@@ -1,51 +1,51 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Starter Kit",
+  "name": "Paycrest Docs",
   "logo": {
     "dark": "/logo/dark.svg",
     "light": "/logo/light.svg"
   },
   "favicon": "/favicon.svg",
   "colors": {
-    "primary": "#0D9373",
-    "light": "#07C983",
-    "dark": "#0D9373",
+    "primary": "#0065F5",
+    "light": "#FFFFFF",
+    "dark": "#0065F5",
     "anchors": {
-      "from": "#0D9373",
-      "to": "#07C983"
+      "from": "#A855F7",
+      "to": "#F9A8D4"
     }
   },
   "topbarLinks": [
     {
       "name": "Support",
-      "url": "mailto:hi@mintlify.com"
+      "url": "mailto:dev@paycrest.io"
     }
   ],
   "topbarCtaButton": {
     "name": "Dashboard",
-    "url": "https://dashboard.mintlify.com"
+    "url": "https://app.paycrest.io"
   },
   "tabs": [
     {
       "name": "API Reference",
-      "url": "api-reference"
+      "url": "reference"
     }
   ],
   "anchors": [
     {
       "name": "Documentation",
       "icon": "book-open-cover",
-      "url": "https://mintlify.com/docs"
+      "url": "https://paycrest.io/docs"
     },
     {
       "name": "Community",
       "icon": "slack",
-      "url": "https://mintlify.com/community"
+      "url": "https://paycrest.io/community"
     },
     {
       "name": "Blog",
       "icon": "newspaper",
-      "url": "https://mintlify.com/blog"
+      "url": "https://medium.com/@paycrest"
     }
   ],
   "navigation": [
@@ -71,21 +71,34 @@
     {
       "group": "API Documentation",
       "pages": [
-        "api-reference/introduction"
+        "reference/introduction"
       ]
     },
     {
-      "group": "Endpoint Examples",
+      "group": "Sender API",
       "pages": [
-        "api-reference/endpoint/get",
-        "api-reference/endpoint/create",
-        "api-reference/endpoint/delete"
+        "reference/sender/initiate",
+        "reference/sender/orders",
+        "reference/sender/order-by-id"
+      ]
+    },
+    {
+      "group": "Aggregator",
+      "pages": [
+        "reference/aggregator/current-rate",
+        "reference/aggregator/currencies",
+        "reference/aggregator/institutions",
+        "reference/aggregator/accept",
+        "reference/aggregator/decline",
+        "reference/aggregator/cancel",
+        "reference/aggregator/fulfill",
+        "reference/aggregator/market-rate"
       ]
     }
   ],
   "footerSocials": {
-    "x": "https://x.com/mintlify",
-    "github": "https://github.com/mintlify",
-    "linkedin": "https://linkedin.com/company/mintlify"
+    "x": "https://x.com/paycrest",
+    "github": "https://github.com/paycrest",
+    "linkedin": "https://linkedin.com/company/paycrest"
   }
 }
