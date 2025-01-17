@@ -79,12 +79,14 @@
       "pages": [
         "reference/sender/initiate",
         "reference/sender/orders",
-        "reference/sender/order-by-id"
+        "reference/sender/order-by-id",
+        "reference/sender/stats"
       ]
     },
     {
       "group": "Aggregator",
       "pages": [
+        "reference/aggregator/orders",
         "reference/aggregator/current-rate",
         "reference/aggregator/currencies",
         "reference/aggregator/institutions",
@@ -92,7 +94,9 @@
         "reference/aggregator/decline",
         "reference/aggregator/cancel",
         "reference/aggregator/fulfill",
-        "reference/aggregator/market-rate"
+        "reference/aggregator/market-rate",
+        "reference/aggregator/stats",
+        "reference/aggregator/node-info"
       ]
     }
   ],
