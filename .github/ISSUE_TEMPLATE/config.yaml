@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Paycrest Dev Community"
+    url: "https://t.me/+Stx-wLOdj49iNDM0"
+    about: "Please ask and answer questions here."
+  - name: "Paycrest docs"
+    url: "engineering@paycrest.io"
+    about: "Paycrest integration into external apps."
