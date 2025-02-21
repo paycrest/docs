@@ -1,0 +1,27 @@
+{
+  "id": "api",
+  "title": "APIs",
+  "description": "Here are some of the endpoints you'd require to get neccessary information to perform transactions",
+  "source": "@site/docs/api.md",
+  "sourceDirName": ".",
+  "slug": "/api",
+  "permalink": "/api",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/undefined/undefined/tree/main/docs/api.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "contractSidebar",
+  "previous": {
+    "title": "Sender API",
+    "permalink": "/guides/sender"
+  },
+  "next": {
+    "title": "Contracts",
+    "permalink": "/contracts/"
+  }
+}

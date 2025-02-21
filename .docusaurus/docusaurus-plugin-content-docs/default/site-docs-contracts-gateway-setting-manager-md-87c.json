@@ -1,0 +1,24 @@
+{
+  "id": "contracts/GatewaySettingManager",
+  "title": "GatewaySettingManager",
+  "description": "GatewaySettingManager",
+  "source": "@site/docs/contracts/GatewaySettingManager.md",
+  "sourceDirName": "contracts",
+  "slug": "/contracts/GatewaySettingManager",
+  "permalink": "/contracts/GatewaySettingManager",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/undefined/undefined/tree/main/docs/contracts/GatewaySettingManager.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "contractSidebar",
+  "previous": {
+    "title": "Gateway",
+    "permalink": "/contracts/Gateway"
+  },
+  "next": {
+    "title": "Deployment Addresses",
+    "permalink": "/deploymentAddresses"
+  }
+}

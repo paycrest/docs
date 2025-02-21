@@ -1,0 +1,24 @@
+{
+  "id": "guides/GatewayOrders",
+  "title": "Gateway Orders",
+  "description": "In this guide, we will create an off-ramp order to convert USDT to Nigerian naira(NGN).",
+  "source": "@site/docs/guides/GatewayOrders.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/GatewayOrders",
+  "permalink": "/guides/GatewayOrders",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/undefined/undefined/tree/main/docs/guides/GatewayOrders.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "contractSidebar",
+  "previous": {
+    "title": "Guides",
+    "permalink": "/guides/"
+  },
+  "next": {
+    "title": "Sender API",
+    "permalink": "/guides/sender"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "guides/sender",
+  "title": "Sender API",
+  "description": "Welcome to the comprehensive guide for the Paycrest Sender API. This documentation serves as a detailed reference for developers integrating Paycrest’s Sender API services into their applications. Whether you're looking to initiate orders, fetch order details, manage webhooks, or handle user authentication, this documentation covers all the necessary aspects to get started and ensure a smooth integration process.",
+  "source": "@site/docs/guides/sender.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/sender",
+  "permalink": "/guides/sender",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/undefined/undefined/tree/main/docs/guides/sender.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "contractSidebar",
+  "previous": {
+    "title": "Gateway Orders",
+    "permalink": "/guides/GatewayOrders"
+  },
+  "next": {
+    "title": "APIs",
+    "permalink": "/api"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "contracts/index",
+  "title": "Contracts",
+  "description": "Paycrest contracts are multi-chain EVM-based smart contracts that facilitate the on-chain lifecycle of a payment order. They empower a sender to create a payment order, enable a liquidity provider to receive cryptocurrency in escrow, and much more.",
+  "source": "@site/docs/contracts/index.md",
+  "sourceDirName": "contracts",
+  "slug": "/contracts/",
+  "permalink": "/contracts/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/undefined/undefined/tree/main/docs/contracts/index.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "contractSidebar",
+  "previous": {
+    "title": "APIs",
+    "permalink": "/api"
+  },
+  "next": {
+    "title": "Gateway",
+    "permalink": "/contracts/Gateway"
+  }
+}

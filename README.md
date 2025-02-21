@@ -1,32 +1,25 @@
-# Mintlify Starter Kit
+# Bonadocs Documentation
 
-Click on `Use this template` to copy the Mintlify starter kit. The starter kit contains examples including
+Paycrest contracts are multi-chain EVM-based smart contracts that facilitate the on-chain lifecycle of a payment order. They empower a sender to create a payment order, enable a liquidity provider to receive cryptocurrency in escrow, and much more. This docs covers how to use our APIs and contract to enable our off-ramp in your app.  
 
-- Guide pages
-- Navigation
-- Customizations
-- API Reference pages
-- Use of popular components
-
-### Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mintlify) to preview the documentation changes locally. To install, use the following command
+### Installation
 
 ```
-npm i -g mintlify
+$ yarn
 ```
 
-Run the following command at the root of your documentation (where mint.json is)
+### Local Development
 
 ```
-mintlify dev
+$ yarn start
 ```
 
-### Publishing Changes
+This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
 
-Install our Github App to auto propagate changes from your repo to your deployment. Changes will be deployed to production automatically after pushing to the default branch. Find the link to install on your dashboard. 
+### Build
 
-#### Troubleshooting
+```
+$ yarn build
+```
 
-- Mintlify dev isn't running - Run `mintlify install` it'll re-install dependencies.
-- Page loads as a 404 - Make sure you are running in a folder with `mint.json`
+This command generates static content into the `build` directory and can be served using any static contents hosting service.

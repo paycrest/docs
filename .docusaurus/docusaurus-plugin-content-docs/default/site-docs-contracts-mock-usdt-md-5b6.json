@@ -1,0 +1,24 @@
+{
+  "id": "contracts/MockUSDT",
+  "title": "MockUSDT",
+  "description": "MockUSDT",
+  "source": "@site/docs/contracts/MockUSDT.md",
+  "sourceDirName": "contracts",
+  "slug": "/contracts/MockUSDT",
+  "permalink": "/contracts/MockUSDT",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/undefined/undefined/tree/main/docs/contracts/MockUSDT.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "contractSidebar",
+  "previous": {
+    "title": "GatewaySettingManager",
+    "permalink": "/contracts/GatewaySettingManager"
+  },
+  "next": {
+    "title": "Deployment Addresses",
+    "permalink": "/deploymentAddresses"
+  }
+}

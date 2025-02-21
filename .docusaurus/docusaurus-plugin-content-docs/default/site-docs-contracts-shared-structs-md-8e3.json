@@ -1,0 +1,24 @@
+{
+  "id": "contracts/SharedStructs",
+  "title": "SharedStructs",
+  "description": "SharedStructs",
+  "source": "@site/docs/contracts/SharedStructs.md",
+  "sourceDirName": "contracts",
+  "slug": "/contracts/SharedStructs",
+  "permalink": "/contracts/SharedStructs",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/undefined/undefined/tree/main/docs/contracts/SharedStructs.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "contractSidebar",
+  "previous": {
+    "title": "MockUSDT",
+    "permalink": "/contracts/MockUSDT"
+  },
+  "next": {
+    "title": "Deployment Addresses",
+    "permalink": "/deploymentAddresses"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "/__docusaurus/debug-47d": {
+    "__comp": "__comp---theme-debug-config-23-a-2ff",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-2-d-8-48f"
+    }
+  },
+  "/__docusaurus/debug/config-ae0": {
+    "__comp": "__comp---theme-debug-config-23-a-2ff",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-2-d-8-48f"
+    }
+  },
+  "/__docusaurus/debug/content-d76": {
+    "__comp": "__comp---theme-debug-contentba-8-ce7",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-2-d-8-48f"
+    },
+    "allContent": "allContent---docusaurus-debug-content-246-9aa"
+  },
+  "/__docusaurus/debug/globalData-b62": {
+    "__comp": "__comp---theme-debug-global-dataede-0fa",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-2-d-8-48f"
+    }
+  },
+  "/__docusaurus/debug/metadata-8d9": {
+    "__comp": "__comp---theme-debug-site-metadata-68-e-3d4",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-2-d-8-48f"
+    }
+  },
+  "/__docusaurus/debug/registry-d70": {
+    "__comp": "__comp---theme-debug-registry-679-501",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-2-d-8-48f"
+    }
+  },
+  "/__docusaurus/debug/routes-feb": {
+    "__comp": "__comp---theme-debug-routes-946-699",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-2-d-8-48f"
+    }
+  },
+  "/-757": {
+    "__comp": "__comp---theme-docs-root-5-e-9-0b6",
+    "__context": {
+      "plugin": "plugin---9-f-8-bef"
+    }
+  },
+  "/-4e6": {
+    "__comp": "__comp---theme-doc-version-roota-7-b-5de",
+    "version": "version---935-fcf"
+  },
+  "/-301": {
+    "__comp": "__comp---theme-doc-roota-94-67a"
+  },
+  "/api-98a": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---api-5-fb-585"
+  },
+  "/contracts/-4a6": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---contracts-315-c68"
+  },
+  "/contracts/Gateway-57b": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---contracts-gatewayf-50-b85"
+  },
+  "/deploymentAddresses-872": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---deployment-addressesd-54-189"
+  },
+  "/guides/-837": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---guides-d-03-118"
+  },
+  "/guides/GatewayOrders-05a": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---guides-gateway-orders-1-c-7-cc3"
+  },
+  "/guides/sender-fba": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---guides-sender-227-699"
+  },
+  "/-1d4": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---c-37-d02"
+  }
+}
