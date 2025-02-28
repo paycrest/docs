@@ -15,9 +15,9 @@
           "editUrlLocalized": "https://github.com/undefined/undefined/tree/main/i18n/en/docusaurus-plugin-content-docs/current",
           "isLast": true,
           "routePriority": -1,
-          "sidebarFilePath": "/Users/david/Documents/projects/contracts-docs/sidebars.js",
-          "contentPath": "/Users/david/Documents/projects/contracts-docs/docs",
-          "contentPathLocalized": "/Users/david/Documents/projects/contracts-docs/i18n/en/docusaurus-plugin-content-docs/current",
+          "sidebarFilePath": "/Users/david/Documents/projects/paycrest-docs/docs/sidebars.js",
+          "contentPath": "/Users/david/Documents/projects/paycrest-docs/docs/docs",
+          "contentPathLocalized": "/Users/david/Documents/projects/paycrest-docs/docs/i18n/en/docusaurus-plugin-content-docs/current",
           "docs": [
             {
               "id": "api",
@@ -291,6 +291,7 @@
   },
   "docusaurus-plugin-debug": {},
   "docusaurus-theme-classic": {},
+  "docusaurus-theme-live-codeblock": {},
   "docusaurus-bootstrap-plugin": {},
   "docusaurus-mdx-fallback-plugin": {}
 }

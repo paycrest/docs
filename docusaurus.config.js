@@ -30,6 +30,8 @@ export default {
       },
     ],
   ],
+  themes: ["@docusaurus/theme-live-codeblock"],
+
   themeConfig: {
     image: "img/docusaurus-social-card.jpg",
     navbar: {
