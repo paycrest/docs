@@ -113,14 +113,14 @@ function App() {
     try {
       setLoading(true);
       const response = await fetch(
-        "https://api.paycrest.io/v1/institutions/NGN"
+        "https://api.paycrest.io/v1/institutions/ngn"
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       let res = await response.json();
-      setBankDeets(JSON.stringify(res));
+      setInstitutions(JSON.stringify(res));
     } catch (error) {
       console.error("Error fetching NGN institutions:", error);
       throw error;
@@ -183,7 +183,7 @@ function App() {
   const verifyBank = async () => {
     const bankData = {
       institution: "KUDANGPC",
-      accountIdentifier: "12345678953",
+      accountIdentifier: "12345678953", // sample account identifier
     };
 
     try {
@@ -310,6 +310,9 @@ Method: `GET`
 
 - `id`: The unique identifier for the order
 
+### Headers
+It requires an `API-Key` header, which is the sender's `Clent ID` from the dashboard.
+
 ### Response Format
 
 A JSON object containing detailed information about the fetched payment order.
@@ -413,6 +416,9 @@ Method: `GET`
 - `network`: Filters orders by their network.
 - `page`: Specifies the page number for pagination.
 - `pageSize`: Specifies the number of items per page for pagination.
+
+### Headers
+It requires an `API-Key` header, which is the sender's `Clent ID` from the dashboard.
 
 ### Response Format
 

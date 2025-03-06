@@ -194,7 +194,7 @@ Finally, we can now make the order. We make use of the [createOrder](#createOrde
 ```
 // create order through the gateway contract
 
-const refundAddress = "0xFf7dAD16C6Cd58FD0De22ddABbcBF35f888Fc9B2"
+const refundAddress = "0x344de...." // this is the user's address to pay into for refunds
 
 try {
   const createOrderTx = await gateway.createOrder(

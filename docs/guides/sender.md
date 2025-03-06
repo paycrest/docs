@@ -140,7 +140,7 @@ model Transaction {
 }
 ```
 
-Here, we have a webhook endpoint that first verifies the endpoint using the `payload` from paycrest that's sent to our webhook, `"X-Paycrest-Signature"` that's part of the payload header, and the `Client Secret` from the dashboard that we talked about earlier. If it passes verification, we save it to `Transaction`.
+Here, we have a webhook endpoint that first verifies the endpoint using the `payload` from paycrest that's sent to our webhook, `"X-Paycrest-Signature"` that's part of the expected payload header, and the `Client Secret` from the dashboard that we talked about earlier. If it passes verification, we save it to `Transaction`.
 
 ```
 app.post("/webhook", async (req: any, res: any, next) => {
