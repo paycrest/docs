@@ -1,5 +1,6 @@
 # Node.js
 node_modules/
+.docusaurus
 npm-debug.log
 yarn-error.log
 
