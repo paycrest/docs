@@ -2,12 +2,14 @@
 
 In this guide, we will create an off-ramp order to convert USDT to Nigerian naira(NGN).
 
-## Setup 
-To create an off-ramp order, we have to first import certain values from `ethers` and define both the stablecoin's token contract and Paycrest's gateway contract. 
+## Setup
+
+To create an off-ramp order, we have to first import certain values from `ethers` and define both the stablecoin's token contract and Paycrest's gateway contract.
 
 In this example, we're performing the transaction on the `arbitrum` network and we're using the appropriate contract addresses and `ABI` per contract. We then define variables for the transaction's exchange rate and the user's bank account.
 
 ### Import Values
+
 ```
 import { ethers, Contract, formatUnits, parseUnits, BigNumber, ZeroAddress } from "ethers";
 
@@ -28,6 +30,7 @@ const { address: usdtAddress, abi: usdtAbi } = usdtContract;
 const { address: gatewayAddress, abi: gatewayAbi } = gatewayContract;
 let getRate, getAccount;
 ```
+
 ### Define Variables
 
 Next, let's define our user's `signer` that'll be used to initiate the contracts. One thing to note is that you require the `provider` will to get the signer.
@@ -53,9 +56,10 @@ Let's verify the user's account by taking their account number and bank to gener
 
 Both requests are performed in parallel so it can be completed faster.
 
-P.S: Keep in mind that for the `bankData` you can know the correct `institution` code from [here]((/api#fetch-supported-institutions))
+P.S: Keep in mind that for the `bankData` you can know the correct `institution` code from [here](<(/api#fetch-supported-institutions)>)
 
 ## Fetch naira rate and bank verification
+
 ```
 // get the  nairaRate and verify account number
 const nairaRate = "https://api.paycrest.io/v1/rates/usdt/1/ngn";
@@ -63,7 +67,7 @@ const accountName = "https://api.paycrest.io/v1/verify-account";
 
   const bankData = {
     institution: "KUDANGPC",
-    accountIdentifier: "2002948489"
+    accountIdentifier: "12345678953"
   };
 
   try {
@@ -85,7 +89,9 @@ const accountName = "https://api.paycrest.io/v1/verify-account";
     console.error("Error fetching data:", error);
   }
 ```
+
 ## Bank Data Encryption
+
 Next, encrypt the user's bank data in a message hash. Here, we fetch the aggregator's public key using `fetchAggregatorPublicKey()`. Then, we generate the hash by passing the bank data and key into the `publicKeyEncrypt()` function.
 
 ```
@@ -150,10 +156,10 @@ const fetchAggregatorPublicKey = async () => {
 
 // Encrypt recipient details
 const recipient = {
-  accountIdentifier: "2002948489",
+  accountIdentifier: "12345678953",
   accountName: getAccount.data,
   institution: "KUDANGPC",
-  providerId: "etoMCRIY",
+  providerId: "PROVIDER_ID", // You'll need to contact us to receive an ID
   memo: "N/A",
 };
 
@@ -163,11 +169,12 @@ const messageHash = await publicKeyEncrypt(recipient, publicKey.data);
 console.log(publicKey, messageHash);
 ```
 
-## Approve USDT token 
+## Approve USDT token
 
 Before we can debit USDT from the user's wallet, we need them to confirm the `approve` method on the `usdtAsset` contract by passing in the amount(`usdtAmount`) and the `gatewayAddress`.
 
 We define the amount by using `parseUnits` from ethers. It takes in the amount in string and the token's decimal. In this case, USDT's decimal is `6`.
+
 ```
 // approve on USDT
 const usdtAmount = parseUnits('100', 6);
@@ -183,6 +190,7 @@ console.log(approveRct.logs)
 ## Create Order
 
 Finally, we can now make the order. We make use of the [createOrder](#createOrder) method on the gateway.
+
 ```
 // create order through the gateway contract
 
@@ -219,4 +227,3 @@ try {
 ```
 
 We pass in the `token`, `amount`, `rate`, `senderFeeRecipient`, `senderFee`, `refundAddress`, `messageHash` respectively. Then we get back the `emittedCreatedOrder` event that's logged.
-

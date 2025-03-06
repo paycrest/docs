@@ -1,7 +1,7 @@
 {
   "id": "guides/sender",
   "title": "Sender API",
-  "description": "Welcome to the comprehensive guide for the Paycrest Sender API. This documentation serves as a detailed reference for developers integrating Paycrest’s Sender API services into their applications. Whether you're looking to initiate orders, fetch order details, manage webhooks, or handle user authentication, this documentation covers all the necessary aspects to get started and ensure a smooth integration process.",
+  "description": "In this guide, we demonstrate how to enable off-ramps for users with the sender API. The main difference between the sender API and the gateway contract is that users get a receiving address to pay for rather than connecting their non-custodial wallets. This means users can off-ramp directly from any wallet.",
   "source": "@site/docs/guides/sender.md",
   "sourceDirName": "guides",
   "slug": "/guides/sender",
