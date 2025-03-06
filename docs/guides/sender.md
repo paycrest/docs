@@ -48,6 +48,8 @@ const orderParams = {
 }
 ```
 
+**P.S**: We support USDT and USDC, but USDC is not supported on Tron and USDT is not supported on Base.
+
 Here, we have the `orderParams` that contains all the necessary information about the order. One thing to note is that you'll need to get the `rate` and `accountName` in real time by calling their respective API endpoints. Also the `returnAddress` is just the user's address in the case of refunds.
 
 ```
