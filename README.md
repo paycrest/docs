@@ -1,8 +1,6 @@
-# Paycrest Documentation
+# Paycrest Docs
 
-We cover the two main ways to interact with the protocol - gateway contract and sender API. Paycrest's gateway contract is a multi-chain EVM-based smart contract that helps facilitate the on-chain lifecycle of a payment order. 
-
-It empowers users on-chain to create an off-ramp order while enabling a liquidity provider to facilitate that order at a good exchange rate. Sender API also helps users create and execute off-ramp orders but uses a receiving address. 
+Developer documentation for the Paycrest protocol.
 
 ### Installation
 
@@ -28,7 +26,7 @@ This command generates static content into the `build` directory and can be serv
 
 ## Contributing
 
-We welcome contributions to the stablecoin-rates project! To get started, follow these steps:
+We welcome contributions to the Paycrest docs! To get started, follow these steps:
 
 **Important:** Before you begin contributing, please ensure you've read and understood these important documents:
 
