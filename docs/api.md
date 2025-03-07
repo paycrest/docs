@@ -7,14 +7,14 @@ sidebar_position: 3
 Here are some of the endpoints you'd require to get neccessary information to perform transactions
 
 ```
-baseUrl = https://api.paycrest.io
+baseUrl = https://api.paycrest.io/v1
 ```
 
 ---
 
 ## Fetch Token Rate
 
-Endpoint: `{baseUrl}/v1/rates/:token/:amount/:fiat`
+Endpoint: `{baseUrl}/rates/:token/:amount/:fiat`
 Method: `GET`
 
 ### Path Parameters
@@ -29,7 +29,7 @@ Method: `GET`
 
 ### Response Format
 
-A successful response from the `GET {baseUrl}/v1/rates/:token/:amount/:fiat` endpoint will contain a JSON object with the following structure:
+A successful response from the `GET {baseUrl}/rates/:token/:amount/:fiat` endpoint will contain a JSON object with the following structure:
 
 ```json
 {
@@ -39,11 +39,112 @@ A successful response from the `GET {baseUrl}/v1/rates/:token/:amount/:fiat` end
 }
 ```
 
+```jsx live
+function App() {
+  const [rate, setRate] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const fetchTokenRate = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://api.paycrest.io/v1/rates/usdt/1/ngn"
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      let res = await response.json();
+      setRate(JSON.stringify(res));
+    } catch (error) {
+      console.error("Error fetching NGN rates:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={fetchTokenRate}>
+        {!loading ? `Fetch token` : `Loading rates...`}
+      </button>
+      <div>{rate}</div>
+    </div>
+  );
+}
+```
+
+---
+
+## Fetch Supported Institutions
+
+Endpoint: `{baseUrl}/institutions/:currency_code`
+Method: `GET`
+
+### Response Format
+
+A successful response from the `GET {baseUrl}/institutions/:currency_code` endpoint will contain a JSON object with the following structure:
+
+```json
+{
+  "message": "OK",
+  "status": "success",
+  "data": [
+    {
+      "name": "GT Bank Plc",
+      "code": "GTBINGLA",
+      "type": "bank" // bank or mobile_money
+    },
+    {
+      "name": "First Bank of Nigeria",
+      "code": "FBNINGLA",
+      "type": "bank" // bank or mobile_money
+    }
+  ]
+}
+```
+
+```jsx live
+function App() {
+  const [institutions, setInstitutions] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const getInstitutions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://api.paycrest.io/v1/institutions/ngn"
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let res = await response.json();
+      setInstitutions(JSON.stringify(res));
+    } catch (error) {
+      console.error("Error fetching NGN institutions:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={getInstitutions}>
+        {!loading ? `Fetch NGN institutions` : `Loading NGN institutions...`}
+      </button>
+      <div>{institutions}</div>
+    </div>
+  );
+}
+```
+
 ---
 
 ## Verify Account
 
-Endpoint: `{baseUrl}/v1/verify-account`
+Endpoint: `{baseUrl}/verify-account`
 Method: `POST`
 
 ### Payload
@@ -74,33 +175,48 @@ A JSON object containing the receive address to accept the cryptocurrency token.
 }
 ```
 
----
+```jsx live
+function App() {
+  const [bankDeets, setBankDeets] = useState("");
+  const [loading, setLoading] = useState(false);
 
-## Fetch Supported Institutions
+  const verifyBank = async () => {
+    const bankData = {
+      institution: "KUDANGPC",
+      accountIdentifier: "12345678953", // sample account identifier
+    };
 
-Endpoint: `{baseUrl}/v1/institutions/:currency_code`
-Method: `GET`
-
-### Response Format
-
-A successful response from the `GET {baseUrl}/v1/institutions/:currency_code` endpoint will contain a JSON object with the following structure:
-
-```json
-{
-  "message": "OK",
-  "status": "success",
-  "data": [
-    {
-      "name": "GT Bank Plc",
-      "code": "GTBINGLA",
-      "type": "bank" // bank or mobile_money
-    },
-    {
-      "name": "First Bank of Nigeria",
-      "code": "FBNINGLA",
-      "type": "bank" // bank or mobile_money
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://api.paycrest.io/v1/verify-account",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bankData),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      let res = await response.json();
+      setBankDeets(JSON.stringify(res));
+    } catch (error) {
+      console.error("Error fetching NGN rates:", error);
+      throw error;
+    } finally {
+      setLoading(false);
     }
-  ]
+  };
+
+  return (
+    <div>
+      <button onClick={verifyBank}>
+        {!loading ? `Fetch bank details` : `Loading bank details...`}
+      </button>
+      <div>{bankDeets}</div>
+    </div>
+  );
 }
 ```
 
@@ -108,12 +224,12 @@ A successful response from the `GET {baseUrl}/v1/institutions/:currency_code` en
 
 ## Fetch Supported Currencies
 
-Endpoint: `{baseUrl}/v1/currencies`
+Endpoint: `{baseUrl}/currencies`
 Method: `GET`
 
 ### Response Format
 
-A successful response from the `GET {baseUrl}/v1/currencies` endpoint will contain a JSON object with the following structure:
+A successful response from the `GET {baseUrl}/currencies` endpoint will contain a JSON object with the following structure:
 
 ```json
 {
@@ -148,16 +264,54 @@ A successful response from the `GET {baseUrl}/v1/currencies` endpoint will conta
 }
 ```
 
+```jsx live
+function App() {
+  const [currencies, setCurrencies] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const getCurrencies = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("https://api.paycrest.io/v1/currencies");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let res = await response.json();
+      console.log(res);
+      setCurrencies(JSON.stringify(res));
+    } catch (error) {
+      console.error("Error fetching currencies:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={getCurrencies}>
+        {!loading ? `Fetch currencies` : `Loading currencies...`}
+      </button>
+      <div>{currencies}</div>
+    </div>
+  );
+}
+```
+
 ---
 
 ## Fetch Payment Order by ID
 
-Endpoint: `{baseUrl}/v1/sender/orders/:id`
+Endpoint: `{baseUrl}/sender/orders/:id`
 Method: `GET`
 
 ### Path Parameters
 
 - `id`: The unique identifier for the order
+
+### Headers
+It requires an `API-Key` header, which is the sender's `Clent ID` from the dashboard.
 
 ### Response Format
 
@@ -206,11 +360,52 @@ A JSON object containing detailed information about the fetched payment order.
 }
 ```
 
+```jsx live
+function App() {
+  const [order, setOrder] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const getOrder = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://api.paycrest.io/v1/sender/orders/:id",
+        headers: {
+          "Content-Type": "application/json",
+          "API-Key": "208a4aef-1320-4222-82b4-e3bca8781b4b",
+        },
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let res = await response.json();
+      console.log(res);
+      setOrder(JSON.stringify(res));
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={getOrder}>
+        {!loading ? `Fetch order` : `Loading the order...`}
+      </button>
+      <div>{order}</div>
+    </div>
+  );
+}
+```
+
 ---
 
 ## Fetch All Payment Orders
 
-Endpoint: `{baseUrl}/v1/sender/orders`
+Endpoint: `{baseUrl}/sender/orders`
 Method: `GET`
 
 ### Query Parameters
@@ -221,6 +416,9 @@ Method: `GET`
 - `network`: Filters orders by their network.
 - `page`: Specifies the page number for pagination.
 - `pageSize`: Specifies the number of items per page for pagination.
+
+### Headers
+It requires an `API-Key` header, which is the sender's `Clent ID` from the dashboard.
 
 ### Response Format
 
@@ -267,5 +465,45 @@ A JSON array containing detailed information about each fetched payment order.
                     ...
                 ]
         }
+}
+```
+
+```jsx live
+function App() {
+  const [orders, setOrders] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const getOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("https://api.paycrest.io/v1/sender/orders", {
+        headers: {
+          "Content-Type": "application/json",
+          "API-Key": "208a4aef-1320-4222-82b4-e3bca8781b4b",
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      let res = await response.json();
+      console.log(res);
+      setOrders(JSON.stringify(res));
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={getOrders}>
+        {!loading ? `Fetch orders` : `Loading the orders...`}
+      </button>
+      <div>{orders}</div>
+    </div>
+  );
 }
 ```

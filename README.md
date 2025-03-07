@@ -1,6 +1,6 @@
-# Bonadocs Documentation
+# Paycrest Docs
 
-Paycrest contracts are multi-chain EVM-based smart contracts that facilitate the on-chain lifecycle of a payment order. They empower a sender to create a payment order, enable a liquidity provider to receive cryptocurrency in escrow, and much more. This docs covers how to use our APIs and contract to enable our off-ramp in your app.  
+Developer documentation for the Paycrest protocol.
 
 ### Installation
 
@@ -37,3 +37,12 @@ We welcome contributions to the Paycrest docs! To get started, follow these step
 Our team will review your pull request and work with you to get it merged into the main branch of the repository.
 
 If you encounter any issues or have questions, feel free to open an issue on the repository or leave a message in our [developer community on Telegram](https://t.me/+Stx-wLOdj49iNDM0)
+
+## 📜 License
+
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+By using, modifying, or distributing this software, you agree to comply with the terms of the **AGPL-3.0** license.
+
+For more details, see the [LICENSE](LICENSE) file or visit:  
+[https://www.gnu.org/licenses/agpl-3.0.html](https://www.gnu.org/licenses/agpl-3.0.html)

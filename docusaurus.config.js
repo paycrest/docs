@@ -5,9 +5,9 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 export default {
   title: "Paycrest",
-  tagline: "Generated with Bonadocs",
+  tagline: "",
   favicon: "img/favicon.ico",
-  url: "https://your-documentation-site.com",
+  url: "https://docs.paycrest.io",
   baseUrl: "/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
@@ -22,7 +22,7 @@ export default {
         docs: {
           routeBasePath: "/",
           sidebarPath: "./sidebars.js",
-          editUrl: "https://github.com/undefined/undefined/tree/main/",
+          editUrl: "https://github.com/paycrest/docs/tree/main/",
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -30,6 +30,8 @@ export default {
       },
     ],
   ],
+  themes: ["@docusaurus/theme-live-codeblock"],
+
   themeConfig: {
     image: "img/docusaurus-social-card.jpg",
     navbar: {
