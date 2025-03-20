@@ -1,4 +1,4 @@
-# Paycrest Docs
+# Paycrest Documentation
 
 Developer documentation for the Paycrest protocol.
 
