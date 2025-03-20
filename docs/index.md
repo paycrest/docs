@@ -3,7 +3,7 @@ sidebar_position: 1
 slug: /
 ---
 
-# Paycrest
+# Introduction
 
 The P2P-powered crypto-to-cash protocol. 
 

@@ -35,17 +35,17 @@ export default {
   themeConfig: {
     image: "img/paycrest.jpg",
     navbar: {
-      title: "Paycrest",
+      // title: "Paycrest Docs",
       logo: {
         alt: "Paycrest Logo",
-        src: "https://avatars.githubusercontent.com/u/128634635?s=200&v=4",
+        src: "https://paycrest.io/assets/paycrest-beta-logo-black.svg",
       },
       items: [
         {
           type: "docSidebar",
-          sidebarId: "contractSidebar",
+          sidebarId: "mainSidebar",
           position: "left",
-          label: "Contracts",
+          label: "Docs",
         },
       ],
     },
