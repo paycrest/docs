@@ -5,9 +5,9 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 export default {
   title: "Paycrest",
-  tagline: "Generated with Bonadocs",
+  tagline: "The P2P-powered crypto-to-cash protocol",
   favicon: "img/favicon.ico",
-  url: "https://your-documentation-site.com",
+  url: "https://docs.paycrest.io/",
   baseUrl: "/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
@@ -31,7 +31,7 @@ export default {
     ],
   ],
   themeConfig: {
-    image: "img/docusaurus-social-card.jpg",
+    image: "img/paycrest.jpg",
     navbar: {
       title: "Paycrest",
       logo: {
