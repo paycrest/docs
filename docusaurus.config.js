@@ -22,7 +22,7 @@ export default {
         docs: {
           routeBasePath: "/",
           sidebarPath: "./sidebars.js",
-          editUrl: "https://github.com/undefined/undefined/tree/main/",
+          editUrl: "https://github.com/paycrest/docs/tree/main/",
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -30,6 +30,8 @@ export default {
       },
     ],
   ],
+  themes: ["@docusaurus/theme-live-codeblock"],
+
   themeConfig: {
     image: "img/paycrest.jpg",
     navbar: {
