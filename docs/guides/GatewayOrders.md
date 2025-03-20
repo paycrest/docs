@@ -56,7 +56,7 @@ Let's verify the user's account by taking their account number and bank to gener
 
 Both requests are performed in parallel so it can be completed faster.
 
-P.S: Keep in mind that for the `bankData` you can know the correct `institution` code from [here](<(/api#fetch-supported-institutions)>)
+P.S: Keep in mind that for the `bankData` you can know the correct `institution` code from [here](/api#fetch-supported-institutions)
 
 ## Fetch naira rate and bank verification
 
