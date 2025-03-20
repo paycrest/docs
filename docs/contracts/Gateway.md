@@ -1,4 +1,4 @@
-﻿﻿## Gateway
+﻿﻿# Gateway
 
 This contract serves as a gateway for creating orders and managing settlements.
 

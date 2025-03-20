@@ -1,6 +1,6 @@
 # Sender API
 
-In this guide, we demonstrate how to enable off-ramps for users with the sender API. The main difference between the sender API and the gateway contract is that users get a receiving address to pay for rather than connecting their non-custodial wallets. This means users can off-ramp directly from any wallet.
+In this guide, we demonstrate how to enable off-ramps for users with the Sender API. The main difference between the Sender API and the Gateway contract is that users get a receiving address to pay for rather than connecting their non-custodial wallets. This means users can off-ramp directly from any wallet.
 
 ## Getting Started
 

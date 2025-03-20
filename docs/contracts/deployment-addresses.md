@@ -1,10 +1,4 @@
----
-sidebar_position: 4
----
-
 # Deployment Addresses
-
-## Contract Deployment Addresses
 
 ## Testnet Contracts
 
@@ -104,7 +98,7 @@ sidebar_position: 4
 		</tr>
 	</thead>
 	<tbody>
-		<tr>
+		<!-- <tr>
 			<td rowspan="2">Ethereum</td>
 			<td>Gateway Proxy</td>
 			<td>0x16c9C78Dbb224889E3e2ADef991C8c4438ea797B</td>
@@ -115,7 +109,7 @@ sidebar_position: 4
 		</tr>
 		<tr>
 			<td colspan="3"></td>
-		</tr>
+		</tr> -->
 		<tr>
 			<td rowspan="2">Polygon</td>
 			<td>Gateway Proxy</td>
@@ -208,6 +202,19 @@ sidebar_position: 4
 		<tr>
 			<td>Gateway Admin</td>
 			<td>0xc38D6817F736b1cb44785e14A8cb7152385d3210</td>
+		</tr>
+				<tr>
+			<td rowspan="3">Lisk</td>
+			<td>Gateway Proxy</td>
+			<td>0xff0E00E0110C1FBb5315D276243497b66D3a4d8a</td>
+		</tr>
+		<tr>
+			<td>Gateway Implementation</td>
+			<td>0x3Dc80272cE93cBFF3351913bB089B59C4a9141DE</td>
+		</tr>
+		<tr>
+			<td>Gateway Admin</td>
+			<td>0x8FD1f78d88Dd008E557273b5Cd517487C2A9A7de</td>
 		</tr>
 		<tr>
 			<td rowspan="2">Asset Chain</td>

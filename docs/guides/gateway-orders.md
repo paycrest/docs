@@ -4,7 +4,7 @@ In this guide, we will create an off-ramp order to convert USDT to Nigerian nair
 
 ## Setup
 
-To create an off-ramp order, we have to first import certain values from `ethers` and define both the stablecoin's token contract and Paycrest's gateway contract.
+To create an off-ramp order, we have to first import certain values from `ethers` and define both the stablecoin's token contract and Paycrest's Gateway contract.
 
 In this example, we're performing the transaction on the `arbitrum` network and we're using the appropriate contract addresses and `ABI` per contract. We then define variables for the transaction's exchange rate and the user's bank account.
 
