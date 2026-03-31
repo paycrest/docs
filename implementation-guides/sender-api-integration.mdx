@@ -85,7 +85,7 @@ In the dashboard settings, you can set a default `refundAddress` and `feeAddress
 Before creating an order, verify the recipient's bank or mobile account. This reduces failed orders.
 
 ```bash
-curl -X POST "https://api.paycrest.io/v1/verify-account" \
+curl -X POST "https://api.paycrest.io/v2/verify-account" \
   -H "API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -106,12 +106,12 @@ The rates endpoint is public (no API key required). Always fetch a fresh rate im
 <Tabs>
   <Tab title="cURL">
 ```bash
-curl "https://api.paycrest.io/v1/rates/USDT/100/NGN?network=base"
+curl "https://api.paycrest.io/v2/rates/USDT/100/NGN?network=base"
 ```
   </Tab>
   <Tab title="JavaScript">
 ```javascript
-const rate = await fetch("https://api.paycrest.io/v1/rates/USDT/100/NGN?network=base")
+const rate = await fetch("https://api.paycrest.io/v2/rates/USDT/100/NGN?network=base")
   .then(r => r.json())
   .then(r => r.data); // e.g. "1500.50"
 ```
@@ -119,7 +119,7 @@ const rate = await fetch("https://api.paycrest.io/v1/rates/USDT/100/NGN?network=
   <Tab title="Python">
 ```python
 import requests
-res = requests.get("https://api.paycrest.io/v1/rates/USDT/100/NGN", params={"network": "base"})
+res = requests.get("https://api.paycrest.io/v2/rates/USDT/100/NGN", params={"network": "base"})
 rate = res.json()["data"]  # e.g. "1500.50"
 ```
   </Tab>

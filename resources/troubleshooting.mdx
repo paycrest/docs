@@ -20,7 +20,7 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
     
     <h4>Example Request</h4>
     ```bash
-    curl -X GET "https://api.paycrest.io/v1/sender/orders" \
+    curl -X GET "https://api.paycrest.io/v2/sender/orders" \
       -H "API-Key: YOUR_API_KEY"
     ```
   </Accordion>
@@ -219,7 +219,7 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
   <Step title="Enable Debug Logging">
     Add debug headers to see detailed request/response information:
     ```bash
-    curl -X POST "https://api.paycrest.io/v1/sender/orders" \
+    curl -X POST "https://api.paycrest.io/v2/sender/orders" \
       -H "API-Key: YOUR_API_KEY" \
       -H "X-Debug: true" \
       -H "Content-Type: application/json" \

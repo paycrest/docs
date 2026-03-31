@@ -323,13 +323,13 @@ func createOffRampOrder(amount string, recipient map[string]interface{}, refundA
   <Tab title="JavaScript">
 ```javascript
 async function getExchangeRate() {
-  const response = await fetch("https://api.paycrest.io/v1/rates/usdt/1/ngn?network=base");
+  const response = await fetch("https://api.paycrest.io/v2/rates/usdt/1/ngn?network=base");
   const data = await response.json();
   return Number(data.data);
 }
 
 async function verifyAccount(recipient) {
-  const response = await fetch("https://api.paycrest.io/v1/verify-account", {
+  const response = await fetch("https://api.paycrest.io/v2/verify-account", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -347,13 +347,13 @@ async function verifyAccount(recipient) {
 import requests
 
 async def get_exchange_rate():
-    response = requests.get("https://api.paycrest.io/v1/rates/usdt/1/ngn?network=base")
+    response = requests.get("https://api.paycrest.io/v2/rates/usdt/1/ngn?network=base")
     data = response.json()
     return float(data['data'])
 
 async def verify_account(recipient):
     response = requests.post(
-        "https://api.paycrest.io/v1/verify-account",
+        "https://api.paycrest.io/v2/verify-account",
         headers={"Content-Type": "application/json"},
         json={
             "institution": recipient["institution"],
@@ -375,7 +375,7 @@ import (
 )
 
 func getExchangeRate() (float64, error) {
-    resp, err := http.Get("https://api.paycrest.io/v1/rates/usdt/1/ngn?network=base")
+    resp, err := http.Get("https://api.paycrest.io/v2/rates/usdt/1/ngn?network=base")
     if err != nil {
         return 0, err
     }
@@ -405,7 +405,7 @@ func verifyAccount(recipient map[string]interface{}) (string, error) {
     })
     
     resp, err := http.Post(
-        "https://api.paycrest.io/v1/verify-account",
+        "https://api.paycrest.io/v2/verify-account",
         "application/json",
         bytes.NewBuffer(jsonData),
     )
@@ -429,10 +429,10 @@ func verifyAccount(recipient map[string]interface{}) (string, error) {
   <Tab title="cURL">
 ```bash
 # Get exchange rate
-curl -X GET "https://api.paycrest.io/v1/rates/usdt/1/ngn?network=base"
+curl -X GET "https://api.paycrest.io/v2/rates/usdt/1/ngn?network=base"
 
 # Verify account
-curl -X POST "https://api.paycrest.io/v1/verify-account" \
+curl -X POST "https://api.paycrest.io/v2/verify-account" \
   -H "Content-Type: application/json" \
   -d '{
     "institution": "GTB",
@@ -454,7 +454,7 @@ The recipient object is encrypted with the aggregator's public key to produce th
   <Tab title="JavaScript">
 ```javascript
 async function encryptRecipientData(recipient) {
-  const response = await fetch("https://api.paycrest.io/v1/pubkey");
+  const response = await fetch("https://api.paycrest.io/v2/pubkey");
   const { data: publicKey } = await response.json();
   const encrypt = new JSEncrypt();
   encrypt.setPublicKey(publicKey);
@@ -475,7 +475,7 @@ import json
 import base64
 
 async def encrypt_recipient_data(recipient):
-    response = requests.get("https://api.paycrest.io/v1/pubkey")
+    response = requests.get("https://api.paycrest.io/v2/pubkey")
     public_key = response.json()['data']
     
     # Import public key
@@ -506,7 +506,7 @@ import (
 
 func encryptRecipientData(recipient map[string]interface{}) (string, error) {
     // Get public key
-    resp, err := http.Get("https://api.paycrest.io/v1/pubkey")
+    resp, err := http.Get("https://api.paycrest.io/v2/pubkey")
     if err != nil {
         return "", err
     }
@@ -551,7 +551,7 @@ func encryptRecipientData(recipient map[string]interface{}) (string, error) {
   <Tab title="cURL">
 ```bash
 # Get public key for encryption
-curl -X GET "https://api.paycrest.io/v1/pubkey"
+curl -X GET "https://api.paycrest.io/v2/pubkey"
 
 # Note: Encryption is typically done in your application code
 # rather than with cURL. Use one of the programming language examples above.
