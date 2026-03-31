@@ -5,6 +5,32 @@ description: "The technical components behind Paycrest's payment routing — Gat
 
 Paycrest is a payment routing protocol built on three cooperating layers: a Gateway smart contract for onchain escrow, an aggregator for order routing and coordination, and provision nodes for fiat execution. This page explains how those components interact.
 
+```mermaid
+flowchart TD
+    APP["Sender App"]
+
+    subgraph PROTO["Paycrest Protocol"]
+        AGG["Aggregator Node"]
+        GW["Gateway Contract\nonchain escrow"]
+    end
+
+    subgraph PROV["Provider"]
+        NODE["Provision Node"]
+        PSP["PSP"]
+    end
+
+    RECIP(["Recipient"])
+
+    APP -->|"initiate order"| AGG
+    APP <-->|"stablecoin lock / release"| GW
+    GW -.->|"order events"| AGG
+    AGG -->|"route order"| NODE
+    NODE <-->|"fiat execution"| PSP
+    PSP <-->|"fiat / stablecoins"| RECIP
+    NODE -.->|"fulfillment confirmed"| AGG
+    AGG -.->|"webhook"| APP
+```
+
 ## Core Components
 
 ### Gateway Contract
@@ -13,24 +39,24 @@ The **Gateway contract** is the onchain entry point for all payment orders. It h
 
 #### Key Functions
 
-- **Order Creation**: Accepts payment orders from senders; locks stablecoins in escrow
+- **Order Creation**: Accepts payment orders from senders; locks stablecoins in escrow (offramp) or coordinates stablecoin release to recipients (onramp)
 - **Event Emission**: Emits events that the aggregator monitors to begin routing
-- **Escrow Release**: Releases escrowed funds to providers after payout is verified, or returns them to senders if the order can't be fulfilled
+- **Escrow Settlement**: Releases escrowed funds to providers after fulfillment is verified, or returns them to senders if the order can't be completed
 
 #### Payment Flow
 
 <Steps>
   <Step title="Order Creation">
-    Sender creates an order via the Sender API or direct contract interaction. Stablecoins are locked in escrow.
+    Sender creates an order via the Sender API or direct contract interaction. For offramp, stablecoins are locked in escrow. For onramp, the contract coordinates stablecoin release once fiat receipt is confirmed.
   </Step>
   <Step title="Routing">
     Aggregator picks up the onchain event and routes the order to the most suitable liquidity provider based on rate, availability, and corridor.
   </Step>
   <Step title="Fulfillment">
-    Provider executes fiat payout to the recipient via a local PSP connection.
+    For offramp, the provider disburses fiat to the recipient via a local PSP. For onramp, the provider receives the user's fiat deposit and reports confirmation.
   </Step>
   <Step title="Completion">
-    After payout verification, escrowed stablecoins are released to the provider onchain. If fulfillment fails, funds are automatically returned to the sender.
+    After fulfillment is verified, the contract settles atomically: escrowed stablecoins are released to the provider (offramp), or stablecoins are transferred to the recipient's wallet (onramp). If fulfillment fails, funds are automatically returned.
   </Step>
 </Steps>
 
@@ -76,14 +102,14 @@ The **aggregator node** is the coordination layer: it monitors onchain events, m
 
 ### Provision Nodes
 
-**Provision nodes** handle the execution of fiat payments to recipients. They are run by independent liquidity providers who connect their own PSP integrations.
+**Provision nodes** handle fiat execution: disbursing fiat to recipients for offramp orders, or receiving and confirming fiat deposits for onramp orders. They are run by independent liquidity providers who connect their own PSP integrations.
 
 #### Components
 
 - **PSP Integration**: Connects to local payment service providers (banks, mobile wallets)
 - **Rate Management**: Sets and updates competitive rates per corridor
 - **Order Processing**: Executes assigned payment orders
-- **Settlement Reporting**: Reports successful payouts back to the aggregator
+- **Settlement Reporting**: Reports fulfillment status back to the aggregator
 
 #### Integration Types
 

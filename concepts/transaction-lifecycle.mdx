@@ -7,9 +7,23 @@ Paycrest supports two payment directions: **offramp** (stablecoin → fiat) and 
 
 ## Offramp Lifecycle (Stablecoin → Fiat)
 
-```
-initiated → deposited → pending → fulfilling → validated → settling → settled
-     ↘ expired                                           ↘ refunding → refunded
+```mermaid
+stateDiagram-v2
+    [*] --> initiated
+    initiated --> deposited: deposit received
+    initiated --> expired: no deposit (5 min timeout)
+    deposited --> pending: provider matched
+    pending --> fulfilling: fiat payout started
+    fulfilling --> validated: payout confirmed
+    validated --> settling: settlement tx broadcast
+    settling --> settled: onchain confirmed
+    deposited --> refunding: fulfillment failed
+    pending --> refunding: fulfillment failed
+    fulfilling --> refunding: fulfillment failed
+    refunding --> refunded: funds returned to sender
+    expired --> [*]
+    settled --> [*]
+    refunded --> [*]
 ```
 
 <Steps>
@@ -46,9 +60,21 @@ initiated → deposited → pending → fulfilling → validated → settling �
 
 ## Onramp Lifecycle (Fiat → Stablecoin)
 
-```
-initiated → pending → fulfilling → validated → settling → settled
-     ↘ expired                              ↘ refunding → refunded
+```mermaid
+stateDiagram-v2
+    [*] --> initiated
+    initiated --> pending: provider matched
+    initiated --> expired: no fiat deposit (timeout)
+    pending --> fulfilling: fiat deposit confirmed
+    fulfilling --> validated: stablecoin release authorized
+    validated --> settling: onchain transfer started
+    settling --> settled: stablecoins delivered
+    pending --> refunding: fulfillment failed
+    fulfilling --> refunding: fulfillment failed
+    refunding --> refunded: fiat returned
+    expired --> [*]
+    settled --> [*]
+    refunded --> [*]
 ```
 
 <Steps>

@@ -15,6 +15,7 @@ The Gateway contract is a multi-chain EVM-based smart contract that facilitates 
 
 ## Prerequisites
 
+- **Paycrest Sender Account**: Register at [app.paycrest.io](https://app.paycrest.io) and complete KYB verification. You'll need your **API Key** to embed in every order's encrypted metadata — this links the onchain order to your sender profile and enables webhooks.
 - **Ethereum Provider**: MetaMask, WalletConnect, or any Web3 provider
 - **Viem**: For smart contract interactions
 - **USDT/USDC Balance**: Sufficient token balance for orders
@@ -182,7 +183,11 @@ async function createOffRampOrder(amount, recipient, refundAddress) {
   try {
     const rate = await getExchangeRate();
     const accountName = await verifyAccount(recipient);
-    const messageHash = await encryptRecipientData({ ...recipient, accountName });
+    const messageHash = await encryptRecipientData({
+      ...recipient,
+      accountName,
+      metadata: { apiKey: process.env.PAYCREST_API_KEY }
+    });
     await approveUSDT(amount);
     const { request } = await gateway.simulate.createOrder({
       args: [
@@ -213,7 +218,11 @@ async def create_off_ramp_order(amount, recipient, refund_address):
     try:
         rate = await get_exchange_rate()
         account_name = await verify_account(recipient)
-        message_hash = await encrypt_recipient_data({**recipient, 'accountName': account_name})
+        message_hash = await encrypt_recipient_data({
+            **recipient,
+            'accountName': account_name,
+            'metadata': {'apiKey': os.environ['PAYCREST_API_KEY']}
+        })
         await approve_usdt(amount)
         
         # Build transaction
@@ -256,8 +265,13 @@ func createOffRampOrder(amount string, recipient map[string]interface{}, refundA
     if err != nil {
         return err
     }
-    
-    messageHash, err := encryptRecipientData(recipient, accountName)
+
+    recipient["accountName"] = accountName
+    recipient["metadata"] = map[string]interface{}{
+        "apiKey": os.Getenv("PAYCREST_API_KEY"),
+    }
+
+    messageHash, err := encryptRecipientData(recipient)
     if err != nil {
         return err
     }
@@ -309,7 +323,7 @@ func createOffRampOrder(amount string, recipient map[string]interface{}, refundA
   <Tab title="JavaScript">
 ```javascript
 async function getExchangeRate() {
-  const response = await fetch("https://api.paycrest.io/v1/rates/usdt/1/ngn");
+  const response = await fetch("https://api.paycrest.io/v1/rates/usdt/1/ngn?network=base");
   const data = await response.json();
   return Number(data.data);
 }
@@ -333,7 +347,7 @@ async function verifyAccount(recipient) {
 import requests
 
 async def get_exchange_rate():
-    response = requests.get("https://api.paycrest.io/v1/rates/usdt/1/ngn")
+    response = requests.get("https://api.paycrest.io/v1/rates/usdt/1/ngn?network=base")
     data = response.json()
     return float(data['data'])
 
@@ -361,7 +375,7 @@ import (
 )
 
 func getExchangeRate() (float64, error) {
-    resp, err := http.Get("https://api.paycrest.io/v1/rates/usdt/1/ngn")
+    resp, err := http.Get("https://api.paycrest.io/v1/rates/usdt/1/ngn?network=base")
     if err != nil {
         return 0, err
     }
@@ -415,7 +429,7 @@ func verifyAccount(recipient map[string]interface{}) (string, error) {
   <Tab title="cURL">
 ```bash
 # Get exchange rate
-curl -X GET "https://api.paycrest.io/v1/rates/usdt/1/ngn"
+curl -X GET "https://api.paycrest.io/v1/rates/usdt/1/ngn?network=base"
 
 # Verify account
 curl -X POST "https://api.paycrest.io/v1/verify-account" \
@@ -429,6 +443,12 @@ curl -X POST "https://api.paycrest.io/v1/verify-account" \
 </Tabs>
 
 ## Data Encryption
+
+The recipient object is encrypted with the aggregator's public key to produce the `messageHash` passed to the contract. **Always include your API Key in the `metadata.apiKey` field** — this is the same key used as the `API-Key` header in REST requests, and it links the onchain order to your sender profile, enabling webhooks and order attribution.
+
+<Note>
+  Your API Key is available in the dashboard at [app.paycrest.io](https://app.paycrest.io).
+</Note>
 
 <Tabs>
   <Tab title="JavaScript">
@@ -718,13 +738,13 @@ const unwatchOrderCreated = publicClient.watchContractEvent({
   }
 });
 
-const unwatchOrderSettled = publicClient.watchContractEvent({
+const unwatchSettleOut = publicClient.watchContractEvent({
   address: GATEWAY_ADDRESS,
   abi: GATEWAY_ABI,
-  eventName: 'OrderSettled',
+  eventName: 'SettleOut',
   onLogs: (logs) => {
     logs.forEach((log) => {
-      console.log("Order Settled:", { 
+      console.log("Order Settled (SettleOut):", { 
         orderId: log.args.orderId, 
         liquidityProvider: log.args.liquidityProvider, 
         settlePercent: log.args.settlePercent 
@@ -765,8 +785,8 @@ def handle_order_created(event):
         'rate': event['args']['rate']
     })
 
-def handle_order_settled(event):
-    print("Order Settled:", {
+def handle_settle_out(event):
+    print("Order Settled (SettleOut):", {
         'orderId': event['args']['orderId'],
         'liquidityProvider': event['args']['liquidityProvider'],
         'settlePercent': event['args']['settlePercent']
@@ -780,7 +800,7 @@ def handle_order_refunded(event):
 
 # Create event filters
 order_created_filter = gateway.events.OrderCreated.create_filter(fromBlock='latest')
-order_settled_filter = gateway.events.OrderSettled.create_filter(fromBlock='latest')
+settle_out_filter = gateway.events.SettleOut.create_filter(fromBlock='latest')
 order_refunded_filter = gateway.events.OrderRefunded.create_filter(fromBlock='latest')
 
 # Poll for events
@@ -788,8 +808,8 @@ async def poll_events():
     while True:
         for event in order_created_filter.get_new_entries():
             handle_order_created(event)
-        for event in order_settled_filter.get_new_entries():
-            handle_order_settled(event)
+        for event in settle_out_filter.get_new_entries():
+            handle_settle_out(event)
         for event in order_refunded_filter.get_new_entries():
             handle_order_refunded(event)
         await asyncio.sleep(1)
@@ -811,17 +831,17 @@ import (
 func watchEvents(client *ethclient.Client) {
     // Create event filters
     orderCreatedSig := []byte("OrderCreated(address,address,uint256,bytes32,uint256)")
-    orderSettledSig := []byte("OrderSettled(bytes32,address,uint256)")
-    orderRefundedSig := []byte("OrderRefunded(bytes32,uint256)")
+    settleOutSig := []byte("SettleOut(bytes32,bytes32,address,uint64,uint64)")
+    orderRefundedSig := []byte("OrderRefunded(uint256,bytes32)")
     
     orderCreatedSigHash := crypto.Keccak256(orderCreatedSig)
-    orderSettledSigHash := crypto.Keccak256(orderSettledSig)
+    settleOutSigHash := crypto.Keccak256(settleOutSig)
     orderRefundedSigHash := crypto.Keccak256(orderRefundedSig)
     
     query := ethereum.FilterQuery{
         Addresses: []common.Address{gatewayAddress},
         Topics: [][]common.Hash{
-            {common.BytesToHash(orderCreatedSigHash), common.BytesToHash(orderSettledSigHash), common.BytesToHash(orderRefundedSigHash)},
+            {common.BytesToHash(orderCreatedSigHash), common.BytesToHash(settleOutSigHash), common.BytesToHash(orderRefundedSigHash)},
         },
     }
     
@@ -838,8 +858,8 @@ func watchEvents(client *ethclient.Client) {
         case vLog := <-logs:
             if vLog.Topics[0] == common.BytesToHash(orderCreatedSigHash) {
                 handleOrderCreated(vLog)
-            } else if vLog.Topics[0] == common.BytesToHash(orderSettledSigHash) {
-                handleOrderSettled(vLog)
+            } else if vLog.Topics[0] == common.BytesToHash(settleOutSigHash) {
+                handleSettleOut(vLog)
             } else if vLog.Topics[0] == common.BytesToHash(orderRefundedSigHash) {
                 handleOrderRefunded(vLog)
             }
@@ -851,8 +871,8 @@ func handleOrderCreated(log types.Log) {
     fmt.Printf("Order Created: %+v\n", log)
 }
 
-func handleOrderSettled(log types.Log) {
-    fmt.Printf("Order Settled: %+v\n", log)
+func handleSettleOut(log types.Log) {
+    fmt.Printf("Order Settled (SettleOut): %+v\n", log)
 }
 
 func handleOrderRefunded(log types.Log) {
@@ -1008,8 +1028,8 @@ class PaycrestGateway {
     this.provider.watchContractEvent({
       address: this.gatewayAddress,
       abi: GATEWAY_ABI,
-      eventName: 'OrderSettled',
-      onLogs: this.handleOrderSettled.bind(this)
+      eventName: 'SettleOut',
+      onLogs: this.handleSettleOut.bind(this)
     });
     this.provider.watchContractEvent({
       address: this.gatewayAddress,
@@ -1287,13 +1307,13 @@ func main() {
 
 ## Supported Networks
 
-- **Ethereum**: USDT, USDC
-- **Base**: USDT, USDC (primary recommended network)
+- **Ethereum**: USDT, USDC, cNGN
+- **Base**: USDT, USDC, cNGN (primary recommended network)
 - **Arbitrum One**: USDT, USDC
-- **Polygon**: USDT, USDC
-- **BNB Smart Chain**: USDT, USDC (18 decimals — see note in contract addresses)
+- **Polygon**: USDT, USDC, cNGN
+- **BNB Smart Chain**: USDT, USDC, cNGN
 - **Lisk**: USDT, USDC
-- **Celo**: USDT, USDC, cNGN
+- **Celo**: USDT, USDC
 - **Scroll**: USDT, USDC
 
 See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for deployment addresses per network.

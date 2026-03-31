@@ -10,6 +10,54 @@ The Sender API lets your app create payment orders in two directions:
 
 Both flows go through the same endpoint: `POST /v2/sender/orders`. The direction is determined by the `source` and `destination` object types you pass.
 
+## Flow Overview
+
+<Tabs>
+  <Tab title="Offramp (Stablecoin → Fiat)">
+```mermaid
+sequenceDiagram
+    participant App as Sender App
+    participant API as Sender API
+    participant GW as Gateway Contract
+    participant PRV as Provider Node
+    participant PSP as Local PSP
+    participant RCP as Recipient
+
+    App->>API: POST /v2/sender/orders<br/>(source: crypto, destination: fiat)
+    API-->>App: receiveAddress + order ID
+    App->>GW: Transfer stablecoins to receiveAddress
+    GW-->>API: OrderCreated event
+    API->>PRV: Assign order
+    PRV->>PSP: Initiate fiat transfer
+    PSP->>RCP: Deliver fiat to bank / wallet
+    PRV-->>API: Payout confirmed
+    API->>GW: Release escrow
+    GW->>PRV: Transfer stablecoins
+    API-->>App: Webhook: payment_order.settled
+```
+  </Tab>
+  <Tab title="Onramp (Fiat → Stablecoin)">
+```mermaid
+sequenceDiagram
+    participant App as Sender App
+    participant API as Sender API
+    participant PRV as Provider Node
+    participant USR as User
+    participant GW as Gateway Contract
+    participant WLT as Recipient Wallet
+
+    App->>API: POST /v2/sender/orders<br/>(source: fiat, destination: crypto)
+    API-->>App: providerAccount (virtual bank account)
+    App-->>USR: Show fiat deposit instructions
+    USR->>PRV: Deposit fiat to virtual account
+    PRV-->>API: Fiat deposit confirmed
+    API->>GW: Release stablecoins to recipient
+    GW->>WLT: Transfer stablecoins
+    API-->>App: Webhook: payment_order.settled
+```
+  </Tab>
+</Tabs>
+
 ## Getting Started
 
 ### 1. Obtain API Credentials
@@ -47,7 +95,7 @@ curl -X POST "https://api.paycrest.io/v1/verify-account" \
   }'
 ```
 
-A `200 OK` response returns the resolved `accountName`. Use that exact name in your order's `recipient.accountName` field.
+A `200 OK` response returns the resolved `accountName` in the `data` field. If `data` is an actual name (e.g. `"JOHN DOE"`), use that exact value as `accountName` in your order. If `data` is `"OK"`, account name lookup is not available for that corridor — pass your own `accountName` value instead.
 
 ---
 
