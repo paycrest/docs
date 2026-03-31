@@ -25,15 +25,35 @@ Your provision node can support multiple payment service providers to ensure rel
 
 
 
-#### Obtain Live API Credentials
-- After creating PSP accounts, obtain Live API Key and API Secret
-- These credentials are provided through your provider dashboard
+#### Obtain Required Credentials
+You need two credential groups:
+
+1. **Paycrest Aggregator Credentials** (from your Paycrest dashboard)
+   - Go to **Provider Dashboard → Settings → Payout tab → API Keys**
+   - Copy:
+     - **API Key** -> set as `AGGREGATOR_CLIENT_ID`
+     - **API Secret** -> set as `AGGREGATOR_SECRET_KEY`
+
+2. **PSP Credentials** (from each PSP portal)
+   - For each PSP you enable, collect the required fields (for example: API key, client secret, client assertion, account ID, base URL, callback URL, webhook secret)
+   - Use the dashboard PSP setup page to see the exact environment variable keys to populate
+   - Add these values to your node `.env`
 
 ### Step 4: Provision Node Setup
 
 Choose your provision node hosting method:
 
-#### Option A: Self-Hosted Deployment
+#### Option A: Blockops (Recommended for Low Technical Skills)
+- **Cost**: $10/month
+- Simplified setup with Paycrest partnership
+- Video setup guide available
+- Start here: [https://blockops.network](https://blockops.network)
+- After setup, obtain the Host Identifier URL from Blockops
+- In the app: **Settings → Payout tab → Configure Provision Node → Host identifier** — paste the URL and click **Update**
+
+Choose this option if you want faster setup with minimal infrastructure management.
+
+#### Option B: Self-Hosted Deployment (Recommended for Developers)
 
 A Paycrest provision node is a backend service hosted on Docker Hub. The deployment process involves pulling the Docker image, configuring environment variables, and starting the server.
 
@@ -55,56 +75,48 @@ Create a `.env` file with your configuration:
 
 ```bash
 # Server Config
-SECRET=41b00819-1747-4a5a-aa8f-b759f22c # use any 32 digit hash of your choice for encryption
 DEBUG=False
-ALLOWED_HOSTS=0.0.0.0
-SERVER_HOST=0.0.0.0
-SERVER_PORT=8000
-CURRENCIES=KES # active corridors: NGN, KES, UGX, TZS, MWK, BRL
+ALLOWED_HOSTS=* # optional; used for trusted proxy configuration
+SERVER_HOST=0.0.0.0 # optional (default: 0.0.0.0)
+SERVER_PORT=8000 # optional (default: 8000)
+CURRENCIES=KES # single currency
+# CURRENCIES=NGN,KES,UGX # multiple currencies must be comma-separated
 ENVIRONMENT=production # local, staging, production
+SERVER_URL=https://your-server-domain-or-ip
+EVM_PRIVATE_KEY= # required for onramp settlements
 
 # Aggregator Config
-AGGREGATOR_CLIENT_ID=7a3c8d9e-2f51-4b6a-9e7d-1c8f3a0b5d2e # to be issued by aggregator
-AGGREGATOR_SECRET_KEY=Z9X7mPqL2tHvJfN8yRwEoUbC1kDiY3SaA_gO5lTnWxM= # to be issued by aggregator
+AGGREGATOR_CLIENT_ID=your_paycrest_api_key # Provider Dashboard → Settings → Payout → API Keys
+AGGREGATOR_SECRET_KEY=your_paycrest_api_secret # Provider Dashboard → Settings → Payout → API Keys
 AGGREGATOR_BASE_URL=https://api.paycrest.io/v2/provider
 
 # PSP Config - Only configure for PSPs you are using
-# API keys and configuration for your selected payment service providers
-# These will be provided in your provider dashboard
-PSP_1_API_KEY=
-PSP_1_SECRET_KEY=
-PSP_1_BASE_URL=
-
-PSP_2_API_KEY=
-PSP_2_ACCOUNT_ID=
-PSP_2_BASE_URL=
-
-PSP_3_API_KEY=
-PSP_3_BASE_URL=
-PSP_3_TRANSACTION_PIN=
-
-PSP_4_CLIENT_ASSERTION=
-PSP_4_OAUTH_CLIENT_ID=
-PSP_4_BASE_URL=
-
-PSP_5_API_KEY=
-PSP_5_BASE_URL=
-
-PSP_6_API_KEY=
-PSP_6_PUBLIC_KEY=
-PSP_6_BASE_URL=
-
-PSP_7_CONSUMER_KEY=
-PSP_7_CONSUMER_SECRET=
-PSP_7_BASE_URL=
+# Example env prefix (Payaza — names shown in dashboard; availability varies by corridor/currency)
+PAYAZA_API_KEY=
+PAYAZA_BASE_URL=
+PAYAZA_TRANSACTION_PIN=
+PAYAZA_SUPPORTS_PAYIN=false
 ```
+
+> **Credential Mapping**
+> - `AGGREGATOR_CLIENT_ID` must be your Paycrest **API Key** (Settings → **Payout** → **API Keys**)
+> - `AGGREGATOR_SECRET_KEY` must be your Paycrest **API Secret** (Settings → **Payout** → **API Keys**)
+> - PSP variables (for example `PAYAZA_*`, `NOMBA_*`) use values issued by each PSP. Prefixes match PSPs listed in the dashboard; availability depends on your corridor and currency.
+
+#### `EVM_PRIVATE_KEY` explained
+
+- **What it is**: The private key for a dedicated EVM wallet (EOA) used by your provision node.
+- **When you need it**: Required for onramp-related wallet/authorization flows. If you're running offramp-only operations, you can leave it unset.
+- **How to generate it**: Create a new dedicated EVM wallet (do not reuse a personal wallet) and use that wallet's private key.
+- **Security**: Treat this as a production secret. Never commit it to git, store it in a secure secret manager or protected `.env`, and rotate it immediately if exposed.
 
 > **Important Notes:**
 > - One node works for multiple currencies and can support multiple PSPs (for the same currency)
 > - Only configure the variables for the PSPs you are using
 > - If there is no comment on a credential key that has a value, DO NOT change that value
 > - DO NOT change the value of `AGGREGATOR_BASE_URL`
-> - PSP configuration details are provided in your provider dashboard
+> - The dashboard PSP setup page shows the exact environment variable keys per PSP
+> - Retrieve the credential values from each PSP and place them in your `.env`
 
 3. **Start the Service**
 ```bash
@@ -112,26 +124,30 @@ docker run -d -p 8000:8000 --env-file .env safaria/riverpod:latest
 ```
 
 4. **Verify Deployment**
-Check the health endpoint to confirm your node is running correctly:
+Check the info endpoint to confirm your node is running and reporting provider metadata:
 
 ```bash
-curl http://your-server-ip:8000/health
+curl http://your-server-ip:8000/info
 ```
 
 Expected response:
 ```json
 {
+  "status": "success",
+  "message": "Provider information",
   "data": {
-    "currencies": ["KES"]
-  },
-  "message": "Node is live",
-  "status": "success"
+    "serviceInfo": {
+      "currencies": ["KES"],
+      "totalPSPs": 1,
+      "version": "..."
+    }
+  }
 }
 ```
 
 5. **Configure Host Identifier**
 - Take the base URL of your server (e.g., `http://your-server-ip:8000`)
-- Add it to your provider dashboard settings as the Host Identifier
+- In the app: **Settings → Payout tab → Configure Provision Node → Host identifier** — paste the URL and save
 - Go live on your dashboard
 
 **Benefits:**
@@ -139,14 +155,6 @@ Expected response:
 - Custom security configurations
 - No dependency on third-party services
 - Potential cost savings at scale
-
-#### Option B: Blockops (Recommended)
-- **Cost**: $10/month
-- Simplified setup with Paycrest partnership
-- Video setup guide available
-- After setup, obtain the Host Identifier URL from Blockops
-- Paste the URL into the 'Configure Provision Node' section of your Paycrest dashboard settings
-- Click update to complete configuration
 
 ### Step 5: Configure Trade Settings
 
@@ -193,7 +201,8 @@ Use this checklist to track your progress:
 | Provider Account Created | ⬜ |
 | KYB Submitted | ⬜ |
 | PSP Accounts Created | ⬜ |
-| API Key + API Secret Obtained | ⬜ |
+| Paycrest API Key + API Secret copied (for `AGGREGATOR_CLIENT_ID` / `AGGREGATOR_SECRET_KEY`) | ⬜ |
+| PSP credentials obtained and added to `.env` | ⬜ |
 | Node Deployed (Preferably Blockops) | ⬜ |
 | Trade Settings Configured | ⬜ |
 | Settlement Addresses Added | ⬜ |
@@ -272,7 +281,7 @@ docker restart <container_name>
 **API Connection Issues**
 ```bash
 # Test API connectivity
-curl -X GET https://api.paycrest.io/v2/health
+curl -X GET https://api.paycrest.io/v2/currencies
 ```
 
 **Database Connection Errors**
@@ -290,6 +299,14 @@ docker exec <container_name> env | grep DATABASE
 - **Community**: [Telegram](https://t.me/+Stx-wLOdj49iNDM0)
 - **Support**: [support@paycrest.io](mailto:support@paycrest.io)
 - **Blockops Support**: Available through Blockops platform
+
+### When to Contact Support
+
+Most providers can complete setup without support. Contact support only if:
+- KYB remains pending beyond expected review time
+- A required PSP is unavailable for your corridor
+- Node status remains offline after valid `hostIdentifier` and `.env` setup
+- API keys under **Settings → Payout → API Keys** are missing or cannot be copied/rotated
 
 
 
