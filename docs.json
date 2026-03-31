@@ -85,11 +85,6 @@
                 "pages": [
                   "api-reference/provider/list-orders-v2",
                   "api-reference/provider/get-order-by-id-v2",
-                  "api-reference/provider/accept-order",
-                  "api-reference/provider/decline-order",
-                  "api-reference/provider/fulfill-order",
-                  "api-reference/provider/cancel-order",
-                  "api-reference/provider/update-balances",
                   "api-reference/provider/get-market-rate",
                   "api-reference/provider/get-provider-stats",
                   "api-reference/provider/get-node-info"
