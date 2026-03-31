@@ -7,11 +7,11 @@ The Paycrest protocol ecosystem consists of four main participant types, each wi
 
 ## Sender
 
-A **KYC-verified entity** that initiates either a fiat-to-stablecoin or stablecoin-to-fiat transaction.
+A **KYB-verified entity** that initiates either a fiat-to-stablecoin or stablecoin-to-fiat transaction.
 
 ### Characteristics
 
-- **KYC Required**: Must complete identity verification (KYC/KYB)
+- **KYB Required**: Must complete business verification
 - **API Access**: Uses the Sender API to create orders or can interact directly with the Gateway contract
 - **Fee Structure**: Zero protocol fees, with optional sender fees for business monetization
 - **Flexibility**: Can be smart contracts, dApps, or traditional applications
@@ -32,7 +32,7 @@ A **KYC-verified entity** that initiates either a fiat-to-stablecoin or stableco
 - **E-commerce**: Accept crypto payments and settle in fiat
 
 <Note>
-  **Sender Fee Model:** Sender businesses can optionally charge fees to their users by setting `senderFee` and `senderFeeRecipient` when creating orders. This allows businesses to monetize their Paycrest integration while keeping the protocol itself fee-free for end users. The sender fee is distributed to the specified recipient upon successful order settlement.
+  **Sender Fee Model:** Sender businesses can optionally charge fees to their users. Configure a fixed fee via the dashboard, or pass `senderFeePercent` on each order request (overrides the dashboard setting). The fee is settled atomically on-chain upon successful order settlement, with no off-chain billing required.
 </Note>
 
 ## Recipient
@@ -63,12 +63,12 @@ The **beneficiary** of the transaction who receives funds without interacting wi
 
 ## Provider
 
-A **KYC-verified participant** that supplies fiat liquidity in exchange for stablecoins or provides stablecoins in exchange for fiat.
+A **KYB-verified participant** that supplies fiat liquidity in exchange for stablecoins or provides stablecoins in exchange for fiat.
 
 ### Characteristics
 
 - **Liquidity Supply**: Provides fiat or crypto liquidity
-- **KYC/KYB Required**: Business verification for compliance
+- **KYB Required**: Business verification for compliance
 - **PSP Integration**: Connects to Payment Service Providers
 - **Competitive Rates**: Sets rates based on market conditions
 
@@ -105,7 +105,7 @@ A **KYC-verified participant** that supplies fiat liquidity in exchange for stab
 
 ## Aggregator
 
-A **KYC-verified entity** that coordinates the entire order routing process and ensures protocol efficiency.
+A **KYB-verified entity** that coordinates the entire order routing process and ensures protocol efficiency.
 
 ### Characteristics
 

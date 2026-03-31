@@ -35,12 +35,12 @@ components:
           type: number
         token:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         rate:
           type: number
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
         recipient:
           $ref: '#/components/schemas/PaymentOrderRecipient'
@@ -86,10 +86,10 @@ components:
           type: string
         token:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
         receiveAddress:
           type: string
@@ -102,7 +102,7 @@ components:
           type: number
         reference:
           type: string
-    PaymentOrderResponse:
+    SenderOrderResponse:
       type: object
       properties:
         id:
@@ -115,7 +115,7 @@ components:
           type: number
         token:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         senderFee:
           type: number
         transactionFee:
@@ -124,7 +124,7 @@ components:
           type: number
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
         gatewayId:
           type: string
@@ -166,7 +166,7 @@ components:
         orders:
           type: array
           items:
-            $ref: '#/components/schemas/PaymentOrderResponse'
+            $ref: '#/components/schemas/SenderOrderResponse'
     SenderStatsResponse:
       type: object
       properties:
@@ -178,7 +178,7 @@ components:
           type: string
 
     # Provider Schemas
-    ProviderLockOrderList:
+    ProviderOrderList:
       type: object
       properties:
         totalRecords:
@@ -190,15 +190,15 @@ components:
         orders:
           type: array
           items:
-            $ref: '#/components/schemas/LockPaymentOrderResponse'
-    LockPaymentOrderResponse:
+            $ref: '#/components/schemas/ProviderOrderResponse'
+    ProviderOrderResponse:
       type: object
       properties:
         id:
           type: string
         token:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         gatewayId:
           type: string
         amount:
@@ -216,7 +216,7 @@ components:
           type: string
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
         status:
           type: string
@@ -324,7 +324,7 @@ components:
       properties:
         symbol:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         contractAddress:
           type: string
         decimals:
@@ -333,11 +333,11 @@ components:
           type: string
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
 
     # Order Status Schemas
-    LockPaymentOrderStatusResponse:
+    ProviderOrderStatusResponse:
       type: object
       properties:
         orderId:
@@ -346,10 +346,10 @@ components:
           type: number
         token:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
         settlePercent:
           type: number
@@ -360,15 +360,15 @@ components:
         settlements:
           type: array
           items:
-            $ref: '#/components/schemas/LockPaymentOrderSplitOrder'
+            $ref: '#/components/schemas/PaymentOrderSplitOrder'
         txReceipts:
           type: array
           items:
-            $ref: '#/components/schemas/LockPaymentOrderTxReceipt'
+            $ref: '#/components/schemas/PaymentOrderTxReceipt'
         updatedAt:
           type: string
           format: date-time
-    LockPaymentOrderSplitOrder:
+    PaymentOrderSplitOrder:
       type: object
       properties:
         splitOrderId:
@@ -379,7 +379,7 @@ components:
           type: number
         orderPercent:
           type: number
-    LockPaymentOrderTxReceipt:
+    PaymentOrderTxReceipt:
       type: object
       properties:
         status:
@@ -443,6 +443,379 @@ components:
         data:
           type: object
           description: The actual response data (e.g., ReceiveAddressResponse, etc.)
+
+    # ─── V2 Schemas ────────────────────────────────────────────────────────────
+
+    V2PaymentOrderPayload:
+      type: object
+      required:
+        - amount
+        - source
+        - destination
+      properties:
+        amount:
+          type: string
+          description: Payment amount. Denomination is determined by `amountIn` (defaults to crypto units).
+          example: "100"
+        amountIn:
+          type: string
+          enum: [crypto, fiat]
+          description: Specifies whether `amount` is denominated in crypto or fiat. Defaults to `crypto`.
+        rate:
+          type: string
+          description: Quoted exchange rate (fiat per crypto unit). Optional — protocol uses best available rate if omitted.
+        senderFee:
+          type: string
+          description: Fixed sender fee in crypto units.
+        senderFeePercent:
+          type: string
+          description: Sender fee as a percentage of the order amount (alternative to senderFee).
+        reference:
+          type: string
+          description: Your internal reference ID for this order.
+        source:
+          description: "Polymorphic source — set `type: \"crypto\"` for offramp or `type: \"fiat\"` for onramp."
+          oneOf:
+            - $ref: '#/components/schemas/V2CryptoSource'
+            - $ref: '#/components/schemas/V2FiatSource'
+          discriminator:
+            propertyName: type
+            mapping:
+              crypto: '#/components/schemas/V2CryptoSource'
+              fiat: '#/components/schemas/V2FiatSource'
+        destination:
+          description: "Polymorphic destination — set `type: \"fiat\"` for offramp or `type: \"crypto\"` for onramp."
+          oneOf:
+            - $ref: '#/components/schemas/V2FiatDestination'
+            - $ref: '#/components/schemas/V2CryptoDestination'
+          discriminator:
+            propertyName: type
+            mapping:
+              fiat: '#/components/schemas/V2FiatDestination'
+              crypto: '#/components/schemas/V2CryptoDestination'
+
+    V2CryptoSource:
+      type: object
+      required: [type, currency, network, refundAddress]
+      properties:
+        type:
+          type: string
+          enum: [crypto]
+        currency:
+          type: string
+          description: Stablecoin symbol (e.g. USDT, USDC, cNGN)
+        network:
+          type: string
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon]
+        refundAddress:
+          type: string
+          description: Wallet address for refunds if the order can't be fulfilled
+
+    V2FiatSource:
+      type: object
+      required: [type, currency, refundAccount]
+      properties:
+        type:
+          type: string
+          enum: [fiat]
+        currency:
+          type: string
+          description: Fiat currency code (e.g. NGN, KES, BRL)
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code (optional)
+        refundAccount:
+          $ref: '#/components/schemas/V2FiatRefundAccount'
+
+    V2FiatRefundAccount:
+      type: object
+      required: [institution, accountIdentifier, accountName]
+      properties:
+        institution:
+          type: string
+          description: Bank or mobile provider code (SWIFT prefix or Paycrest institution code)
+        accountIdentifier:
+          type: string
+          description: Account number or mobile number
+        accountName:
+          type: string
+          description: Account holder name
+
+    V2FiatDestination:
+      type: object
+      required: [type, currency, recipient]
+      properties:
+        type:
+          type: string
+          enum: [fiat]
+        currency:
+          type: string
+          description: Fiat currency code (e.g. NGN, KES)
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code (optional)
+        providerId:
+          type: string
+          description: Pin order to a specific provider (optional)
+        recipient:
+          $ref: '#/components/schemas/V2FiatRecipient'
+
+    V2FiatRecipient:
+      type: object
+      required: [institution, accountIdentifier, accountName, memo]
+      properties:
+        institution:
+          type: string
+        accountIdentifier:
+          type: string
+        accountName:
+          type: string
+        memo:
+          type: string
+          description: Payment narration / reference
+
+    V2CryptoDestination:
+      type: object
+      required: [type, currency, network, recipient]
+      properties:
+        type:
+          type: string
+          enum: [crypto]
+        currency:
+          type: string
+          description: Stablecoin symbol (e.g. USDT, USDC)
+        network:
+          type: string
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon]
+        providerId:
+          type: string
+        recipient:
+          $ref: '#/components/schemas/V2CryptoRecipient'
+
+    V2CryptoRecipient:
+      type: object
+      required: [address, network]
+      properties:
+        address:
+          type: string
+          description: Wallet address to receive stablecoins
+        network:
+          type: string
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon]
+
+    V2CryptoProviderAccount:
+      type: object
+      description: Returned for offramp orders — the address to send stablecoins to
+      properties:
+        network:
+          type: string
+        receiveAddress:
+          type: string
+          description: EVM address to send stablecoins to
+        validUntil:
+          type: string
+          format: date-time
+          description: Deadline for the stablecoin deposit
+
+    V2FiatProviderAccount:
+      type: object
+      description: Returned for onramp orders — the virtual account to deposit fiat into
+      properties:
+        institution:
+          type: string
+          description: Bank or mobile provider code
+        accountIdentifier:
+          type: string
+          description: Account number or mobile number to send fiat to
+        accountName:
+          type: string
+        amountToTransfer:
+          type: string
+          description: Exact fiat amount the user must deposit
+        currency:
+          type: string
+          description: Fiat currency code
+        validUntil:
+          type: string
+          format: date-time
+          description: Deadline — order expires if fiat not received by this time
+
+    V2PaymentOrderResponse:
+      type: object
+      description: Response returned when creating an order
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        orderType:
+          type: string
+          enum: [regular, otc]
+        timestamp:
+          type: string
+          format: date-time
+        amount:
+          type: string
+          description: Crypto amount in token units
+        rate:
+          type: string
+        senderFee:
+          type: string
+        senderFeePercent:
+          type: string
+        transactionFee:
+          type: string
+        reference:
+          type: string
+        providerAccount:
+          description: Crypto provider account for offramp; fiat provider account (virtual account) for onramp
+          oneOf:
+            - $ref: '#/components/schemas/V2CryptoProviderAccount'
+            - $ref: '#/components/schemas/V2FiatProviderAccount'
+        source:
+          oneOf:
+            - $ref: '#/components/schemas/V2CryptoSource'
+            - $ref: '#/components/schemas/V2FiatSource'
+        destination:
+          oneOf:
+            - $ref: '#/components/schemas/V2FiatDestination'
+            - $ref: '#/components/schemas/V2CryptoDestination'
+
+    V2PaymentOrderGetResponse:
+      type: object
+      description: Response for a single order (or list item)
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [initiated, deposited, pending, fulfilling, fulfilled, validated, settling, settled, cancelled, refunding, refunded, expired]
+        orderType:
+          type: string
+          enum: [regular, otc]
+        direction:
+          type: string
+          enum: [offramp, onramp]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        amount:
+          type: string
+        amountInUsd:
+          type: string
+        amountPaid:
+          type: string
+        amountReturned:
+          type: string
+        percentSettled:
+          type: string
+        rate:
+          type: string
+        senderFee:
+          type: string
+        senderFeePercent:
+          type: string
+        transactionFee:
+          type: string
+        reference:
+          type: string
+        txHash:
+          type: string
+        providerAccount:
+          oneOf:
+            - $ref: '#/components/schemas/V2CryptoProviderAccount'
+            - $ref: '#/components/schemas/V2FiatProviderAccount'
+        source:
+          oneOf:
+            - $ref: '#/components/schemas/V2CryptoSource'
+            - $ref: '#/components/schemas/V2FiatSource'
+        destination:
+          oneOf:
+            - $ref: '#/components/schemas/V2FiatDestination'
+            - $ref: '#/components/schemas/V2CryptoDestination'
+
+    V2PaymentOrderListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/V2PaymentOrderGetResponse'
+
+    V2WebhookPayload:
+      type: object
+      description: Webhook payload for v2 payment order events
+      properties:
+        event:
+          type: string
+          enum: [payment_order.deposited, payment_order.pending, payment_order.validated, payment_order.settling, payment_order.settled, payment_order.refunding, payment_order.refunded, payment_order.expired]
+        webhookVersion:
+          type: string
+          enum: ["2"]
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            direction:
+              type: string
+              enum: [offramp, onramp]
+            status:
+              type: string
+            amount:
+              type: string
+            amountInUsd:
+              type: string
+            amountPaid:
+              type: string
+            amountReturned:
+              type: string
+            percentSettled:
+              type: string
+            senderFee:
+              type: string
+            transactionFee:
+              type: string
+            rate:
+              type: string
+            gatewayId:
+              type: string
+            senderId:
+              type: string
+              format: uuid
+            providerAccount:
+              oneOf:
+                - $ref: '#/components/schemas/V2CryptoProviderAccount'
+                - $ref: '#/components/schemas/V2FiatProviderAccount'
+            source:
+              oneOf:
+                - $ref: '#/components/schemas/V2CryptoSource'
+                - $ref: '#/components/schemas/V2FiatSource'
+            destination:
+              oneOf:
+                - $ref: '#/components/schemas/V2FiatDestination'
+                - $ref: '#/components/schemas/V2CryptoDestination'
+            fromAddress:
+              type: string
+            reference:
+              type: string
+            txHash:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
 
 
 
@@ -517,7 +890,7 @@ paths:
           name: network
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
             description: Network identifier for the blockchain
         - in: query
           name: ordering
@@ -571,7 +944,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/PaymentOrderResponse'
+                        $ref: '#/components/schemas/SenderOrderResponse'
         '400':
           description: Bad request
           content:
@@ -631,7 +1004,7 @@ paths:
     get:
       tags:
         - Sender
-      summary: Get lock payment order status
+      summary: Get order status by Gateway ID
       parameters:
         - in: path
           name: chain_id
@@ -654,7 +1027,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/LockPaymentOrderStatusResponse'
+                        $ref: '#/components/schemas/ProviderOrderStatusResponse'
         '400':
           description: Bad request
           content:
@@ -679,7 +1052,7 @@ paths:
     get:
       tags:
         - Provider
-      summary: List lock payment orders
+      summary: List orders (provider)
       security:
         - ApiKeyAuth: []
       parameters:
@@ -706,7 +1079,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/ProviderLockOrderList'
+                        $ref: '#/components/schemas/ProviderOrderList'
         '400':
           description: Bad request
           content:
@@ -924,7 +1297,7 @@ paths:
           name: network
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
             description: Network identifier for the blockchain
       responses:
         '200':
@@ -975,7 +1348,7 @@ paths:
           name: network
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
             description: Network identifier for the blockchain (optional, filters tokens by network)
         - in: query
           name: provider_id
@@ -1101,7 +1474,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /reindex/{network}/{tx_hash}:
+  /reindex/{network}/{tx_hash_or_address}:
     get:
       tags:
         - General
@@ -1113,7 +1486,7 @@ paths:
           schema:
             type: string
         - in: path
-          name: tx_hash
+          name: tx_hash_or_address
           required: true
           schema:
             type: string
@@ -1152,4 +1525,1066 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse' 
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─── Provider Action Endpoints (v1) ─────────────────────────────────────────
+
+  /provider/orders/{id}/accept:
+    post:
+      tags:
+        - Provider
+      summary: Accept an order
+      description: Provider accepts an assigned order, signalling intent to fulfill.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /provider/orders/{id}/decline:
+    post:
+      tags:
+        - Provider
+      summary: Decline an order
+      description: Provider declines an assigned order. The aggregator will reassign it to another provider.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order declined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /provider/orders/{id}/fulfill:
+    post:
+      tags:
+        - Provider
+      summary: Fulfill an order
+      description: Provider reports that the fiat payment has been disbursed to the recipient.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                txId:
+                  type: string
+                  description: PSP transaction ID or reference for the payout
+      responses:
+        '200':
+          description: Order fulfilled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /provider/orders/{id}/cancel:
+    post:
+      tags:
+        - Provider
+      summary: Cancel an order
+      description: Provider cancels a previously accepted order. The aggregator will attempt reassignment.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for cancellation
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /provider/balances:
+    post:
+      tags:
+        - Provider
+      summary: Update provider balances
+      description: Provider node reports current available liquidity balances per currency.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                balances:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - currency
+                      - availableBalance
+                    properties:
+                      currency:
+                        type: string
+                        description: Fiat currency code (e.g. NGN, KES)
+                      availableBalance:
+                        type: string
+                        description: Available balance in fiat units
+      responses:
+        '200':
+          description: Balances updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  # ─── V2 Sender — Stats & Gateway Lookup ─────────────────────────────────────
+
+  /v2/sender/stats:
+    get:
+      tags:
+        - Sender
+      summary: Get sender stats
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      responses:
+        '200':
+          description: Sender stats
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SenderStatsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v2/orders/{chain_id}/{id}:
+    get:
+      tags:
+        - General
+      summary: Get order status by Gateway ID
+      description: Retrieve the status of an order by its onchain Gateway ID and chain ID. Use this for smart contract integrations.
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: chain_id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order status
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProviderOrderStatusResponse'
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+
+  # ─── V2 Provider Action Endpoints ────────────────────────────────────────────
+
+  /v2/provider/orders/{id}/accept:
+    post:
+      tags:
+        - Provider
+      summary: Accept an order
+      description: Provider accepts an assigned order, signalling intent to fulfill.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /v2/provider/orders/{id}/decline:
+    post:
+      tags:
+        - Provider
+      summary: Decline an order
+      description: Provider declines an assigned order. The aggregator will reassign it to another provider.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order declined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /v2/provider/orders/{id}/fulfill:
+    post:
+      tags:
+        - Provider
+      summary: Fulfill an order
+      description: Provider reports that the fiat payment has been disbursed to the recipient.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                txId:
+                  type: string
+                  description: PSP transaction ID or reference for the payout
+      responses:
+        '200':
+          description: Order fulfilled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /v2/provider/orders/{id}/cancel:
+    post:
+      tags:
+        - Provider
+      summary: Cancel an order
+      description: Provider cancels a previously accepted order. The aggregator will attempt reassignment.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for cancellation
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /v2/provider/balances:
+    post:
+      tags:
+        - Provider
+      summary: Update provider balances
+      description: Provider node reports current available liquidity balances per currency.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                balances:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - currency
+                      - availableBalance
+                    properties:
+                      currency:
+                        type: string
+                        description: Fiat currency code (e.g. NGN, KES)
+                      availableBalance:
+                        type: string
+                        description: Available balance in fiat units
+      responses:
+        '200':
+          description: Balances updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /v2/provider/rates/{token}/{fiat}:
+    get:
+      tags:
+        - Provider
+      summary: Get market rate
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: fiat
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Market rate
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MarketRateResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /v2/provider/stats:
+    get:
+      tags:
+        - Provider
+      summary: Get provider stats
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: query
+          name: currency
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Provider stats
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProviderStatsResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /v2/provider/node-info:
+    get:
+      tags:
+        - Provider
+      summary: Get node info
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      responses:
+        '200':
+          description: Node info
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        '401':
+          description: Unauthorized
+        '503':
+          description: Service unavailable
+
+  # ─── V2 General Endpoints ─────────────────────────────────────────────────────
+
+  /v2/currencies:
+    get:
+      tags:
+        - General
+      summary: List supported fiat currencies
+      servers:
+        - url: https://api.paycrest.io
+      responses:
+        '200':
+          description: List of currencies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SupportedCurrencies'
+
+  /v2/institutions/{currency_code}:
+    get:
+      tags:
+        - General
+      summary: List supported institutions for a currency
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: currency_code
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of institutions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SupportedInstitutions'
+        '400':
+          description: Bad request
+
+  /v2/tokens:
+    get:
+      tags:
+        - General
+      summary: List supported tokens
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: query
+          name: network
+          schema:
+            type: string
+            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
+      responses:
+        '200':
+          description: List of tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SupportedTokenResponse'
+
+  /v2/rates/{token}/{amount}/{fiat}:
+    get:
+      tags:
+        - General
+      summary: Get token rate
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: amount
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: fiat
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: network
+          schema:
+            type: string
+            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
+        - in: query
+          name: provider_id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token rate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: number
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+
+  /v2/pubkey:
+    get:
+      tags:
+        - General
+      summary: Get aggregator public key
+      servers:
+        - url: https://api.paycrest.io
+      responses:
+        '200':
+          description: Public key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: string
+
+  /v2/verify-account:
+    post:
+      tags:
+        - General
+      summary: Verify account
+      servers:
+        - url: https://api.paycrest.io
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyAccountRequest'
+      responses:
+        '200':
+          description: Account verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: string
+        '400':
+          description: Bad request
+        '502':
+          description: Bad gateway
+        '503':
+          description: Service unavailable
+
+  /v2/reindex/{network}/{tx_hash_or_address}:
+    get:
+      tags:
+        - General
+      summary: Reindex transaction
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: network
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tx_hash_or_address
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transaction reindexed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          events:
+                            type: object
+        '400':
+          description: Bad request
+
+  # ─── V2 Sender Endpoints ─────────────────────────────────────────────────────
+
+  /v2/sender/orders:
+    post:
+      tags:
+        - Sender
+      summary: Create a v2 payment order (offramp or onramp)
+      description: |
+        Creates a new payment order.
+
+        - **Offramp** (stablecoin → fiat): set `source.type = "crypto"` and `destination.type = "fiat"`.
+          The response `providerAccount` contains a `receiveAddress` to send tokens to.
+        - **Onramp** (fiat → stablecoin): set `source.type = "fiat"` and `destination.type = "crypto"`.
+          The response `providerAccount` contains a virtual bank account for the user to deposit fiat into.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/V2PaymentOrderPayload'
+            examples:
+              offramp:
+                summary: Offramp — USDT on Base → NGN bank account
+                value:
+                  amount: "100"
+                  source:
+                    type: crypto
+                    currency: USDT
+                    network: base
+                    refundAddress: "0xYourAddress"
+                  destination:
+                    type: fiat
+                    currency: NGN
+                    recipient:
+                      institution: GTBINGLA
+                      accountIdentifier: "1234567890"
+                      accountName: John Doe
+                      memo: Payment
+              onramp:
+                summary: Onramp — NGN → USDT on Base
+                value:
+                  amount: "50000"
+                  amountIn: fiat
+                  source:
+                    type: fiat
+                    currency: NGN
+                    refundAccount:
+                      institution: GTBINGLA
+                      accountIdentifier: "1234567890"
+                      accountName: John Doe
+                  destination:
+                    type: crypto
+                    currency: USDT
+                    network: base
+                    recipient:
+                      address: "0xRecipientWalletAddress"
+                      network: base
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Payment order created successfully
+                  data:
+                    $ref: '#/components/schemas/V2PaymentOrderResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: No provider available for this corridor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - Sender
+      summary: List v2 payment orders
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [initiated, deposited, pending, fulfilling, fulfilled, validated, settling, settled, cancelled, refunding, refunded, expired]
+      responses:
+        '200':
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/V2PaymentOrderListResponse'
+        '401':
+          description: Unauthorized
+
+  /v2/sender/orders/{id}:
+    get:
+      tags:
+        - Sender
+      summary: Get a v2 payment order by ID
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: V2 payment order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/V2PaymentOrderGetResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  # ─── V2 Provider Endpoints ────────────────────────────────────────────────────
+
+  /v2/provider/orders:
+    get:
+      tags:
+        - Provider
+      summary: List v2 payment orders (provider)
+      description: Returns a paginated list of payment orders assigned to the authenticated provider, in the v2 response schema. Requires a `currency` query parameter. Supports `search`, `export=csv`, `from`/`to` date filters, and `ordering` (asc/desc).
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: query
+          name: currency
+          required: true
+          schema:
+            type: string
+            example: NGN
+          description: Fiat currency to filter orders by (e.g. NGN, KES).
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [initiated, deposited, pending, fulfilling, fulfilled, validated, settling, settled, cancelled, refunding, refunded, expired]
+        - in: query
+          name: ordering
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by order ID, reference, or account identifier.
+        - in: query
+          name: export
+          schema:
+            type: string
+            enum: [csv]
+          description: Pass `export=csv` with `from` and `to` to download a CSV export.
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+          description: Start date for CSV export (YYYY-MM-DD). Required when `export=csv`.
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+          description: End date for CSV export (YYYY-MM-DD). Required when `export=csv`.
+      responses:
+        '200':
+          description: Paginated list of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/V2PaymentOrderListResponse'
+        '400':
+          description: Bad request (e.g. missing currency)
+        '401':
+          description: Unauthorized
+
+  /v2/provider/orders/{id}:
+    get:
+      tags:
+        - Provider
+      summary: Get a v2 payment order by ID (provider)
+      description: Returns a single payment order assigned to the authenticated provider, including polymorphic source/destination, providerAccount, and transaction logs.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the payment order.
+      responses:
+        '200':
+          description: V2 payment order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/V2PaymentOrderGetResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found

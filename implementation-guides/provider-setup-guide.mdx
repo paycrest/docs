@@ -60,13 +60,13 @@ DEBUG=False
 ALLOWED_HOSTS=0.0.0.0
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8000
-CURRENCIES=KES # could be multiple NGN,KES,GHS,UGX,TZS,MWK,BRL,XOF
+CURRENCIES=KES # active corridors: NGN, KES, UGX, TZS, MWK, BRL
 ENVIRONMENT=production # local, staging, production
 
 # Aggregator Config
 AGGREGATOR_CLIENT_ID=7a3c8d9e-2f51-4b6a-9e7d-1c8f3a0b5d2e # to be issued by aggregator
 AGGREGATOR_SECRET_KEY=Z9X7mPqL2tHvJfN8yRwEoUbC1kDiY3SaA_gO5lTnWxM= # to be issued by aggregator
-AGGREGATOR_BASE_URL=https://api.paycrest.io/v1/provider
+AGGREGATOR_BASE_URL=https://api.paycrest.io/v2/provider
 
 # PSP Config - Only configure for PSPs you are using
 # API keys and configuration for your selected payment service providers
@@ -272,7 +272,7 @@ docker restart <container_name>
 **API Connection Issues**
 ```bash
 # Test API connectivity
-curl -X GET https://api.paycrest.io/v1/health
+curl -X GET https://api.paycrest.io/v2/health
 ```
 
 **Database Connection Errors**

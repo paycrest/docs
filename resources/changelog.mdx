@@ -1,0 +1,90 @@
+---
+title: "Changelog"
+description: "A record of notable API, protocol, and documentation changes."
+---
+
+This page tracks significant changes to the Paycrest API and protocol. For full commit history, see the [aggregator repository](https://github.com/paycrest/aggregator).
+
+---
+
+## Q1 2026
+
+### v2 API — Onramp & Offramp (March 2026)
+
+The v2 API introduces a unified endpoint for both offramp and onramp flows, replacing the v1 offramp-only schema.
+
+**New endpoints:**
+- `POST /v2/sender/orders` — create offramp or onramp orders
+- `GET /v2/sender/orders/:id` — get a single v2 order
+- `GET /v2/sender/orders` — list v2 orders
+- `GET /v2/provider/orders` — provider view of v2 orders
+- `GET /v2/provider/orders/:id` — provider view of a single v2 order
+
+**What changed:**
+
+| Feature | v1 | v2 |
+|---------|----|----|
+| Direction support | Offramp only | Offramp + onramp |
+| Request schema | Flat: `token`, `network`, `recipient` | Polymorphic: `source`, `destination` with `type` discriminator |
+| Amount direction | Always crypto | `amountIn: "fiat"` or `"crypto"` |
+| Sender fee | Fixed amount via dashboard | Dashboard required; `senderFeePercent` on request overrides it |
+| Numeric field types | `decimal.Decimal` | `string` |
+| Webhook version | `webhookVersion: "1"` | `webhookVersion: "2"` |
+
+The v1 API remains fully supported. No breaking changes to existing v1 integrations.
+
+**Migration notes:**
+
+If you're building a new integration, use v2. Key differences to be aware of:
+
+1. The `source` and `destination` objects use a `type` discriminator (`"crypto"` or `"fiat"`) to distinguish offramp from onramp.
+2. For offramp, the `source.refundAddress` field replaces the v1 `returnAddress` field.
+3. All numeric values (amount, rate, fees) are returned as `string` in v2 — parse them as needed.
+4. The `providerAccount` in the create response is a virtual account (`V2FiatProviderAccount`) for onramp orders, replacing the `receiveAddress` string from v1.
+
+See the [Sender API Integration Guide](/implementation-guides/sender-api-integration) for full v2 offramp and onramp documentation.
+
+---
+
+### Onramp in production (March 2026)
+
+Fiat-to-stablecoin onramp is live across active corridors. Available via the v2 API.
+
+---
+
+### Scroll network support (Q1 2026)
+
+Scroll (chain ID 534352) is now fully supported by the aggregator. Gateway contract: `0x663C5BfE7d44bA946C2dd4b2D1Cf9580319F9338`.
+
+Previously marked "Coming Soon" — now live across USDT and USDC.
+
+---
+
+## 2025
+
+### cNGN support added
+
+cNGN (Compliant Naira) is now supported as a stablecoin across Ethereum, Base, Polygon, and BNB Smart Chain. This is the first local-currency stablecoin supported by the protocol.
+
+### Lisk network support
+
+Lisk (chain ID 1135) added to the aggregator. Gateway contract: `0xff0E00E0110C1FBb5315D276243497b66D3a4d8a`.
+
+### BRL corridor live
+
+Brazilian Real (BRL) via PIX now available as an active corridor. Mobile/PIX delivery only.
+
+### Protocol launch (February 2025)
+
+Initial mainnet deployment across Base, Polygon, BNB Smart Chain, and Arbitrum One. NGN corridor live with bank transfer and mobile delivery.
+
+---
+
+## API Versioning Policy
+
+The Paycrest API uses URL-based versioning (`/v1/`, `/v2/`). Within a major version:
+
+- Additive changes (new optional fields, new endpoints) are non-breaking and may be introduced at any time
+- Breaking changes (removed fields, changed field types, changed semantics) require a new major version
+
+v1 will continue to be supported until an explicit deprecation notice is issued with at least 90 days' advance notice.

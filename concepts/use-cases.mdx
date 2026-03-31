@@ -254,9 +254,9 @@ const app = express();
 app.use(express.json());
 
 // Webhook signature verification
-function verifySignature(payload, signature, secret) {
+function verifySignature(rawBody, signature, secret) {
   const hash = crypto.createHmac('sha256', secret)
-    .update(JSON.stringify(payload))
+    .update(rawBody) // rawBody is the raw request body string/Buffer
     .digest('hex');
   return signature === hash;
 }
@@ -324,7 +324,7 @@ app.post('/api/payments', async (req, res) => {
 // Direct API integration
 
 // Direct API integration using fetch
-const API_BASE_URL = 'https://api.paycrest.io/v1';
+const API_BASE_URL = 'https://api.paycrest.io/v2';
 const API_KEY = 'YOUR_API_KEY';
 
 const initiatePayment = async (amount, recipient) => {
@@ -412,4 +412,4 @@ To implement any of these use cases:
 5. **Test thoroughly** with small amounts ($0.50+)
 6. **Go live** with production integration
 
-For detailed implementation guides, see our [Sender API Integration](/implementation/sender-api-integration) documentation. 
+For detailed implementation guides, see our [Sender API Integration](/implementation-guides/sender-api-integration) documentation. 

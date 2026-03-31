@@ -3,454 +3,272 @@ title: "Transaction Lifecycle"
 description: "Understanding how payment messages flow through the Paycrest protocol from order creation to settlement"
 ---
 
-Understanding the complete lifecycle of a payment order in the Paycrest protocol is crucial for building reliable integrations. This section explains each stage of the order processing flow and what happens at each step.
+Paycrest supports two payment directions: **offramp** (stablecoin → fiat) and **onramp** (fiat → stablecoin). Both flows follow a similar lifecycle through the protocol.
 
-## Overview
+## Offramp Lifecycle (Stablecoin → Fiat)
 
-A payment order in the Paycrest protocol follows a well-defined lifecycle from order creation to final settlement. Each stage has specific requirements, validations, and outcomes that ensure reliable and compliant order routing and fulfillment.
-
-## Transaction Stages
-
-### 1. Order Creation
-
-The transaction lifecycle begins when a sender creates a payment order.
-
-#### Order Parameters
-
-**Required Fields:**
-- **Amount**: Transaction amount in stablecoins
-- **Token**: Stablecoin type (USDT, USDC, etc.)
-- **Network**: Blockchain network (Base, Polygon, etc.)
-- **Recipient**: Bank account or wallet details
-- **Reference**: Unique transaction identifier
-
-**Optional Fields:**
-- **Rate**: Exchange rate (if not using market rate)
-- **Memo**: Payment purpose/narration
-- **Return Address**: Address for refunds if needed
-
-#### Validation Process
-
-<Steps>
-  <Step title="Parameter Validation">
-    Validate all required fields are present and properly formatted
-  </Step>
-  <Step title="Sender Verification">
-    Verify sender KYC status and account validity
-  </Step>
-  <Step title="Recipient Validation">
-    Validate recipient information and delivery method
-  </Step>
-  <Step title="Compliance Check">
-    Perform AML/CFT screening and risk assessment
-  </Step>
-  <Step title="Rate Calculation">
-    Calculate optimal exchange rate if not specified
-  </Step>
-</Steps>
-
-#### Order States
-
-- **`initiated`**: Order initiated via API (before Gateway creation)
-- **`pending`**: Order awaiting provider assignment
-- **`processing`**: Order being processed by provider
-- **`cancelled`**: Order cancelled by provider
-- **`fulfilled`**: Order fulfilled by provider
-- **`validated`**: Order validated and ready for settlement
-- **`settled`**: Order fully completed on blockchain
-- **`expired`**: Order expired because no transfer was made to the receive address within the time limit
-
-### 2. Provider Assignment
-
-Once an order is created, aggregators work to assign it to suitable providers.
-
-#### Assignment Criteria
-
-**Provider Selection Factors:**
-- **Geographic Coverage**: Provider supports recipient location
-- **Rate Competitiveness**: Best available exchange rate
-- **Provider Rating**: Historical performance and reliability
-- **Capacity**: Provider has sufficient liquidity
-- **Compliance**: Provider meets regulatory requirements
-
-#### Assignment Process
-
-<Steps>
-  <Step title="Provider Discovery">
-    Identify all providers supporting the currency pair
-  </Step>
-  <Step title="Rate Comparison">
-    Compare rates from all available providers
-  </Step>
-  <Step title="Capacity Check">
-    Verify provider has sufficient liquidity
-  </Step>
-  <Step title="Quality Assessment">
-    Evaluate provider reliability and performance
-  </Step>
-  <Step title="Final Selection">
-    Select optimal provider based on criteria
-  </Step>
-</Steps>
-
-#### Assignment States
-
-- **`assigned`**: Order assigned to provider
-- **`rejected`**: No suitable provider available
-- **`retrying`**: Retrying assignment with different criteria
-
-### 3. Order Fulfillment
-
-Once assigned, the provider fulfills the payment to the recipient.
-
-#### Fulfillment Process
-
-**Provider Actions:**
-- **Payment Initiation**: Initiate payout or collection through PSP
-- **Delivery Confirmation**: Confirm payment delivery or receipt
-- **Settlement Reporting**: Report successful settlement
-- **Compliance Reporting**: Report for regulatory compliance
-
-#### Fulfillment Methods
-
-<CardGroup cols={2}>
-  <Card title="Bank Transfer">
-    - Direct bank account deposit
-    - SWIFT/SEPA transfers
-    - Real-time payments
-    - Batch processing
-  </Card>
-  <Card title="Mobile">
-    - M-Pesa transfers
-    - Airtel Money
-    - MTN Mobile Money
-    - Other mobile wallets
-  </Card>
-  <Card title="Digital Wallets">
-    - PayPal transfers
-    - Digital banking apps
-    - E-wallet services
-    - Prepaid cards
-  </Card>
-  <Card title="Crypto Wallets">
-    - Stablecoin transfers
-    - Multi-signature wallets
-    - Hardware wallet support
-    - DeFi wallet integration
-  </Card>
-</CardGroup>
-
-#### Fulfillment Statuses
-
-- **`pending`**: Payment being executed by provider
-- **`success`**: Payment successfully delivered to recipient
-- **`failed`**: Order fulfillment failed
-
-### 4. Settlement
-
-After successful payment order fulfillment, the transaction moves to settlement phase.
-
-#### Settlement Process
-
-**Onchain Settlement:**
-- **Stablecoin Transfer**: Stablecoins transferred to provider (offramp) or recipient (onramp)
-- **Fee Distribution:**
-  - Provider fees
-  - Protocol fees
-- **Settlement Confirmation**: Blockchain confirmation
-- **Order Completion**: Order marked as settled
-
-#### Settlement Components
-
-<CardGroup cols={2}>
-  <Card title="Token Settlement">
-    - Stablecoin transfer to provider
-    - Gas fee optimization
-    - Multi-signature security
-    - Settlement confirmation
-  </Card>
-  <Card title="Fee Distribution">
-    - Provider fees
-    - Protocol fees
-  </Card>
-  <Card title="Compliance Settlement">
-    - Regulatory reporting
-    - Audit trail completion
-    - Compliance attestation
-    - Record retention
-  </Card>
-  <Card title="Order Completion">
-    - Final status update
-    - Webhook notification
-    - Receipt generation
-    - Analytics update
-  </Card>
-</CardGroup>
-
-#### Settlement States
-- **`validated`**: Order validated and ready for settlement
-- **`settled`**: Settlement completed successfully
-- **`refunded`**: Order refunded to sender
-
-## Transaction Status Flow
-
-### Complete Status Flow
+```
+initiated → deposited → pending → fulfilling → validated → settling → settled
+     ↘ expired                                           ↘ refunding → refunded
+```
 
 <Steps>
   <Step title="initiated">
-    Order initiated via API
+    Sender creates a payment order via the API or Gateway contract. The order is recorded and a receive address (deposit address) is returned. Funds have not yet arrived.
+  </Step>
+  <Step title="deposited">
+    Stablecoins are detected at the receive address. The protocol confirms the deposit and begins matching.
   </Step>
   <Step title="pending">
-    Awaiting provider assignment
+    The aggregator has assigned the order to a suitable liquidity provider. The provider's provision node is processing the fiat payout.
   </Step>
-  <Step title="processing">
-    Order being processed by provider
-  </Step>
-  <Step title="fulfilled">
-    Order fulfilled by provider
+  <Step title="fulfilling">
+    The provision node is actively disbursing fiat to the recipient's bank account or mobile wallet via a local PSP.
   </Step>
   <Step title="validated">
-    Order validated and ready for settlement
+    The provider has confirmed successful fiat delivery. The order is waiting for onchain settlement.
+  </Step>
+  <Step title="settling">
+    Onchain settlement is in progress — the escrowed stablecoins are being released to the provider.
   </Step>
   <Step title="settled">
-    Transaction completed successfully
+    The order is fully closed. Stablecoins have been released to the provider; fiat has been delivered to the recipient.
   </Step>
 </Steps>
 
-### Alternative Flows
+<Note>
+  **Performance**: The majority of orders complete in under 30 seconds from deposit to completion. If fulfillment fails after a deposit is received, the sender is automatically refunded.
+</Note>
 
-#### Expired Transaction Flow
+<Warning>
+  **expired vs refunded**: These are two distinct failure modes. `expired` means the receive address (offramp) or virtual account (onramp) was never funded — no deposit was received. `refunded` means a deposit was received but the order could not be fulfilled (e.g. no available provider, PSP unavailability, rate constraints) — and the deposited funds have been returned to the sender.
+</Warning>
+
+## Onramp Lifecycle (Fiat → Stablecoin)
+
+```
+initiated → pending → fulfilling → validated → settling → settled
+     ↘ expired                              ↘ refunding → refunded
+```
 
 <Steps>
   <Step title="initiated">
-    Order initiated via API
-  </Step>
-  <Step title="expired">
-    Order expired - receive address did not receive stablecoin within time limit
-  </Step>
-</Steps>
-
-#### Refund Flow
-
-<Steps>
-  <Step title="initiated">
-    Order initiated via API
+    Sender creates an onramp order via the API. The protocol returns provider account details (virtual bank account or mobile wallet) for the user to deposit fiat into.
   </Step>
   <Step title="pending">
-    Awaiting provider assignment
+    The aggregator has matched the order to a provider. Waiting for the user's fiat deposit to be confirmed by the provider.
   </Step>
-  <Step title="processing">
-    Order being processed by provider
+  <Step title="fulfilling">
+    Provider has confirmed fiat receipt. The protocol is preparing to release stablecoins to the recipient's wallet address.
   </Step>
-  <Step title="cancelled">
-    Order cancelled by provider
+  <Step title="validated">
+    Fiat receipt confirmed and stablecoin release authorized.
   </Step>
-  <Step title="refunded">
-    Funds refunded to sender
+  <Step title="settling">
+    Onchain transfer of stablecoins to the recipient's wallet is in progress.
+  </Step>
+  <Step title="settled">
+    Stablecoins have been delivered to the recipient's wallet. The order is fully closed.
   </Step>
 </Steps>
 
-## Timeframes and SLAs
+<Note>
+  `expired` means the virtual account was never funded — no fiat deposit was received. `refunded` means fiat was received but the order could not be completed, and the deposited funds have been returned.
+</Note>
 
-### Processing Timeframes
+## Order Statuses
 
-**Standard Processing Times:**
-- **Order Processing**: < 30 seconds (creation → validation)
-- **Settlement**: +15 seconds (onchain settlement)
-- **Total Transaction Time**: ~1-2 minutes
-- **Auto-Refund**: If not completed within 5 minutes
+The complete set of order status values:
 
-**Factors Affecting Speed:**
-- **Geographic Location**: Distance between sender and recipient
-- **Payment Method**: Bank transfer vs mobile
-- **Provider Capacity**: Provider liquidity and processing speed
-- **Network Congestion**: Blockchain network conditions
-- **Compliance Checks**: Additional verification requirements
-- **Provider Reassignment**: Failed validation may trigger reassignment (extends processing time)
+| Status | Description |
+|--------|-------------|
+| `initiated` | Order created, awaiting deposit |
+| `deposited` | Deposit confirmed (offramp only) |
+| `pending` | Assigned to provider, awaiting fulfillment |
+| `fulfilling` | Provider is disbursing fiat or stablecoins |
+| `fulfilled` | Fulfillment completed by provider (internal) |
+| `validated` | Payout confirmed |
+| `settling` | Onchain settlement in progress |
+| `settled` | Fully complete |
+| `cancelled` | Order cancelled |
+| `refunding` | Refund in progress (deposit received, fulfillment failed) |
+| `refunded` | Funds returned to sender |
+| `expired` | Receive address or virtual account expired without receiving a deposit |
 
-### Service Level Agreements
+## Webhook Events
 
-**Availability (Beta):**
-- **API Uptime**: 99.9% availability
-- **Order Processing**: ~80% success rate (beta phase)
-- **Settlement**: ~100% success rate (beta phase)
-- **Support Response**: < 48 hours
+Paycrest sends webhooks to your configured endpoint as an order progresses. The event name format is `payment_order.<status>`.
 
-**Performance Metrics:**
-- **API Response Time**: < 200ms average
-- **Webhook Delivery**: < 5 seconds
-- **Status Updates**: Real-time
-- **Error Recovery**: < 10 minutes
+| Event | Triggered When |
+|-------|---------------|
+| `payment_order.deposited` | Deposit confirmed on the receive address |
+| `payment_order.pending` | Order assigned to a provider |
+| `payment_order.validated` | Payout confirmed by provider |
+| `payment_order.settling` | Onchain settlement started |
+| `payment_order.settled` | Settlement complete |
+| `payment_order.refunding` | Refund initiated |
+| `payment_order.refunded` | Refund complete |
+| `payment_order.expired` | Order expired after 5 minutes |
+
+<Note>
+  Not all statuses emit webhooks. Intermediate states like `initiated`, `fulfilling`, and `cancelled` do not trigger webhook events.
+</Note>
+
+### Webhook Payload (v1)
+
+```json
+{
+  "event": "payment_order.settled",
+  "webhookVersion": "1",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "amount": "100",
+    "amountInUsd": "100.00",
+    "amountPaid": "100",
+    "amountReturned": "0",
+    "percentSettled": "100",
+    "senderFee": "0.5",
+    "networkFee": "0.01",
+    "rate": "1500.50",
+    "network": "base",
+    "gatewayId": "0xabc123...",
+    "senderId": "sender-uuid",
+    "recipient": {
+      "institution": "GTBINGLA",
+      "accountIdentifier": "1234567890",
+      "accountName": "John Doe",
+      "currency": "NGN",
+      "memo": "Payment"
+    },
+    "fromAddress": "0xsender...",
+    "returnAddress": "0xrefund...",
+    "reference": "payment-123",
+    "txHash": "0xtxhash...",
+    "status": "settled",
+    "updatedAt": "2026-03-01T10:30:00Z",
+    "createdAt": "2026-03-01T10:29:35Z"
+  }
+}
+```
+
+### Webhook Payload (v2)
+
+The v2 payload adds a `direction` field and uses polymorphic `source`/`destination` objects that vary based on whether the order is an offramp or onramp:
+
+```json
+{
+  "event": "payment_order.settled",
+  "webhookVersion": "2",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "direction": "offramp",
+    "amount": "100",
+    "amountInUsd": "100.00",
+    "amountPaid": "100",
+    "amountReturned": "0",
+    "percentSettled": "100",
+    "senderFee": "0.5",
+    "transactionFee": "0.01",
+    "rate": "1500.50",
+    "gatewayId": "0xabc123...",
+    "senderId": "sender-uuid",
+    "source": {
+      "type": "crypto",
+      "currency": "USDT",
+      "network": "base"
+    },
+    "destination": {
+      "type": "fiat",
+      "currency": "NGN",
+      "recipient": {
+        "institution": "GTBINGLA",
+        "accountIdentifier": "1234567890",
+        "accountName": "John Doe",
+        "memo": "Payment"
+      }
+    },
+    "fromAddress": "0xsender...",
+    "reference": "payment-123",
+    "txHash": "0xtxhash...",
+    "status": "settled",
+    "timestamp": "2026-03-01T10:30:00Z"
+  }
+}
+```
+
+## Webhook Verification
+
+Verify the authenticity of webhook payloads using your API Secret to compute an HMAC-SHA256 signature and compare it against the `X-Paycrest-Signature` header. Always verify against the **raw request body bytes** — do not parse and re-serialize the JSON, as key ordering may differ:
+
+<Tabs>
+  <Tab title="JavaScript">
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhook(rawBody, signature, secret) {
+  const computed = crypto
+    .createHmac('sha256', secret)
+    .update(rawBody) // rawBody is the raw request body Buffer/string
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(computed),
+    Buffer.from(signature)
+  );
+}
+```
+  </Tab>
+  <Tab title="Python">
+```python
+import hmac
+import hashlib
+
+def verify_webhook(raw_body, signature, secret):
+    # raw_body is request.data (raw bytes)
+    computed = hmac.new(
+        secret.encode(),
+        raw_body if isinstance(raw_body, bytes) else raw_body.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(computed, signature)
+```
+  </Tab>
+  <Tab title="Go">
+```go
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+)
+
+func verifyWebhook(payload []byte, signature, secret string) bool {
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write(payload)
+    computed := hex.EncodeToString(mac.Sum(nil))
+    return hmac.Equal([]byte(computed), []byte(signature))
+}
+```
+  </Tab>
+</Tabs>
+
+## Timeframes & SLAs
+
+| Metric | Target |
+|--------|--------|
+| Median order completion time (NGN) | < 30 seconds |
+| Reliability (NGN) | ≥ 95% complete within 30s |
+| Refund rate | ≤ 3% |
 
 ## Error Handling
 
-### Common Error Scenarios
+There are two distinct failure paths:
 
-#### Order Creation Errors
+**`expired`** — No deposit was ever received. The receive address (offramp) or virtual account (onramp) expired without being funded. The order closes with no funds moved. Common causes:
+- User abandoned the payment flow
+- Deposit was sent to the wrong address or after the address expired
 
-**Validation Errors:**
-- Invalid recipient information
-- Insufficient sender balance
-- Compliance check failures
-- Rate calculation errors
+**`refunded`** — A deposit was received but fulfillment failed. The deposited funds are automatically returned to the sender. Common causes:
+- No provider available at the requested rate
+- PSP unavailability in the corridor
+- Deposited amount doesn't match the quoted rate within tolerance
 
-**Resolution:**
-- Correct recipient details
-- Ensure sufficient balance
-- Complete additional verification
-- Use market rates
-
-#### Provider Assignment Errors
-
-**Assignment Failures:**
-- No available providers
-- Insufficient provider liquidity
-- Geographic restrictions
-- Compliance limitations
-
-**Resolution:**
-- Retry with different parameters
-- Wait for provider capacity
-- Check geographic restrictions
-- Contact support for assistance
-
-#### Order Fulfillment Errors
-
-**Execution Failures:**
-- Recipient account issues
-- PSP processing errors
-- Network connectivity issues
-- Compliance rejections
-
-**Resolution:**
-- Verify recipient details
-- Retry order fulfillment
-- Check network connectivity
-- Review compliance requirements
-
-### Error Recovery
-
-#### Automatic Recovery
-
-**Built-in Recovery:**
-- Automatic retry mechanisms
-- Alternative provider selection
-- Graceful error handling
-- Status notification
-
-**Manual Recovery:**
-- Support team intervention
-- Manual order processing
-- Refund processing
-- Issue escalation
-
-#### Refund Process
-
-**Automatic Refunds:**
-- Failed payment refunds
-- Expired order refunds
-- Compliance rejection refunds
-- System error refunds
-
-**Manual Refunds:**
-- Customer service requests
-- Dispute resolution
-- Technical issue refunds
-- Special circumstance refunds
-
-## Monitoring and Notifications
-
-### Real-time Monitoring
-
-**Order Tracking:**
-- Real-time status updates
-- Progress notifications
-- Error alerts
-- Completion confirmations
-
-**Webhook Notifications:**
-- Order status changes
-- Payment confirmations
-- Error notifications
-- Settlement confirmations
-
-### Notification Types
-
-<CardGroup cols={2}>
-  <Card title="Status Updates">
-    - Order creation confirmation
-    - Provider assignment notification
-    - Order fulfillment updates
-    - Settlement confirmation
-  </Card>
-  <Card title="Error Notifications">
-    - Validation error alerts
-    - Processing failure notifications
-    - Compliance rejection alerts
-    - System error notifications
-  </Card>
-  <Card title="Completion Notifications">
-    - Successful payment confirmations
-    - Settlement completion alerts
-    - Receipt generation
-    - Analytics updates
-  </Card>
-  <Card title="System Notifications">
-    - Maintenance announcements
-    - Service updates
-    - Security alerts
-    - Performance notifications
-  </Card>
-</CardGroup>
-
-## Best Practices
-
-### For Senders
-
-**Order Creation:**
-- Provide accurate recipient information
-- Use appropriate exchange rates
-- Monitor order status regularly
-- Handle webhook notifications properly
-
-**Error Handling:**
-- Implement retry logic for failed orders
-- Monitor for error notifications
-- Contact support for persistent issues
-- Maintain transaction logs
-
-### For Providers
-
-**Order Fulfillment:**
-- Execute payments promptly
-- Provide accurate delivery confirmations
-- Report compliance information
-- Maintain audit trails
-
-**Quality Assurance:**
-- Monitor payment success rates
-- Optimize processing times
-- Maintain competitive rates
-- Provide excellent support
-
-### For Aggregators
-
-**Order Management:**
-- Optimize provider assignment
-- Monitor system performance
-- Ensure compliance adherence
-- Maintain service quality
-
-**System Operations:**
-- Monitor network health
-- Optimize processing efficiency
-- Maintain security standards
-- Provide reliable infrastructure
-
-<Note>
-  Understanding the transaction lifecycle helps participants build reliable integrations and provides transparency into the order routing process. Each stage is designed to ensure secure, compliant, and efficient order coordination.
-</Note>
-
-<Note>
-  **Beta Status:** Paycrest is currently in beta phase. Success rates, processing times, and feature availability may evolve as the protocol matures. We're actively working to improve reliability and performance based on real-world usage.
-</Note> 
+Monitor `payment_order.refunded` and `payment_order.expired` webhook events and implement retry logic in your integration. You can also poll [GET /sender/orders/:id](/api-reference/sender/get-order-by-id) directly.

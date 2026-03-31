@@ -15,10 +15,7 @@ Paycrest uses **ISO 4217** standard currency codes, which are the internationall
 - **UGX** - Ugandan Shilling
 - **TZS** - Tanzanian Shilling
 - **MWK** - Malawi Kwacha
-- **GHS** - Ghanaian Cedi
 - **BRL** - Brazilian Real
-- **XOF** - West African CFA Franc
-- **INR** - Indian Rupee
 
 <Note>
   All currency codes used in Paycrest API calls must follow the ISO 4217 standard. These codes are case-sensitive and should be provided in uppercase.
@@ -50,7 +47,6 @@ For mobile payment providers, local banks without SWIFT codes, and other financi
 - **MONINGPC** - Moniepoint (Nigeria)
 - **SAFAKEPC** - Safaricom M-Pesa (Kenya)
 - **AIRTKEPC** - Airtel Money (Kenya)
-- **MOMOGHPC** - MTN Mobile Money (Ghana)
 
 ## Code Format Rules
 
@@ -87,10 +83,10 @@ const order = {
 
 ## Finding Institution Codes
 
-Use the **[GET /institutions/{currency_code}](/api-reference/general/list-supported-institutions-for-a-currency)** endpoint to get the complete list of supported institutions for any currency:
+Use the **[GET /institutions/{currency_code}](/api-reference/general/list-supported-institutions)** endpoint to get the complete list of supported institutions for any currency:
 
 ```bash
-curl -X GET "https://api.paycrest.io/v1/institutions/NGN" \
+curl -X GET "https://api.paycrest.io/v2/institutions/NGN" \
   -H "API-Key: your-api-key"
 ```
 

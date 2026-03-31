@@ -13,87 +13,134 @@
     "dark": "/logo/dark.svg"
   },
   "navigation": {
-    "tabs": [
+    "versions": [
       {
-        "tab": "Guides",
-        "groups": [
+        "version": "v2",
+        "tag": "Latest",
+        "tabs": [
           {
-            "group": "Getting Started",
-            "pages": [
-              "introduction",
-              "quickstart",
-              "protocol-overview"
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Getting Started",
+                "pages": [
+                  "introduction",
+                  "quickstart",
+                  "protocol-overview"
+                ]
+              },
+              {
+                "group": "Core Concepts",
+                "pages": [
+                  "concepts/participants",
+                  "concepts/architecture",
+                  "concepts/compliance-security",
+                  "concepts/transaction-lifecycle",
+                  "concepts/use-cases"
+                ]
+              },
+              {
+                "group": "Implementation Guides",
+                "pages": [
+                  "implementation-guides/sender-api-integration",
+                  "implementation-guides/smart-contract-interaction",
+                  "implementation-guides/provider-setup-guide"
+                ]
+              },
+              {
+                "group": "Resources",
+                "pages": [
+                  "resources/supported-stablecoins",
+                  "resources/supported-currencies",
+                  "resources/code-standards",
+                  "resources/gateway-contract-addresses",
+                  "resources/troubleshooting",
+                  "resources/changelog"
+                ]
+              }
             ]
           },
           {
-            "group": "Core Concepts",
-            "pages": [
-              "concepts/participants",
-              "concepts/architecture",
-              "concepts/compliance-security",
-              "concepts/transaction-lifecycle"
-            ]
-          },
-          {
-            "group": "Implementation Guides",
-            "pages": [
-              "implementation-guides/sender-api-integration",
-              "implementation-guides/smart-contract-interaction",
-              "implementation-guides/provider-setup-guide"
-            ]
-          },
-          {
-            "group": "Resources",
-            "pages": [
-              "resources/supported-stablecoins",
-              "resources/supported-currencies",
-              "resources/code-standards",
-              "resources/gateway-contract-addresses",
-              "resources/troubleshooting"
+            "tab": "API Reference",
+            "groups": [
+              {
+                "group": "Overview",
+                "pages": [
+                  "api-reference/introduction",
+                  "api-reference/authentication",
+                  "api-reference/errors"
+                ]
+              },
+              {
+                "group": "Sender",
+                "pages": [
+                  "api-reference/sender/initiate-payment-order-v2",
+                  "api-reference/sender/list-payment-orders-v2",
+                  "api-reference/sender/get-payment-order-by-id-v2",
+                  "api-reference/sender/get-sender-stats"
+                ]
+              },
+              {
+                "group": "Provider",
+                "pages": [
+                  "api-reference/provider/list-orders-v2",
+                  "api-reference/provider/get-order-by-id-v2",
+                  "api-reference/provider/accept-order",
+                  "api-reference/provider/decline-order",
+                  "api-reference/provider/fulfill-order",
+                  "api-reference/provider/cancel-order",
+                  "api-reference/provider/update-balances",
+                  "api-reference/provider/get-market-rate",
+                  "api-reference/provider/get-provider-stats",
+                  "api-reference/provider/get-node-info"
+                ]
+              },
+              {
+                "group": "General",
+                "pages": [
+                  "api-reference/general/list-supported-currencies",
+                  "api-reference/general/list-supported-institutions",
+                  "api-reference/general/list-supported-tokens",
+                  "api-reference/general/get-token-rate",
+                  "api-reference/general/get-aggregator-public-key",
+                  "api-reference/general/verify-account",
+                  "api-reference/sender/get-lock-payment-order-status",
+                  "api-reference/general/reindex-transaction"
+                ]
+              }
             ]
           }
         ]
       },
       {
-        "tab": "API Reference",
-        "groups": [
+        "version": "v1",
+        "tag": "Legacy",
+        "tabs": [
           {
-            "group": "Overview",
-            "pages": [
-              "api-reference/introduction",
-              "api-reference/authentication",
-              "api-reference/errors"
-            ]
-          },
-          {
-            "group": "Sender",
-            "pages": [
-              "api-reference/sender/initiate-payment-order",
-              "api-reference/sender/list-payment-orders",
-              "api-reference/sender/get-payment-order-by-id",
-              "api-reference/sender/get-lock-payment-order-status",
-              "api-reference/sender/get-sender-stats"
-            ]
-          },
-          {
-            "group": "Provider",
-            "pages": [
-              "api-reference/provider/list-lock-payment-orders",
-              "api-reference/provider/get-market-rate",
-              "api-reference/provider/get-provider-stats",
-              "api-reference/provider/get-node-info"
-            ]
-          },
-          {
-            "group": "General",
-            "pages": [
-              "api-reference/general/list-supported-currencies",
-              "api-reference/general/list-supported-institutions",
-              "api-reference/general/list-supported-tokens",
-              "api-reference/general/get-token-rate",
-              "api-reference/general/get-aggregator-public-key",
-              "api-reference/general/verify-account",
-              "api-reference/general/reindex-transaction"
+            "tab": "API Reference",
+            "groups": [
+              {
+                "group": "Overview",
+                "pages": [
+                  "api-reference/introduction",
+                  "api-reference/authentication",
+                  "api-reference/errors"
+                ]
+              },
+              {
+                "group": "Sender",
+                "pages": [
+                  "api-reference/sender/initiate-payment-order",
+                  "api-reference/sender/list-payment-orders",
+                  "api-reference/sender/get-payment-order-by-id"
+                ]
+              },
+              {
+                "group": "Provider",
+                "pages": [
+                  "api-reference/provider/list-lock-payment-orders"
+                ]
+              }
             ]
           }
         ]
@@ -123,4 +170,4 @@
       "linkedin": "https://www.linkedin.com/company/paycrest"
     }
   }
-} 
+}

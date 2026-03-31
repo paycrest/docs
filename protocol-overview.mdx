@@ -3,42 +3,28 @@ title: "Protocol Overview"
 description: "Deep dive into the Paycrest protocol architecture, participants, and core components"
 ---
 
-The Paycrest protocol is a decentralized payment routing protocol designed to bridge the gap between digital assets and real-world financial systems. This overview covers the core architecture, participants, and key components.
+Paycrest is a decentralized payment routing protocol for stablecoin-fiat payments in emerging markets. It handles the full stack — order routing, encrypted message passing, onchain escrow, provider matching, and fiat execution — without ever custodying user funds. This page covers the core architecture, participants, and key technical components. For traction, roadmap, and competitive positioning, see the [Introduction](/introduction).
 
 ## Protocol Vision
 
-Paycrest exists to solve the fundamental problems with cross-border payments in emerging markets:
+Paycrest exists to be **the neutral routing layer for stablecoin-fiat payments** — open infrastructure that any application can integrate to offer on- and offramps without being locked into a single stablecoin issuer's ecosystem.
 
-- **High costs** from legacy intermediaries and fragmented liquidity
-- **Slow settlement** due to closed banking networks
-- **Poor user experience** with complex compliance requirements
-- **Limited accessibility** for underbanked populations
-
-Our solution enables **near-instant fiat/stablecoin conversion** via a decentralized network of liquidity provider, with **zero transaction fees for senders** and **embedded compliance** through user-friendly flows.
-
-## Mission-Driven Architecture
-
-Our mission **"To accelerate the creation of democratized payment systems of the future"** is reflected in every aspect of our protocol design:
+The key properties:
 
 <CardGroup cols={2}>
-  <Card title="Decentralized Control" icon="building">
-    No single entity controls the flow of funds or user access. The protocol operates through a network of independent participants.
+  <Card title="Non-Custodial" icon="lock">
+    Paycrest never holds user funds. Escrow is onchain, enforced by the Gateway contract.
   </Card>
-  
-  <Card title="Universal Participation" icon="users">
-    Anyone can participate as a sender, provider, or developer. No gatekeepers or exclusive access requirements.
+  <Card title="Open & Composable" icon="puzzle-piece">
+    Any smart contract can trigger settlement. Any app can integrate the Sender API.
   </Card>
-  
-  <Card title="Transparent Operations" icon="eye">
-    All transactions are visible on-chain with complete audit trails. No hidden fees or opaque processes.
+  <Card title="Provider-Sovereign" icon="building">
+    Liquidity providers run their own nodes, set their own rates, and connect their own PSPs.
   </Card>
-  
-  <Card title="Local-Global Integration" icon="globe">
-    Local payment solutions work seamlessly with global networks, preserving local context while enabling global reach.
+  <Card title="Compliance at the Edges" icon="shield-check">
+    Providers own local regulatory obligations; senders own theirs. The protocol coordinates requirement exchange — not centralized compliance vetting.
   </Card>
 </CardGroup>
-
-This mission drives our technical decisions, from the multi-chain architecture to the developer-friendly APIs that make integration accessible to everyone.
 
 ## Core Architecture
 
@@ -102,11 +88,11 @@ A registry of attestations for both Senders and Providers:
 
 ### Sender
 
-A KYC-verified entity that initiates either a fiat-to-stablecoin or stablecoin-to-fiat transaction. This can be:
+A KYB-verified entity that initiates either a fiat-to-stablecoin or stablecoin-to-fiat transaction. This can be:
 
 - **Smart contracts** or dApps
 - **API clients** integrating with the protocol
-- **EIP-4337 smart accounts** for advanced wallet functionality
+- **Smart accounts** (e.g., EIP-7702) for advanced wallet functionality
 - **Traditional applications** abstracting away blockchain complexity
 
 The sender supplies the recipient's fiat account information and initiates the payment order.
@@ -122,7 +108,7 @@ The recipient doesn't need to interact with the protocol directly - they simply 
 
 ### Provider
 
-A KYC-verified participant that supplies fiat liquidity in exchange for stablecoins or provides stablecoins in exchange for fiat. Providers:
+A KYB-verified participant that supplies fiat liquidity in exchange for stablecoins or provides stablecoins in exchange for fiat. Providers:
 
 - **Connect to the aggregator** and register rates and limits
 - **Fulfill payment orders** (off-ramp or on-ramp)
@@ -131,12 +117,12 @@ A KYC-verified participant that supplies fiat liquidity in exchange for stableco
 
 ### Aggregator
 
-A KYC-verified entity that coordinates the entire order routing process:
+A KYB-verified entity that coordinates the entire order routing process:
 
 - **Listens to payment order events** from the Gateway contract
 - **Matches orders** with suitable Providers
 - **Coordinates fulfillment** and settlement
-- **Performs offchain KYC verification** for both Senders and Providers
+- **Performs offchain KYB verification** for both Senders and Providers
 - **Splits large orders** across multiple Providers
 - **Issues onchain attestations** for compliance
 - **Enforces penalties** for failed delivery
@@ -185,23 +171,18 @@ A KYC-verified entity that coordinates the entire order routing process:
 
 ## Multi-Chain Support
 
-Paycrest supports the following blockchain networks for fiat and stablecoin transactions:
+Paycrest is live on **8 EVM-compatible networks**:
 
+- **Ethereum**
 - **Base**
 - **Polygon**
 - **BNB Smart Chain**
 - **Arbitrum One**
 - **Lisk**
 - **Celo**
-- **Tron**
+- **Scroll**
 
-Support for additional networks is planned as the protocol evolves.
-
-### Future Expansion
-
-- **Modular chains**: App-specific rollups and Layer 3s
-- **App-specific rollups**: Custom chains for specific use cases
-- **Cross-chain bridges**: Seamless asset movement between chains
+Additional networks (Starknet, Tron, Asset Chain, Optimism) have Gateway contracts deployed but aggregator support is pending. See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the full deployment table.
 
 ## Security & Compliance
 
@@ -214,7 +195,7 @@ Support for additional networks is planned as the protocol evolves.
 
 ### Compliance Integration
 
-- **KYC/KYB verification** for all participants
+- **KYB verification** for all participants
 - **Identity attestation registry** onchain
 - **Regulatory reporting** capabilities
 - **AML/CFT compliance** through integrated providers
@@ -222,9 +203,7 @@ Support for additional networks is planned as the protocol evolves.
 ### Privacy Protection
 
 - **Encrypted recipient data** stored offchain
-- **Zero-knowledge proofs** for compliance verification
-- **Selective disclosure** of sensitive information
-- **GDPR compliance** for user data protection
+- **Minimal data retention**: only what is necessary for order routing and settlement
 
 ## Fee Structure
 
@@ -242,7 +221,7 @@ Providers earn fees by:
 - **Geographic premiums** for underserved markets
 
 <Note>
-  **Fee Structure Clarification:** In the current beta phase, Paycrest operates the only aggregator, so aggregator fees are paid to Paycrest. As the protocol scales, multiple aggregators will compete for order routing, similar to how Ethereum validators earn fees for adding transactions to blocks. This creates a decentralized marketplace where aggregators earn fees for providing order routing services.
+  **Current fee model**: Paycrest currently operates the sole aggregator (federated model). The 0.5% aggregator fee on each settled order flows to Paycrest. This will transition to a competitive multi-aggregator model in a future protocol phase.
 </Note>
 
 ### Delivery Methods
@@ -285,8 +264,7 @@ As the protocol matures, governance will transition to:
 ### API Standards
 
 - **RESTful API** for all interactions
-- **WebSocket support** for real-time updates
-- **Webhook integration** for event notifications
+- **Webhook integration** for real-time event notifications
 - **Rate limiting** and authentication
 
 ### Network Requirements

@@ -1,1615 +1,527 @@
 ---
 title: "Sender API Integration"
-description: "Integrate with Paycrest using the Sender API for initiating payment orders via REST API."
+description: "Integrate Paycrest to offer stablecoin offramp and onramp in your app — one API, two directions."
 ---
 
-> **ℹ️ Note:** Paycrest currently supports **stablecoin-to-fiat (offramp)** transactions only. **Fiat-to-stablecoin (onramp)** is coming in Q3 2025.
+The Sender API lets your app create payment orders in two directions:
 
-In this guide, we demonstrate how to enable off-ramps for users with the Sender API. The main difference between the Sender API and the Gateway contract is that users get a receiving address to pay for rather than connecting their non-custodial wallets. This means users can off-ramp directly from any wallet.
+- **Offramp** — user sends stablecoins, recipient receives local fiat (bank or mobile wallet)
+- **Onramp** — user deposits fiat into a virtual account, recipient receives stablecoins
+
+Both flows go through the same endpoint: `POST /v2/sender/orders`. The direction is determined by the `source` and `destination` object types you pass.
 
 ## Getting Started
 
-### Step 1: Obtain API Credentials
+### 1. Obtain API Credentials
 
-First, you need to get the `API Key` from your sender dashboard.
+Sign up as a **Sender** at [app.paycrest.io](https://app.paycrest.io) and complete the KYB process. Once verified, you'll have:
 
-Visit your [Sender Dashboard](https://app.paycrest.io) to retrieve your `API Key` and `API Secret`. If you're a new user, sign up as a "sender" and complete our Know-Your-Business (KYB) process. Your `API Secret` should always be kept secret - we'll get to this later in the article.
-
-### Step 2: Configure Tokens
-
-Head over to the settings page of your Sender Dashboard to configure the `feePercent`, `feeAddress`, and `refundAddress` across the tokens and blockchain networks you intend to use.
-
-### Step 3: Authentication Setup
-
-Include your `API Key` in the "API-Key" header of every request you make to Paycrest Offramp API.
+- **API Key** — included in every request as the `API-Key` header
+- **API Secret** — used to verify webhook signatures; keep this secret
 
 ```javascript
 const headers = {
-  "API-Key": "208a4aef-1320-4222-82b4-e3bca8781b4b",
+  "API-Key": "YOUR_API_KEY",
+  "Content-Type": "application/json"
 };
 ```
 
-This is because requests without a valid API key will fail with status code `401: Unauthorized`.
+### 2. Configure Tokens (Optional)
 
-## Creating Payment Orders
+In the dashboard settings, you can set a default `refundAddress` and `feeAddress` per token/network. These can also be passed per-request via `source.refundAddress`.
 
-### Step 1: Fetch the Rate
+---
 
-Before creating a payment order, you must first fetch the current rate for your token/amount/currency combination. This ensures you're using an up-to-date rate that's achievable by the system.
+## Step 1: Verify the Recipient Account
+
+Before creating an order, verify the recipient's bank or mobile account. This reduces failed orders.
+
+```bash
+curl -X POST "https://api.paycrest.io/v1/verify-account" \
+  -H "API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "institution": "GTBINGLA",
+    "accountIdentifier": "1234567890",
+    "currency": "NGN"
+  }'
+```
+
+A `200 OK` response returns the resolved `accountName`. Use that exact name in your order's `recipient.accountName` field.
+
+---
+
+## Step 2: Fetch a Rate
+
+The rates endpoint is public (no API key required). Always fetch a fresh rate immediately before creating an order.
 
 <Tabs>
   <Tab title="cURL">
-
 ```bash
-# Get rate for USDT on Base network
-curl -X GET "https://api.paycrest.io/v1/rates/USDT/100/NGN?network=base" \
-  -H "Content-Type: application/json"
+curl "https://api.paycrest.io/v1/rates/USDT/100/NGN?network=base"
 ```
-
   </Tab>
   <Tab title="JavaScript">
 ```javascript
-// Fetch the current rate
-const fetchRate = async (token, amount, currency, network) => {
-  const response = await fetch(
-    `https://api.paycrest.io/v1/rates/${token}/${amount}/${currency}?network=${network}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"
-      }
-    }
-  );
-  
-  if (!response.ok) {
-    throw new Error(`Rate fetch failed: ${response.statusText}`);
-  }
-  
-  const rateData = await response.json();
-  return rateData.data; // Returns the rate as a string
-};
-
-// Example usage
-const rate = await fetchRate("USDT", 100, "NGN", "base");
-console.log('Current rate:', rate); // e.g., "1500.50"
+const rate = await fetch("https://api.paycrest.io/v1/rates/USDT/100/NGN?network=base")
+  .then(r => r.json())
+  .then(r => r.data); // e.g. "1500.50"
 ```
   </Tab>
-  
   <Tab title="Python">
 ```python
 import requests
-
-def fetch_rate(token, amount, currency, network):
-    """Fetch the current rate for a token/amount/currency combination"""
-    response = requests.get(
-        f"https://api.paycrest.io/v1/rates/{token}/{amount}/{currency}",
-        params={"network": network},
-        headers={"Content-Type": "application/json"}
-    )
-    
-    if not response.ok:
-        raise Exception(f"Rate fetch failed: {response.text}")
-    
-    rate_data = response.json()
-    return rate_data["data"]  # Returns the rate as a string
-
-# Example usage
-rate = fetch_rate("USDT", 100, "NGN", "base")
-print('Current rate:', rate)  # e.g., "1500.50"
-```
-  </Tab>
-  
-  <Tab title="Go">
-```go
-package main
-
-import (
-    "encoding/json"
-    "fmt"
-    "io"
-    "net/http"
-)
-
-type RateResponse struct {
-    Status  string `json:"status"`
-    Message string `json:"message"`
-    Data    string `json:"data"`
-}
-
-func fetchRate(token, amount, currency, network string) (string, error) {
-    url := fmt.Sprintf("https://api.paycrest.io/v1/rates/%s/%s/%s?network=%s", 
-        token, amount, currency, network)
-    
-    resp, err := http.Get(url)
-    if err != nil {
-        return "", err
-    }
-    defer resp.Body.Close()
-    
-    if resp.StatusCode != http.StatusOK {
-        body, _ := io.ReadAll(resp.Body)
-        return "", fmt.Errorf("rate fetch failed: %s", string(body))
-    }
-    
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        return "", err
-    }
-    
-    var rateResponse RateResponse
-    if err := json.Unmarshal(body, &rateResponse); err != nil {
-        return "", err
-    }
-    
-    return rateResponse.Data, nil
-}
-
-// Example usage
-func main() {
-    rate, err := fetchRate("USDT", 100, "NGN", "base")
-    if err != nil {
-        fmt.Printf("Error fetching rate: %v\n", err)
-        return
-    }
-    fmt.Printf("Current rate: %s\n", rate) // e.g., "1500.50"
-}
+res = requests.get("https://api.paycrest.io/v1/rates/USDT/100/NGN", params={"network": "base"})
+rate = res.json()["data"]  # e.g. "1500.50"
 ```
   </Tab>
 </Tabs>
 
-<Note>
-  The rate endpoint is publicly accessible and doesn't require authentication. However, the rate you receive is only valid for a limited time and should be used immediately when creating your payment order.
-</Note>
+---
 
-<Warning>
-  Always fetch a fresh rate before creating each payment order. Rates can fluctuate frequently, and using an outdated rate will cause your order creation to fail.
-</Warning>
+## Step 3: Create an Order
 
-### Step 2: Create the Payment Order
+`POST /v2/sender/orders`
 
-Now that you have the current rate, you can create the payment order using that rate.
+Pass a `source` and `destination` object. The `type` field on each determines the direction.
 
 <Tabs>
-  <Tab title="cURL">
+  <Tab title="Offramp (stablecoin → fiat)">
+
+User sends stablecoins; recipient receives fiat. Set `source.type = "crypto"` and `destination.type = "fiat"`.
 
 ```bash
-# First, fetch the current rate
-RATE=$(curl -s -X GET "https://api.paycrest.io/v1/rates/USDT/100/NGN?network=base" \
-  -H "Content-Type: application/json" | jq -r '.data')
-
-# Then create the order with the fetched rate
-curl -X POST "https://api.paycrest.io/v1/sender/orders" \
+curl -X POST "https://api.paycrest.io/v2/sender/orders" \
   -H "API-Key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "amount": 100,
-    "token": "USDT",
-    "network": "base",
-    "rate": "'$RATE'",
-    "recipient": {
-      "institution": "GTB",
-      "accountIdentifier": "1234567890",
-      "accountName": "John Doe",
-      "currency": "NGN",
-      "memo": "Salary payment for January 2024"
+    "amount": "100",
+    "source": {
+      "type": "crypto",
+      "currency": "USDT",
+      "network": "base",
+      "refundAddress": "0xYourWalletAddress"
     },
-    "reference": "payment-123",
-    "returnAddress": "0x1234567890123456789012345678901234567890"
+    "destination": {
+      "type": "fiat",
+      "currency": "NGN",
+      "recipient": {
+        "institution": "GTBINGLA",
+        "accountIdentifier": "1234567890",
+        "accountName": "John Doe",
+        "memo": "Salary payment"
+      }
+    },
+    "reference": "order-001"
+  }'
+```
+  </Tab>
+  <Tab title="Onramp (fiat → stablecoin)">
+
+User deposits fiat; recipient receives stablecoins. Set `source.type = "fiat"` and `destination.type = "crypto"`.
+
+```bash
+curl -X POST "https://api.paycrest.io/v2/sender/orders" \
+  -H "API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "50000",
+    "amountIn": "fiat",
+    "source": {
+      "type": "fiat",
+      "currency": "NGN",
+      "refundAccount": {
+        "institution": "GTBINGLA",
+        "accountIdentifier": "1234567890",
+        "accountName": "John Doe"
+      }
+    },
+    "destination": {
+      "type": "crypto",
+      "currency": "USDT",
+      "network": "base",
+      "recipient": {
+        "address": "0xRecipientWalletAddress",
+        "network": "base"
+      }
+    },
+    "reference": "order-002"
   }'
 ```
 
   </Tab>
-  <Tab title="JavaScript">
+  <Tab title="JavaScript (offramp)">
 ```javascript
-// First, fetch the current rate
-const rate = await fetchRate("USDT", 100, "NGN", "base");
-
-// Then create the payment order with the fetched rate
-const orderData = {
-  amount: 100,
-  token: 'USDT',
-  network: 'base',
-  rate: rate, // Use the fetched rate
-  recipient: {
-    institution: 'GTB',
-    accountIdentifier: '1234567890',
-    accountName: 'John Doe',
-    currency: 'NGN',
-    memo: 'Salary payment for January 2024' // Optional: Purpose/narration for the payment
-  },
-  reference: 'payment-123',
-  returnAddress: '0x1234567890123456789012345678901234567890'
-};
-
-const response = await fetch("https://api.paycrest.io/v1/sender/orders", {
+const res = await fetch("https://api.paycrest.io/v2/sender/orders", {
   method: "POST",
-  headers: {
-    "API-Key": "YOUR_API_KEY",
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify(orderData)
+  headers: { "API-Key": "YOUR_API_KEY", "Content-Type": "application/json" },
+  body: JSON.stringify({
+    amount: "100",
+    source: {
+      type: "crypto",
+      currency: "USDT",
+      network: "base",
+      refundAddress: "0xYourWalletAddress"
+    },
+    destination: {
+      type: "fiat",
+      currency: "NGN",
+      recipient: {
+        institution: "GTBINGLA",
+        accountIdentifier: "1234567890",
+        accountName: "John Doe",
+        memo: "Salary payment"
+      }
+    },
+    reference: "order-001"
+  })
 });
-
-const order = await response.json();
-console.log('Order created:', order);
+const order = await res.json();
 ```
   </Tab>
-  
-  <Tab title="Python">
+  <Tab title="Python (offramp)">
 ```python
 import requests
 
-# First, fetch the current rate
-rate = fetch_rate("USDT", 100, "NGN", "base")
-
-# Then create the payment order with the fetched rate
-order_data = {
-    "amount": 100,
-    "token": "USDT",
-    "network": "base",
-    "rate": rate,  # Use the fetched rate
-    "recipient": {
-        "institution": "GTB",
-        "accountIdentifier": "1234567890",
-        "accountName": "John Doe",
-        "currency": "NGN",
-        "memo": "Salary payment for January 2024"  # Optional: Purpose/narration for the payment
-    },
-    "reference": "payment-123",
-    "returnAddress": "0x1234567890123456789012345678901234567890"
-}
-
-response = requests.post(
-    "https://api.paycrest.io/v1/sender/orders",
-    headers={
-        "API-Key": "YOUR_API_KEY",
-        "Content-Type": "application/json"
-    },
-    json=order_data
-)
-
-order = response.json()
-print('Order created:', order)
-```
-  </Tab>
-  
-  <Tab title="Go">
-```go
-package main
-
-import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "io"
-    "net/http"
-)
-
-// First, fetch the current rate
-rate, err := fetchRate("USDT", 100, "NGN", "base")
-if err != nil {
-    return fmt.Errorf("failed to fetch rate: %v", err)
-}
-
-// Then create the payment order with the fetched rate
-func createPaymentOrder() error {
-    orderData := map[string]interface{}{
-        "amount": 100,
-        "token":  "USDT",
-        "network": "base",
-        "rate":   rate, // Use the fetched rate
-        "recipient": map[string]interface{}{
-            "institution":       "GTB",
-            "accountIdentifier": "1234567890",
-            "accountName":       "John Doe",
-            "currency":          "NGN",
-            "memo":             "Salary payment for January 2024", // Optional: Purpose/narration for the payment
+order = requests.post(
+    "https://api.paycrest.io/v2/sender/orders",
+    headers={"API-Key": "YOUR_API_KEY", "Content-Type": "application/json"},
+    json={
+        "amount": "100",
+        "source": {
+            "type": "crypto",
+            "currency": "USDT",
+            "network": "base",
+            "refundAddress": "0xYourWalletAddress"
         },
-        "reference":     "payment-123",
-        "returnAddress": "0x1234567890123456789012345678901234567890",
+        "destination": {
+            "type": "fiat",
+            "currency": "NGN",
+            "recipient": {
+                "institution": "GTBINGLA",
+                "accountIdentifier": "1234567890",
+                "accountName": "John Doe",
+                "memo": "Salary payment"
+            }
+        },
+        "reference": "order-001"
     }
-
-    jsonData, _ := json.Marshal(orderData)
-    req, _ := http.NewRequest("POST", "https://api.paycrest.io/v1/sender/orders", bytes.NewBuffer(jsonData))
-    req.Header.Set("API-Key", "YOUR_API_KEY")
-    req.Header.Set("Content-Type", "application/json")
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        return err
-    }
-    defer resp.Body.Close()
-
-    body, _ := io.ReadAll(resp.Body)
-    fmt.Println("Order created:", string(body))
-    return nil
-}
+).json()
 ```
   </Tab>
 </Tabs>
 
-### Handle the Response
+### Request Fields
 
-<Tabs>
-  <Tab title="JavaScript">
-```javascript
-// The response includes important information
-const {
-  id,              // Order ID for tracking
-  receiveAddress,  // Address to send tokens to
-  validUntil,      // Expiration time
-  senderFee,       // Fee amount
-  transactionFee   // Network transaction fee
-} = order;
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `amount` | string | ✅ | Payment amount. Denomination set by `amountIn` (defaults to crypto units). |
+| `amountIn` | string | — | `"crypto"` (default) or `"fiat"`. Set to `"fiat"` when `amount` is in the fiat currency. |
+| `rate` | string | — | Exchange rate (fiat per crypto). Omit to use the best available rate. |
+| `senderFeePercent` | string | — | Optional fee percentage you collect, settled atomically onchain. |
+| `reference` | string | — | Your internal order ID. |
+| `source` | object | ✅ | `{ type: "crypto", ... }` for offramp; `{ type: "fiat", ... }` for onramp. |
+| `destination` | object | ✅ | `{ type: "fiat", ... }` for offramp; `{ type: "crypto", ... }` for onramp. |
 
-// Store the order ID for tracking
-await saveOrderToDatabase(order.id, order);
-```
-  </Tab>
-  <Tab title="Python">
-```python
-# The response includes important information
-order_id = order['id']              # Order ID for tracking
-receive_address = order['receiveAddress']  # Address to send tokens to
-valid_until = order['validUntil']      # Expiration time
-sender_fee = order['senderFee']       # Fee amount
-transaction_fee = order['transactionFee']   # Network transaction fee
+---
 
-# Store the order ID for tracking
-save_order_to_database(order['id'], order)
-```
-  </Tab>
-  <Tab title="Go">
-```go
-// The response includes important information
-type OrderResponse struct {
-    ID              string  `json:"id"`
-    ReceiveAddress  string  `json:"receiveAddress"`
-    ValidUntil      string  `json:"validUntil"`
-    SenderFee       float64 `json:"senderFee"`
-    TransactionFee  float64 `json:"transactionFee"`
+## Step 4: Handle the Provider Account Response
+
+The create response includes a `providerAccount` that differs by direction.
+
+### Offramp — send tokens to `receiveAddress`
+
+```json
+{
+  "id": "550e8400-...",
+  "status": "initiated",
+  "providerAccount": {
+    "network": "base",
+    "receiveAddress": "0xProviderReceiveAddress",
+    "validUntil": "2026-03-01T10:05:00Z"
+  },
+  "source": { "type": "crypto", "currency": "USDT", "network": "base" },
+  "destination": { "type": "fiat", "currency": "NGN", "recipient": { ... } }
 }
 ```
-  </Tab>
-</Tabs>
 
-### Send Tokens to Receive Address
+Send **exactly** `amount + senderFee + transactionFee` (all returned in the response) in the specified token to `providerAccount.receiveAddress` before `validUntil`.
+
+<Warning>
+  Always use `decimals` from [GET /tokens](/api-reference/general/list-supported-tokens) to compute the token amount — do not hardcode. BNB Smart Chain USDT and USDC use 18 decimals; all other chains use 6.
+</Warning>
 
 <Tabs>
-  <Tab title="JavaScript">
+  <Tab title="JavaScript (viem)">
 ```javascript
-// Using viem to send tokens
-import { createPublicClient, createWalletClient, http, getContract, parseUnits } from 'viem';
-import { base } from 'viem/chains';
-import { privateKeyToAccount } from 'viem/accounts';
+import { parseUnits } from 'viem';
 
-const publicClient = createPublicClient({
-  chain: base,
-  transport: http('https://mainnet.base.org')
+// Fetch token decimals from GET /v2/tokens or use known value
+const tokenDecimals = 6; // USDT on Base; confirm via /v2/tokens
+
+const totalAmount = parseUnits(
+  (parseFloat(order.amount) + parseFloat(order.senderFee) + parseFloat(order.transactionFee)).toString(),
+  tokenDecimals
+);
+
+const hash = await walletClient.writeContract({
+  address: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', // USDT on Base
+  abi: ERC20_ABI,
+  functionName: 'transfer',
+  args: [order.providerAccount.receiveAddress, totalAmount]
 });
-
-const account = privateKeyToAccount(process.env.PRIVATE_KEY);
-const walletClient = createWalletClient({
-  account,
-  chain: base,
-  transport: http('https://mainnet.base.org')
-});
-
-// USDT contract on Base
-const usdtContract = getContract({
-  address: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', // USDT on Base
-  abi: [{
-    name: 'transfer',
-    type: 'function',
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'amount', type: 'uint256' }
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable'
-  }],
-  publicClient,
-  walletClient
-});
-
-// Send tokens to the receive address
-const { request } = await usdtContract.simulate.transfer({
-  args: [order.receiveAddress, parseUnits(order.amount, 6)] // USDT has 6 decimals
-});
-
-const hash = await walletClient.writeContract(request);
-console.log('Transaction hash:', hash);
 ```
   </Tab>
-  
-  <Tab title="Python">
+  <Tab title="Python (web3.py)">
 ```python
-# Using web3.py to send tokens
 from web3 import Web3
-from eth_account import Account
-import os
 
-# Connect to Base network
-w3 = Web3(Web3.HTTPProvider('https://mainnet.base.org'))
+# USDT on Base; fetch decimals from GET /v2/tokens
+USDT_ADDRESS = '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2'
+token_decimals = 6
 
-# Load private key
-account = Account.from_key(os.getenv('PRIVATE_KEY'))
-
-# USDT contract on Base
-usdt_address = '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb'
-usdt_abi = [{
-    'name': 'transfer',
-    'type': 'function',
-    'inputs': [
-        {'name': 'to', 'type': 'address'},
-        {'name': 'amount', 'type': 'uint256'}
-    ],
-    'outputs': [{'name': '', 'type': 'bool'}],
-    'stateMutability': 'nonpayable'
-}]
-
-usdt_contract = w3.eth.contract(address=usdt_address, abi=usdt_abi)
-
-# Send tokens to the receive address
-amount_wei = w3.to_wei(order['amount'], 'ether')  # USDT has 6 decimals
-tx = usdt_contract.functions.transfer(
-    order['receiveAddress'], 
-    amount_wei
-).build_transaction({
-    'from': account.address,
-    'gas': 100000,
-    'gasPrice': w3.eth.gas_price,
-    'nonce': w3.eth.get_transaction_count(account.address)
-})
-
-# Sign and send transaction
-signed_tx = w3.eth.account.sign_transaction(tx, account.key)
-tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-print('Transaction hash:', tx_hash.hex())
-```
-  </Tab>
-  
-  <Tab title="Go">
-```go
-// Using go-ethereum to send tokens
-package main
-
-import (
-    "context"
-    "fmt"
-    "log"
-    "math/big"
-    "os"
-
-    "github.com/ethereum/go-ethereum/common"
-    "github.com/ethereum/go-ethereum/crypto"
-    "github.com/ethereum/go-ethereum/ethclient"
+total_amount = int(
+    (float(order['amount']) + float(order['senderFee']) + float(order['transactionFee']))
+    * 10**token_decimals
 )
 
-func sendTokens(order map[string]interface{}) error {
-    // Connect to Base network
-    client, err := ethclient.Dial("https://mainnet.base.org")
-    if err != nil {
-        return err
-    }
-
-    // Load private key
-    privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
-    if err != nil {
-        return err
-    }
-
-    // USDT contract on Base
-    usdtAddress := common.HexToAddress("0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb")
-    
-    // Transfer function signature
-    transferSig := crypto.Keccak256([]byte("transfer(address,uint256)"))
-    transferSig = transferSig[:4]
-
-    // Prepare transaction data
-    amount := new(big.Int)
-    amount.SetString(order["amount"].(string), 10)
-    amount.Mul(amount, new(big.Int).Exp(big.NewInt(10), big.NewInt(6), nil)) // USDT has 6 decimals
-
-    toAddress := common.HexToAddress(order["receiveAddress"].(string))
-    
-    // Encode function call
-    data := append(transferSig, toAddress.Bytes()...)
-    data = append(data, common.LeftPadBytes(amount.Bytes(), 32)...)
-
-    // Get nonce
-    nonce, err := client.PendingNonceAt(context.Background(), crypto.PubkeyToAddress(privateKey.PublicKey))
-    if err != nil {
-        return err
-    }
-
-    // Create transaction
-    tx := &types.Transaction{
-        To:       &usdtAddress,
-        Value:    big.NewInt(0),
-        Gas:      100000,
-        GasPrice: big.NewInt(20000000000), // 20 gwei
-        Nonce:    nonce,
-        Data:     data,
-    }
-
-    // Sign transaction
-    signedTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(8453)), privateKey)
-    if err != nil {
-        return err
-    }
-
-    // Send transaction
-    err = client.SendTransaction(context.Background(), signedTx)
-    if err != nil {
-        return err
-    }
-
-    fmt.Printf("Transaction hash: %s\n", signedTx.Hash().Hex())
-    return nil
-}
+tx = usdt_contract.functions.transfer(
+    order['providerAccount']['receiveAddress'],
+    total_amount
+).build_transaction({ ... })
 ```
   </Tab>
 </Tabs>
 
+### Onramp — present virtual account to user
+
+```json
+{
+  "id": "550e8400-...",
+  "status": "initiated",
+  "providerAccount": {
+    "institution": "GTBINGLA",
+    "accountIdentifier": "0123456789",
+    "accountName": "Paycrest / John Doe",
+    "amountToTransfer": "50000",
+    "currency": "NGN",
+    "validUntil": "2026-03-01T10:05:00Z"
+  },
+  "source": { "type": "fiat", "currency": "NGN" },
+  "destination": { "type": "crypto", "currency": "USDT", "recipient": { ... } }
+}
+```
+
+Display the `providerAccount` details to your user. They must transfer exactly `amountToTransfer` in `currency` to `accountIdentifier` before `validUntil`.
+
+---
+
+## Step 5: Monitor Order Status
+
+Listen for webhooks or poll `GET /v2/sender/orders/:id`.
+
+### Webhook Events
+
+Configure your webhook URL in the [Sender Dashboard](https://app.paycrest.io). Webhooks use the `payment_order.<status>` format and include a `direction` field (`"offramp"` or `"onramp"`):
+
+```json
+{
+  "event": "payment_order.settled",
+  "webhookVersion": "2",
+  "data": {
+    "id": "550e8400-...",
+    "direction": "offramp",
+    "status": "settled",
+    "amount": "100",
+    "txHash": "0x...",
+    ...
+  }
+}
+```
+
+| Event | When it fires |
+|-------|--------------|
+| `payment_order.deposited` | Stablecoin deposit detected (offramp) |
+| `payment_order.pending` | Assigned to provider / fiat deposit confirmed (onramp) |
+| `payment_order.validated` | Fiat payout confirmed by provider |
+| `payment_order.settling` | Onchain release in progress |
+| `payment_order.settled` | Order complete |
+| `payment_order.refunding` | Refund in progress |
+| `payment_order.refunded` | Funds returned to sender |
+| `payment_order.expired` | No deposit received before `validUntil` |
+
 <Note>
-  The amount you send to the receive address should be the sum of `amount`, `senderFee`, and `transactionFee` as returned in the order response.
+  You can notify the user of a successful offramp at `payment_order.validated` — that's when the provider has confirmed fiat delivery. For onramp, use `payment_order.settled` — that's when stablecoins are confirmed on-chain.
 </Note>
 
-## Order Status Monitoring
+### Verify Webhook Signatures
 
-Your status can either be any of the following:
-
-* `payment_order.pending` - Order created, waiting for provider assignment
-* `payment_order.validated` - Funds have been sent to recipient's bank/mobile network (value transfer confirmed)
-* `payment_order.expired` - Order expired without completion
-* `payment_order.settled` - Order fully completed on blockchain
-* `payment_order.refunded` - Funds refunded to sender
-
-Once you deploy your server and get the endpoint, you can listen to payment order events by configuring the Webhook URL in your dashboard settings. We trigger various events based on the status of the payment order. Our webhook events are sent exponentially until 24 hours from when the first one is sent.
-
-If pending, your frontend would have to continue polling till it gets back a conclusive response - either `validated`, `expired`, or `refunded`.
-
-<Note>
-  You can tell your user the transaction was successful (or provide value) at the `validated` status, since this indicates funds have been sent to the recipient's bank/mobile network. The `settled` status occurs when the provider has received the stablecoin on-chain, which is separate from the sender-to-recipient money flow.
-</Note>
-
-### Webhook Implementation
+Verify the `X-Paycrest-Signature` header using HMAC-SHA256 with your API Secret:
 
 <Tabs>
   <Tab title="JavaScript">
 ```javascript
-// Server setup and webhook endpoint
-app.post("/webhook", async (req, res, next) => {
-  const signature = req.get("X-Paycrest-Signature");
-  if (!signature) return false;
+const crypto = require('crypto');
 
-  if (!verifyPaycrestSignature(req.body, signature, process.env.API_SECRET!)) {
-    return res.status(401).send("Invalid signature");
+function verifyWebhook(rawBody, signature, secret) {
+  const computed = crypto
+    .createHmac('sha256', secret)
+    .update(rawBody)
+    .digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(signature));
+}
+
+app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  const sig = req.headers['x-paycrest-signature'];
+  if (!verifyWebhook(req.body, sig, process.env.API_SECRET)) {
+    return res.status(401).send('Invalid signature');
   }
-  console.log("Webhook received:", req.body);
-  try {
-    const transaction = await prisma.transaction.create({
-      data: {
-        id: req.body.data.id,
-        status: req.body.event,
-      },
-    });
-    res.json({ data: transaction });
-  } catch (err) {
-    next(err);
-  }
-  res.status(200).send("Webhook received");
+  const { event, data } = JSON.parse(req.body);
+  // handle event...
+  res.sendStatus(200);
 });
-
-function verifyPaycrestSignature(requestBody, signatureHeader, secretKey) {
-  const calculatedSignature = calculateHmacSignature(requestBody, secretKey);
-  return signatureHeader === calculatedSignature;
-}
-
-function calculateHmacSignature(data, secretKey) {
-  const crypto = require('crypto');
-  const key = Buffer.from(secretKey);
-  const hash = crypto.createHmac("sha256", key);
-  hash.update(data);
-  return hash.digest("hex");
-}
 ```
   </Tab>
   <Tab title="Python">
 ```python
-from flask import Flask, request, jsonify
-import hmac
-import hashlib
-import json
-import os
+import hmac, hashlib
 
-app = Flask(__name__)
+def verify_webhook(raw_body: bytes, signature: str, secret: str) -> bool:
+    computed = hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(computed, signature)
 
-@app.route("/webhook", methods=["POST"])
+@app.route('/webhook', methods=['POST'])
 def webhook():
-    signature = request.headers.get("X-Paycrest-Signature")
-    if not signature:
-        return jsonify({"error": "No signature"}), 401
-
-    if not verify_paycrest_signature(request.data, signature, os.getenv("API_SECRET")):
-        return jsonify({"error": "Invalid signature"}), 401
-
-    print("Webhook received:", request.json)
-    try:
-        transaction = Transaction(
-            id=request.json["data"]["id"],
-            status=request.json["event"]
-        )
-        db.session.add(transaction)
-        db.session.commit()
-        return jsonify({"data": transaction.to_dict()})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-def verify_paycrest_signature(request_body, signature_header, secret_key):
-    calculated_signature = calculate_hmac_signature(request_body, secret_key)
-    return signature_header == calculated_signature
-
-def calculate_hmac_signature(data, secret_key):
-    key = secret_key.encode('utf-8')
-    hash_obj = hmac.new(key, data, hashlib.sha256)
-    return hash_obj.hexdigest()
+    sig = request.headers.get('X-Paycrest-Signature')
+    if not verify_webhook(request.data, sig, os.getenv('API_SECRET')):
+        return 'Invalid signature', 401
+    payload = request.json
+    # handle payload['event'] ...
+    return '', 200
 ```
   </Tab>
   <Tab title="Go">
 ```go
-package main
 import (
     "crypto/hmac"
     "crypto/sha256"
     "encoding/hex"
-    "encoding/json"
-    "fmt"
     "io"
     "net/http"
-    "os"
 )
-type WebhookPayload struct {
-    Event string `json:"event"`
-    Data  struct {
-        ID string `json:"id"`
-    } `json:"data"`
+
+func verifyWebhook(body []byte, signature, secret string) bool {
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write(body)
+    return hmac.Equal([]byte(hex.EncodeToString(mac.Sum(nil))), []byte(signature))
 }
+
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
-    signature := r.Header.Get("X-Paycrest-Signature")
-    if signature == "" {
-        http.Error(w, "No signature", http.StatusUnauthorized)
-        return
-    }
-    body, err := io.ReadAll(r.Body)
-    if err != nil {
-        http.Error(w, "Failed to read body", http.StatusBadRequest)
-        return
-    }
-    if !verifyPaycrestSignature(body, signature, os.Getenv("API_SECRET")) {
+    body, _ := io.ReadAll(r.Body)
+    sig := r.Header.Get("X-Paycrest-Signature")
+    if !verifyWebhook(body, sig, os.Getenv("API_SECRET")) {
         http.Error(w, "Invalid signature", http.StatusUnauthorized)
         return
     }
-    fmt.Println("Webhook received:", string(body))
-    var payload WebhookPayload
-    if err := json.Unmarshal(body, &payload); err != nil {
-        http.Error(w, "Invalid JSON", http.StatusBadRequest)
-        return
-    }
-    transaction := Transaction{
-        ID:     payload.Data.ID,
-        Status: payload.Event,
-    }
-    if err := db.Create(&transaction).Error; err != nil {
-        http.Error(w, "Database error", http.StatusInternalServerError)
-        return
-    }
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Webhook received"))
-}
-func verifyPaycrestSignature(requestBody []byte, signatureHeader, secretKey string) bool {
-    calculatedSignature := calculateHmacSignature(requestBody, secretKey)
-    return signatureHeader == calculatedSignature
-}
-func calculateHmacSignature(data []byte, secretKey string) string {
-    key := []byte(secretKey)
-    hash := hmac.New(sha256.New, key)
-    hash.Write(data)
-    return hex.EncodeToString(hash.Sum(nil))
+    // handle body...
 }
 ```
   </Tab>
 </Tabs>
 
-<Note>
-  Webhook URLs are configured through the Sender Dashboard settings, not via API. Visit your dashboard to set up your webhook endpoint URL.
-</Note>
+### Polling
 
-### Polling Implementation
-
-<Tabs>
-  <Tab title="JavaScript">
 ```javascript
-// Status polling endpoint
-app.get("/transactions/:id", async (req, res, next) => {
-  const { id } = req.params;
-  const transaction = await prisma.transaction.findUnique({
-    where: { id },
-  });
-  res.json({ data: transaction ? transaction : 'Non-existent transaction' });
-});
+async function getOrderStatus(orderId) {
+  const { data } = await fetch(`https://api.paycrest.io/v2/sender/orders/${orderId}`, {
+    headers: { "API-Key": "YOUR_API_KEY" }
+  }).then(r => r.json());
 
-// Poll for status updates
-async function checkOrderStatus(orderId) {
-  try {
-    const response = await fetch(`https://api.paycrest.io/v1/sender/orders/${orderId}`, {
-      headers: { "API-Key": "YOUR_API_KEY" }
-    });
-    const order = await response.json();
-    switch (order.status) {
-      case 'pending':
-        console.log('Order is pending provider assignment');
-        break;
-      case 'validated':
-        console.log('Funds have been sent to recipient\'s bank/mobile network (value transfer confirmed)');
-        await handleOrderValidated(order);
-        break;
-      case 'settled':
-        console.log('Order has been settled on blockchain');
-        await handleOrderSettled(order);
-        break;
-      case 'refunded':
-        console.log('Order was refunded to the sender');
-        await handleOrderRefunded(order);
-        break;
-      case 'expired':
-        console.log('Order expired without completion');
-        await handleOrderExpired(order);
-        break;
-    }
-    return order;
-  } catch (error) {
-    console.error('Error checking order status:', error);
-    throw error;
+  switch (data.status) {
+    case 'validated': // offramp: fiat delivered — safe to notify user
+    case 'settled':   // onramp: stablecoins delivered — or offramp fully on-chain
+    case 'refunded':  // funds returned
+    case 'expired':   // no deposit received
   }
+  return data;
 }
 ```
-  </Tab>
-  <Tab title="Python">
-```python
-# Status polling endpoint
-@app.route("/transactions/<id>", methods=["GET"])
-def get_transaction(id):
-    transaction = Transaction.query.filter_by(id=id).first()
-    if transaction:
-        return jsonify({"data": transaction.to_dict()})
-    else:
-        return jsonify({"data": "Non-existent transaction"})
 
-# Poll for status updates
-def check_order_status(order_id):
-    try:
-        response = requests.get(
-            f"https://api.paycrest.io/v1/sender/orders/{order_id}",
-            headers={"API-Key": "YOUR_API_KEY"}
-        )
-        order = response.json()
-        if order['status'] == 'pending':
-            print('Order is pending provider assignment')
-        elif order['status'] == 'validated':
-            print('Funds have been sent to recipient\'s bank/mobile network (value transfer confirmed)')
-            handle_order_validated(order)
-        elif order['status'] == 'settled':
-            print('Order has been settled on blockchain')
-            handle_order_settled(order)
-        elif order['status'] == 'refunded':
-            print('Order was refunded to the sender')
-            handle_order_refunded(order)
-        elif order['status'] == 'expired':
-            print('Order expired without completion')
-            handle_order_expired(order)
-        return order
-    except Exception as e:
-        print('Error checking order status:', str(e))
-        raise e
-```
-  </Tab>
-  <Tab title="Go">
-```go
-// Status polling endpoint
-func getTransactionHandler(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    id := vars["id"]
-    var transaction Transaction
-    result := db.Where("id = ?", id).First(&transaction)
-    if result.Error != nil {
-        json.NewEncoder(w).Encode(map[string]interface{}{
-            "data": "Non-existent transaction",
-        })
-        return
-    }
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "data": transaction,
-    })
-}
+---
 
-// Poll for status updates
-type OrderStatus struct {
-    Status             string `json:"status"`
-    CancellationReason string `json:"cancellationReason,omitempty"`
-}
-func checkOrderStatus(orderID string) (*OrderStatus, error) {
-    req, err := http.NewRequest("GET", fmt.Sprintf("https://api.paycrest.io/v1/sender/orders/%s", orderID), nil)
-    if err != nil {
-        return nil, err
-    }
-    req.Header.Set("API-Key", "YOUR_API_KEY")
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        return nil, err
-    }
-    var order OrderStatus
-    if err := json.Unmarshal(body, &order); err != nil {
-        return nil, err
-    }
-    switch order.Status {
-    case "pending":
-        fmt.Println("Order is pending provider assignment")
-    case "validated":
-        fmt.Println("Funds have been sent to recipient's bank/mobile network (value transfer confirmed)")
-        handleOrderValidated(order)
-    case "settled":
-        fmt.Println("Order has been settled on blockchain")
-        handleOrderSettled(order)
-    case "refunded":
-        fmt.Println("Order was refunded to the sender")
-        handleOrderRefunded(order)
-    case "expired":
-        fmt.Println("Order expired without completion")
-        handleOrderExpired(order)
-    }
-    return &order, nil
-}
-```
-  </Tab>
-</Tabs>
+## Sender Fees
 
-## Error Handling
-
-### Rate Fetching Errors
-
-When fetching rates, you may encounter these common errors:
-
-- **400 Bad Request**: Invalid token, amount, or currency combination
-- **404 Not Found**: No provider available for the specified parameters
-- **Network Errors**: Connection issues or timeouts
-
-<Tabs>
-  <Tab title="JavaScript">
-```javascript
-async function fetchRateWithErrorHandling(token, amount, currency, network) {
-  try {
-    const response = await fetch(
-      `https://api.paycrest.io/v1/rates/${token}/${amount}/${currency}?network=${network}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      }
-    );
-    
-    if (!response.ok) {
-      if (response.status === 400) {
-        const errorData = await response.json();
-        throw new Error(`Rate validation failed: ${errorData.message}`);
-      } else if (response.status === 404) {
-        throw new Error('No provider available for this token/amount/currency combination');
-      } else {
-        throw new Error(`Rate fetch failed: ${response.statusText}`);
-      }
-    }
-    
-    const rateData = await response.json();
-    return rateData.data;
-  } catch (error) {
-    console.error('Error fetching rate:', error);
-    throw error;
-  }
-}
-```
-  </Tab>
-  <Tab title="Python">
-```python
-def fetch_rate_with_error_handling(token, amount, currency, network):
-    try:
-        response = requests.get(
-            f"https://api.paycrest.io/v1/rates/{token}/{amount}/{currency}",
-            params={"network": network},
-            headers={"Content-Type": "application/json"}
-        )
-        
-        if not response.ok:
-            if response.status_code == 400:
-                error_data = response.json()
-                raise Exception(f"Rate validation failed: {error_data['message']}")
-            elif response.status_code == 404:
-                raise Exception("No provider available for this token/amount/currency combination")
-            else:
-                raise Exception(f"Rate fetch failed: {response.text}")
-        
-        rate_data = response.json()
-        return rate_data["data"]
-    except Exception as error:
-        print(f"Error fetching rate: {error}")
-        raise error
-```
-  </Tab>
-  <Tab title="Go">
-```go
-func fetchRateWithErrorHandling(token, amount, currency, network string) (string, error) {
-    url := fmt.Sprintf("https://api.paycrest.io/v1/rates/%s/%s/%s?network=%s", 
-        token, amount, currency, network)
-    
-    resp, err := http.Get(url)
-    if err != nil {
-        return "", fmt.Errorf("network error: %v", err)
-    }
-    defer resp.Body.Close()
-    
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        return "", fmt.Errorf("failed to read response: %v", err)
-    }
-    
-    if resp.StatusCode != http.StatusOK {
-        if resp.StatusCode == 400 {
-            return "", fmt.Errorf("rate validation failed: %s", string(body))
-        } else if resp.StatusCode == 404 {
-            return "", fmt.Errorf("no provider available for this token/amount/currency combination")
-        } else {
-            return "", fmt.Errorf("rate fetch failed: %s", resp.Status)
-        }
-    }
-    
-    var rateResponse RateResponse
-    if err := json.Unmarshal(body, &rateResponse); err != nil {
-        return "", fmt.Errorf("failed to parse response: %v", err)
-    }
-    
-    return rateResponse.Data, nil
-}
-```
-  </Tab>
-</Tabs>
-
-### Order Creation Error Handling
-
-When creating payment orders, you may encounter these common errors:
-
-- **400 Bad Request**: Invalid payload, missing required fields, or validation errors
-- **401 Unauthorized**: Invalid or missing API key
-- **429 Too Many Requests**: Rate limit exceeded
-- **500 Internal Server Error**: Server-side issues
+You can optionally charge your users a fee on each order. It's settled atomically onchain — no off-chain billing required. Configure your fee in [Sender Dashboard](https://app.paycrest.io) settings (required). You can override it per-request by passing `senderFeePercent` in the order payload.
 
 ```json
 {
-  "status": "error",
-  "message": "Failed to validate payload",
-  "data": {
-    "field": "Rate",
-    "message": "Provided rate 1500.00 is not achievable. Available rate is 1500.50"
-  }
+  "amount": "100",
+  "senderFeePercent": "0.5",
+  ...
 }
 ```
 
-### API Error Handling
+The total the user sends to the `providerAccount` is `amount + senderFee + transactionFee`, all returned in the create response.
 
-<Tabs>
-  <Tab title="JavaScript">
-```javascript
-async function createPaymentOrder(orderData) {
-  try {
-    const response = await fetch("https://api.paycrest.io/v1/sender/orders", {
-      method: "POST",
-      headers: {
-        "API-Key": "YOUR_API_KEY",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(orderData)
-    });
-    
-    if (!response.ok) {
-      if (response.status === 400) {
-        // Validation error
-        const validationErrors = await response.json();
-        throw new Error(`Validation failed: ${JSON.stringify(validationErrors)}`);
-      } else if (response.status === 401) {
-        // Authentication error
-        throw new Error('Invalid API key');
-      } else if (response.status === 429) {
-        // Rate limit exceeded
-        throw new Error('Rate limit exceeded. Please try again later.');
-      } else {
-        // Other errors
-        throw new Error(`API error: ${response.statusText}`);
-      }
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating payment order:', error);
-    throw error;
-  }
-}
-```
-  </Tab>
-  <Tab title="Python">
-```python
-import requests
-
-def create_payment_order(order_data):
-    try:
-        response = requests.post(
-            "https://api.paycrest.io/v1/sender/orders",
-            headers={
-                "API-Key": "YOUR_API_KEY",
-                "Content-Type": "application/json"
-            },
-            json=order_data
-        )
-        
-        if not response.ok:
-            if response.status_code == 400:
-                # Validation error
-                validation_errors = response.json()
-                raise Exception(f"Validation failed: {validation_errors}")
-            elif response.status_code == 401:
-                # Authentication error
-                raise Exception("Invalid API key")
-            elif response.status_code == 429:
-                # Rate limit exceeded
-                raise Exception("Rate limit exceeded. Please try again later.")
-            else:
-                # Other errors
-                raise Exception(f"API error: {response.text}")
-        
-        return response.json()
-    except Exception as error:
-        print(f"Error creating payment order: {error}")
-        raise error
-```
-  </Tab>
-  <Tab title="Go">
-```go
-import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "io/ioutil"
-    "net/http"
-)
-
-func createPaymentOrder(orderData map[string]interface{}) (map[string]interface{}, error) {
-    jsonData, _ := json.Marshal(orderData)
-    req, _ := http.NewRequest("POST", "https://api.paycrest.io/v1/sender/orders", bytes.NewBuffer(jsonData))
-    req.Header.Set("API-Key", "YOUR_API_KEY")
-    req.Header.Set("Content-Type", "application/json")
-    
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
-    
-    if resp.StatusCode != http.StatusOK {
-        body, _ := ioutil.ReadAll(resp.Body)
-        
-        switch resp.StatusCode {
-        case 400:
-            // Validation error
-            return nil, fmt.Errorf("validation failed: %s", string(body))
-        case 401:
-            // Authentication error
-            return nil, fmt.Errorf("invalid API key")
-        case 429:
-            // Rate limit exceeded
-            return nil, fmt.Errorf("rate limit exceeded. Please try again later.")
-        default:
-            // Other errors
-            return nil, fmt.Errorf("API error: %s", resp.Status)
-        }
-    }
-    
-    var result map[string]interface{}
-    json.NewDecoder(resp.Body).Decode(&result)
-    return result, nil
-}
-```
-  </Tab>
-  <Tab title="cURL">
-```bash
-# Error handling with cURL
-response=$(curl -s -w "%{http_code}" -X POST "https://api.paycrest.io/v1/sender/orders" \
-  -H "API-Key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": 100,
-    "token": "USDT",
-    "network": "base",
-    "recipient": {
-      "institution": "GTB",
-      "accountIdentifier": "1234567890",
-      "accountName": "John Doe",
-      "currency": "NGN"
-    }
-  }')
-
-http_code="${response: -3}"
-response_body="${response%???}"
-
-if [ "$http_code" = "400" ]; then
-    echo "Validation failed: $response_body"
-elif [ "$http_code" = "401" ]; then
-    echo "Invalid API key"
-elif [ "$http_code" = "429" ]; then
-    echo "Rate limit exceeded"
-else
-    echo "API error: $http_code"
-fi
-```
-  </Tab>
-</Tabs>
-
-### Retry Logic
-
-<Tabs>
-  <Tab title="JavaScript">
-```javascript
-async function createOrderWithRetry(orderData, maxRetries = 3) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await createPaymentOrder(orderData);
-    } catch (error) {
-      if (attempt === maxRetries) {
-        throw error;
-      }
-      
-      // Wait before retrying (exponential backoff)
-      const delay = Math.pow(2, attempt) * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-}
-```
-  </Tab>
-  <Tab title="Python">
-```python
-import asyncio
-import time
-
-async def create_order_with_retry(order_data, max_retries=3):
-    for attempt in range(1, max_retries + 1):
-        try:
-            return create_payment_order(order_data)
-        except Exception as error:
-            if attempt == max_retries:
-                raise error
-            
-            # Wait before retrying (exponential backoff)
-            delay = 2 ** attempt
-            await asyncio.sleep(delay)
-```
-
-```python
-# Synchronous version
-def create_order_with_retry_sync(order_data, max_retries=3):
-    for attempt in range(1, max_retries + 1):
-        try:
-            return create_payment_order(order_data)
-        except Exception as error:
-            if attempt == max_retries:
-                raise error
-            
-            # Wait before retrying (exponential backoff)
-            delay = 2 ** attempt
-            time.sleep(delay)
-```
-  </Tab>
-  <Tab title="Go">
-```go
-import (
-    "fmt"
-    "time"
-)
-
-func createOrderWithRetry(orderData map[string]interface{}, maxRetries int) (map[string]interface{}, error) {
-    for attempt := 1; attempt <= maxRetries; attempt++ {
-        result, err := createPaymentOrder(orderData)
-        if err == nil {
-            return result, nil
-        }
-        
-        if attempt == maxRetries {
-            return nil, err
-        }
-        
-        // Wait before retrying (exponential backoff)
-        delay := time.Duration(1<<uint(attempt)) * time.Second
-        time.Sleep(delay)
-    }
-    
-    return nil, fmt.Errorf("max retries exceeded")
-}
-```
-  </Tab>
-  <Tab title="cURL">
-```bash
-#!/bin/bash
-
-create_order_with_retry() {
-    local order_data="$1"
-    local max_retries=3
-    
-    for ((attempt=1; attempt<=max_retries; attempt++)); do
-        response=$(curl -s -w "%{http_code}" -X POST "https://api.paycrest.io/v1/sender/orders" \
-          -H "API-Key: YOUR_API_KEY" \
-          -H "Content-Type: application/json" \
-          -d "$order_data")
-        
-        http_code="${response: -3}"
-        
-        if [ "$http_code" = "200" ]; then
-            echo "${response%???}"
-            return 0
-        fi
-        
-        if [ $attempt -eq $max_retries ]; then
-            echo "Failed after $max_retries attempts"
-            return 1
-        fi
-        
-        # Wait before retrying (exponential backoff)
-        delay=$((2 ** attempt))
-        sleep $delay
-    done
-}
-
-# Usage
-order_data='{
-  "amount": 100,
-  "token": "USDT",
-  "network": "base",
-  "recipient": {
-    "institution": "GTB",
-    "accountIdentifier": "1234567890",
-    "accountName": "John Doe",
-    "currency": "NGN"
-  }
-}'
-
-create_order_with_retry "$order_data"
-```
-  </Tab>
-</Tabs>
-
-## Production Considerations
-
-<Tabs>
-  <Tab title="JavaScript">
-```javascript
-// Use environment variables for sensitive data
-const config = {
-  apiKey: process.env.PAYCREST_API_KEY,
-  webhookSecret: process.env.PAYCREST_WEBHOOK_SECRET
-};
-
-// Validate webhook signatures
-app.post('/webhooks/paycrest', async (req, res) => {
-  const signature = req.headers['x-paycrest-signature'];
-  
-  if (!validateWebhookSignature(req.body, signature, config.webhookSecret)) {
-    return res.status(401).json({ error: 'Invalid signature' });
-  }
-  
-  // Process webhook
-  // ...
-});
-```
-  </Tab>
-  <Tab title="Python">
-```python
-import os
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-# Use environment variables for sensitive data
-config = {
-    'api_key': os.environ.get('PAYCREST_API_KEY'),
-    'webhook_secret': os.environ.get('PAYCREST_WEBHOOK_SECRET')
-}
-
-# Validate webhook signatures
-@app.route('/webhooks/paycrest', methods=['POST'])
-def webhook_handler():
-    signature = request.headers.get('x-paycrest-signature')
-    
-    if not validate_webhook_signature(request.json, signature, config['webhook_secret']):
-        return jsonify({'error': 'Invalid signature'}), 401
-    
-    # Process webhook
-    # ...
-    return jsonify({'status': 'success'}), 200
-```
-  </Tab>
-  <Tab title="Go">
-```go
-package main
-
-import (
-    "net/http"
-    "os"
-)
-
-// Use environment variables for sensitive data
-type Config struct {
-    APIKey       string
-    WebhookSecret string
-}
-
-func getConfig() Config {
-    return Config{
-        APIKey:       os.Getenv("PAYCREST_API_KEY"),
-        WebhookSecret: os.Getenv("PAYCREST_WEBHOOK_SECRET"),
-    }
-}
-
-// Validate webhook signatures
-func webhookHandler(w http.ResponseWriter, r *http.Request) {
-    signature := r.Header.Get("x-paycrest-signature")
-    
-    if !validateWebhookSignature(r.Body, signature, config.WebhookSecret) {
-        http.Error(w, "Invalid signature", http.StatusUnauthorized)
-        return
-    }
-    
-    // Process webhook
-    // ...
-    w.WriteHeader(http.StatusOK)
-}
-```
-  </Tab>
-  <Tab title="cURL">
-```bash
-# Set environment variables
-export PAYCREST_API_KEY="your_api_key_here"
-export PAYCREST_WEBHOOK_SECRET="your_webhook_secret_here"
-
-# Use environment variables in requests
-curl -X POST "https://api.paycrest.io/v1/sender/orders" \
-  -H "API-Key: $PAYCREST_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": 100,
-    "token": "USDT",
-    "network": "base",
-    "recipient": {
-      "institution": "GTB",
-      "accountIdentifier": "1234567890",
-      "accountName": "John Doe",
-      "currency": "NGN"
-    }
-  }'
-```
-  </Tab>
-</Tabs>
+---
 
 ## Testing
 
-<Tabs>
-  <Tab title="JavaScript">
-```javascript
-// Using Jest for testing
-describe('Paycrest Sender API Integration', () => {
-  test('should create payment order successfully', async () => {
-    const orderData = {
-      amount: 100,
-      token: 'USDT',
-      network: 'base',
-      rate: 1500.50,
-      recipient: {
-        institution: 'GTB',
-        accountIdentifier: '1234567890',
-        accountName: 'Test User',
-        currency: 'NGN'
-      }
-    };
-    
-    const order = await createPaymentOrder(orderData);
-    
-    expect(order.id).toBeDefined();
-    expect(order.receiveAddress).toBeDefined();
-    expect(order.status).toBe('pending');
-  });
-  
-  test('should handle API errors gracefully', async () => {
-    const invalidOrderData = {
-      amount: -100, // Invalid amount
-      token: 'USDT',
-      network: 'base',
-      rate: 1500.50
-    };
-    
-    await expect(createPaymentOrder(invalidOrderData))
-      .rejects
-      .toThrow('Validation failed');
-  });
-});
-```
-  </Tab>
-  <Tab title="Python">
-```python
-import unittest
-from unittest.mock import patch
+Paycrest runs on mainnet only. Test with the minimum order size: **$0.50 on any supported chain**. Use small amounts until you've verified your integration end-to-end.
 
-# Using unittest for testing
-class TestPaycrestSenderAPI(unittest.TestCase):
-    
-    def test_create_payment_order_successfully(self):
-        order_data = {
-            'amount': 100,
-            'token': 'USDT',
-            'network': 'base',
-            'rate': 1500.50,
-            'recipient': {
-                'institution': 'GTB',
-                'accountIdentifier': '1234567890',
-                'accountName': 'Test User',
-                'currency': 'NGN'
-            }
-        }
-        
-        with patch('requests.post') as mock_post:
-            mock_post.return_value.status_code = 200
-            mock_post.return_value.json.return_value = {
-                'id': 'test-order-id',
-                'receiveAddress': '0x123...',
-                'status': 'pending'
-            }
-            
-            order = create_payment_order(order_data)
-            
-            self.assertIsNotNone(order['id'])
-            self.assertIsNotNone(order['receiveAddress'])
-            self.assertEqual(order['status'], 'pending')
-    
-    def test_handle_api_errors_gracefully(self):
-        invalid_order_data = {
-            'amount': -100,  # Invalid amount
-            'token': 'USDT',
-            'network': 'base',
-            'rate': 1500.50
-        }
-        
-        with patch('requests.post') as mock_post:
-            mock_post.return_value.status_code = 400
-            mock_post.return_value.json.return_value = {'error': 'Validation failed'}
-            
-            with self.assertRaises(Exception) as context:
-                create_payment_order(invalid_order_data)
-            
-            self.assertIn('Validation failed', str(context.exception))
-```
-  </Tab>
-  <Tab title="Go">
-```go
-package main
+---
 
-import (
-    "net/http"
-    "net/http/httptest"
-    "testing"
-)
+## v1 Legacy API
 
-// Using Go's testing package
-func TestCreatePaymentOrder(t *testing.T) {
-    orderData := map[string]interface{}{
-        "amount": 100,
-        "token":  "USDT",
-        "network": "base",
-        "rate":   1500.50,
-        "recipient": map[string]interface{}{
-            "institution":       "GTB",
-            "accountIdentifier": "1234567890",
-            "accountName":       "Test User",
-            "currency":          "NGN",
-        },
-    }
-    
-    // Create a test server
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.WriteHeader(http.StatusOK)
-        w.Write([]byte(`{
-            "id": "test-order-id",
-            "receiveAddress": "0x123...",
-            "status": "pending"
-        }`))
-    }))
-    defer server.Close()
-    
-    // Test successful order creation
-    result, err := createPaymentOrder(orderData)
-    if err != nil {
-        t.Errorf("Expected no error, got %v", err)
-    }
-    
-    if result["id"] == nil {
-        t.Error("Expected order ID to be defined")
-    }
-    
-    if result["receiveAddress"] == nil {
-        t.Error("Expected receive address to be defined")
-    }
-    
-    if result["status"] != "pending" {
-        t.Errorf("Expected status 'pending', got %v", result["status"])
-    }
-}
+The v1 API is fully supported for existing integrations. It supports **offramp only** and uses a flat request schema.
 
-func TestHandleAPIErrors(t *testing.T) {
-    invalidOrderData := map[string]interface{}{
-        "amount": -100, // Invalid amount
-        "token":  "USDT",
-        "network": "base",
-        "rate":   1500.50,
-    }
-    
-    // Create a test server that returns an error
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.WriteHeader(http.StatusBadRequest)
-        w.Write([]byte(`{"error": "Validation failed"}`))
-    }))
-    defer server.Close()
-    
-    _, err := createPaymentOrder(invalidOrderData)
-    if err == nil {
-        t.Error("Expected error for invalid order data")
-    }
+<AccordionGroup>
+  <Accordion title="v1 Offramp — Create Order">
+
+`POST /v1/sender/orders`
+
+```json
+{
+  "amount": 100,
+  "token": "USDT",
+  "network": "base",
+  "rate": "1500.50",
+  "recipient": {
+    "institution": "GTBINGLA",
+    "accountIdentifier": "1234567890",
+    "accountName": "John Doe",
+    "currency": "NGN",
+    "memo": "Payment"
+  },
+  "reference": "order-001",
+  "returnAddress": "0xYourWalletAddress"
 }
 ```
-  </Tab>
-</Tabs>
 
-## Deployment Checklist
+The response includes `receiveAddress` (string) and `validUntil`. Send tokens to `receiveAddress`.
 
-Before going live, ensure you have:
+  </Accordion>
+  <Accordion title="v1 vs v2 Differences">
 
-- [ ] **KYC verification completed**
-- [ ] **API credentials secured**
-- [ ] **Webhook endpoints configured and tested**
-- [ ] **Error handling implemented**
-- [ ] **Monitoring and logging set up**
-- [ ] **Rate limiting configured**
-- [ ] **Security measures implemented**
-- [ ] **Testing completed with small amounts**
-- [ ] **Documentation updated**
+| Feature | v1 | v2 |
+|---------|----|----|
+| Offramp | ✅ | ✅ |
+| Onramp | ❌ | ✅ |
+| Schema | Flat: `token`, `network`, `recipient` | Polymorphic: `source`, `destination` with `type` |
+| `refundAddress` | `returnAddress` (top-level) | `source.refundAddress` |
+| Amount direction | Always crypto | `amountIn: "fiat"` or `"crypto"` |
+| Sender fee | Fixed via dashboard | Dashboard (fixed) **or** `senderFeePercent` on request |
+| Numeric types | Number | String |
+| Webhook version | `"1"` | `"2"` |
 
-<Note>
-  This backend structure can be done in any custom way depending on your app as long as the webhook validates and stores the correct payload sent to it.
-</Note>
+  </Accordion>
+</AccordionGroup>
 
-<Callout type="warning">
-  Keep your API key secure and never share it publicly. Consider using environment variables for production deployments.
-</Callout>
+---
 
-Choose this method if you want a simple, offchain integration for your platform or business. 
+## Related
+
+- [Transaction Lifecycle](/concepts/transaction-lifecycle) — order statuses, webhook events, expired vs refunded
+- [Supported Stablecoins](/resources/supported-stablecoins) — tokens, networks, contract addresses
+- [Supported Currencies](/resources/supported-currencies) — active fiat corridors
+- [API Reference — Sender](/api-reference/sender/initiate-payment-order-v2) — full endpoint spec

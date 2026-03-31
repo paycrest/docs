@@ -6,14 +6,17 @@ description: "API Reference for Paycrest. Explore endpoints, request/response fo
 Welcome to the Paycrest API Reference. Here you'll find detailed documentation for all available endpoints, including request/response formats, authentication, and integration tips.
 
 - For a quick start, see the [Quickstart](/quickstart) guide.
-- For OpenAPI playground, see the interactive API explorer below (if available).
+- For the interactive API explorer, use the individual endpoint pages in the sidebar.
 
 The Paycrest Aggregator API provides a comprehensive interface for interacting with the Paycrest protocol. This API enables senders to create payment orders, providers to fulfill orders, and general access to protocol information.
 
 ## Base URL
 
 ```bash
-# Production
+# Production (v2 — recommended for new integrations)
+https://api.paycrest.io/v2
+
+# Legacy (v1 — fully supported, no breaking changes planned)
 https://api.paycrest.io/v1
 ```
 
@@ -28,7 +31,7 @@ API-Key: YOUR_API_KEY
 ### Getting Your API Key
 
 1. **Register** at [app.paycrest.io](https://app.paycrest.io)
-2. **Complete KYC verification** (required for compliance)
+2. **Complete KYB verification** (required for compliance)
 3. **Access your API key** in your dashboard
 
 <Note>
@@ -43,19 +46,25 @@ The Paycrest API is organized into three main categories:
 
 For entities that create payment orders:
 
-- **`POST /sender/orders`** - Create a new payment order
+- **`POST /sender/orders`** - Create a new payment order (offramp or onramp)
 - **`GET /sender/orders`** - List payment orders with filtering
-- **`GET /sender/orders/{id}`** - Get specific payment order details
+- **`GET /sender/orders/{id}`** - Get a specific payment order
 - **`GET /sender/stats`** - Get sender statistics
 
 ### Provider Endpoints
 
 For liquidity providers that fulfill orders:
 
-- **`GET /provider/orders`** - List available orders for fulfillment
+- **`GET /provider/orders`** - List orders available for fulfillment
+- **`GET /provider/orders/{id}`** - Get a specific order
+- **`POST /provider/orders/{id}/accept`** - Accept an order
+- **`POST /provider/orders/{id}/decline`** - Decline an order
+- **`POST /provider/orders/{id}/fulfill`** - Mark an order as fulfilled
+- **`POST /provider/orders/{id}/cancel`** - Cancel an order
+- **`POST /provider/balances`** - Update provider liquidity balances
 - **`GET /provider/rates/{token}/{fiat}`** - Get market rates
 - **`GET /provider/stats`** - Get provider statistics
-- **`GET /provider/node-info`** - Get node information
+- **`GET /provider/node-info`** - Get provision node information
 
 ### General Endpoints
 
@@ -63,12 +72,12 @@ For protocol information and utilities:
 
 - **`GET /currencies`** - List supported fiat currencies
 - **`GET /institutions/{currency_code}`** - List supported institutions
-- **`GET /tokens`** - List supported tokens
-- **`GET /rates/{token}/{amount}/{fiat}`** - Get token rates
+- **`GET /tokens`** - List supported tokens and contract addresses
+- **`GET /rates/{token}/{amount}/{fiat}`** - Get exchange rate for a token/fiat pair
 - **`GET /pubkey`** - Get aggregator public key
-- **`POST /verify-account`** - Verify bank account details
-- **`GET /orders/{chain_id}/{id}`** - Get lock payment order status
-- **`GET /reindex/{network}/{tx_hash}`** - Reindex transactions
+- **`POST /verify-account`** - Verify bank account details before creating an order
+- **`GET /orders/{chain_id}/{id}`** - Get order status by onchain Gateway ID
+- **`GET /reindex/{network}/{tx_hash_or_address}`** - Reindex a transaction or address
 
 ## Request Format
 
@@ -85,23 +94,28 @@ API-Key: YOUR_API_KEY
   <Tab title="cURL">
 
 ```bash
-curl -X POST "https://api.paycrest.io/v1/sender/orders" \
+curl -X POST "https://api.paycrest.io/v2/sender/orders" \
   -H "Content-Type: application/json" \
   -H "API-Key: YOUR_API_KEY" \
   -d '{
-    "amount": 100,
-    "token": "USDT",
-    "network": "base",
-    "rate": 1.0,
-    "recipient": {
-      "institution": "GTB",
-      "accountIdentifier": "1234567890",
-      "accountName": "John Doe",
-      "currency": "NGN",
-      "memo": "Salary payment for January 2024"
+    "amount": "100",
+    "source": {
+      "type": "crypto",
+      "currency": "USDT",
+      "network": "base",
+      "refundAddress": "0xYourWalletAddress"
     },
-    "reference": "payment-123",
-    "returnAddress": "0x1234567890123456789012345678901234567890"
+    "destination": {
+      "type": "fiat",
+      "currency": "NGN",
+      "recipient": {
+        "institution": "GTBINGLA",
+        "accountIdentifier": "1234567890",
+        "accountName": "John Doe",
+        "memo": "Salary payment"
+      }
+    },
+    "reference": "payment-123"
   }'
 ```
 
@@ -112,22 +126,27 @@ curl -X POST "https://api.paycrest.io/v1/sender/orders" \
 const axios = require('axios');
 
 const API_KEY = 'YOUR_API_KEY';
-const BASE_URL = 'https://api.paycrest.io/v1';
+const BASE_URL = 'https://api.paycrest.io/v2';
 
 const orderData = {
-  amount: 100,
-  token: 'USDT',
-  network: 'base',
-  rate: 1.0,
-  recipient: {
-    institution: 'GTB',
-    accountIdentifier: '1234567890',
-    accountName: 'John Doe',
-    currency: 'NGN',
-    memo: 'Salary payment for January 2024'
+  amount: '100',
+  source: {
+    type: 'crypto',
+    currency: 'USDT',
+    network: 'base',
+    refundAddress: '0xYourWalletAddress'
   },
-  reference: 'payment-123',
-  returnAddress: '0x1234567890123456789012345678901234567890'
+  destination: {
+    type: 'fiat',
+    currency: 'NGN',
+    recipient: {
+      institution: 'GTBINGLA',
+      accountIdentifier: '1234567890',
+      accountName: 'John Doe',
+      memo: 'Salary payment'
+    }
+  },
+  reference: 'payment-123'
 };
 
 const response = await axios.post(`${BASE_URL}/sender/orders`, orderData, {
@@ -147,22 +166,27 @@ console.log(response.data);
 import requests
 
 API_KEY = 'YOUR_API_KEY'
-BASE_URL = 'https://api.paycrest.io/v1'
+BASE_URL = 'https://api.paycrest.io/v2'
 
 order_data = {
-    "amount": 100,
-    "token": "USDT",
-    "network": "base",
-    "rate": 1.0,
-    "recipient": {
-        "institution": "GTB",
-        "accountIdentifier": "1234567890",
-        "accountName": "John Doe",
-        "currency": "NGN",
-        "memo": "Salary payment for January 2024"
+    "amount": "100",
+    "source": {
+        "type": "crypto",
+        "currency": "USDT",
+        "network": "base",
+        "refundAddress": "0xYourWalletAddress"
     },
-    "reference": "payment-123",
-    "returnAddress": "0x1234567890123456789012345678901234567890"
+    "destination": {
+        "type": "fiat",
+        "currency": "NGN",
+        "recipient": {
+            "institution": "GTBINGLA",
+            "accountIdentifier": "1234567890",
+            "accountName": "John Doe",
+            "memo": "Salary payment"
+        }
+    },
+    "reference": "payment-123"
 }
 
 response = requests.post(
@@ -187,29 +211,34 @@ import (
     "bytes"
     "encoding/json"
     "fmt"
-    "io/ioutil"
+    "io"
     "net/http"
 )
 
 func main() {
     orderData := map[string]interface{}{
-        "amount": 100,
-        "token":  "USDT",
-        "network": "base",
-        "rate":   1.0,
-        "recipient": map[string]interface{}{
-            "institution":       "GTB",
-            "accountIdentifier": "1234567890",
-            "accountName":       "John Doe",
-            "currency":          "NGN",
-            "memo":             "Salary payment for January 2024",
+        "amount": "100",
+        "source": map[string]interface{}{
+            "type":          "crypto",
+            "currency":      "USDT",
+            "network":       "base",
+            "refundAddress": "0xYourWalletAddress",
         },
-        "reference":     "payment-123",
-        "returnAddress": "0x1234567890123456789012345678901234567890",
+        "destination": map[string]interface{}{
+            "type":     "fiat",
+            "currency": "NGN",
+            "recipient": map[string]interface{}{
+                "institution":       "GTBINGLA",
+                "accountIdentifier": "1234567890",
+                "accountName":       "John Doe",
+                "memo":              "Salary payment",
+            },
+        },
+        "reference": "payment-123",
     }
 
     jsonData, _ := json.Marshal(orderData)
-    req, _ := http.NewRequest("POST", "https://api.paycrest.io/v1/sender/orders", bytes.NewBuffer(jsonData))
+    req, _ := http.NewRequest("POST", "https://api.paycrest.io/v2/sender/orders", bytes.NewBuffer(jsonData))
     req.Header.Set("API-Key", "YOUR_API_KEY")
     req.Header.Set("Content-Type", "application/json")
 
@@ -217,7 +246,7 @@ func main() {
     resp, _ := client.Do(req)
     defer resp.Body.Close()
 
-    body, _ := ioutil.ReadAll(resp.Body)
+    body, _ := io.ReadAll(resp.Body)
     fmt.Println(string(body))
 }
 ```
@@ -258,10 +287,7 @@ Error responses include detailed information:
 
 ## Rate Limiting
 
-API requests are rate-limited to ensure fair usage:
-
-- **Unauthenticated requests**: 20 requests per second
-- **Authenticated requests**: 500 requests per second
+API requests are rate-limited to ensure fair usage. Authenticated requests have a significantly higher limit than unauthenticated ones. If you hit the limit, the API returns `429 Too Many Requests` — back off and retry after a short delay.
 
 ## Pagination
 
@@ -276,7 +302,7 @@ List endpoints support pagination with the following parameters:
   <Tab title="cURL">
 
 ```bash
-curl -X GET "https://api.paycrest.io/v1/sender/orders?page=2&pageSize=10" \
+curl -X GET "https://api.paycrest.io/v2/sender/orders?page=2&pageSize=10" \
   -H "API-Key: YOUR_API_KEY"
 ```
 
@@ -287,7 +313,7 @@ curl -X GET "https://api.paycrest.io/v1/sender/orders?page=2&pageSize=10" \
 const axios = require('axios');
 
 const API_KEY = 'YOUR_API_KEY';
-const BASE_URL = 'https://api.paycrest.io/v1';
+const BASE_URL = 'https://api.paycrest.io/v2';
 
 async function getOrders(page = 2, pageSize = 10) {
   const response = await axios.get(`${BASE_URL}/sender/orders`, {
@@ -306,7 +332,7 @@ getOrders();
 import requests
 
 API_KEY = 'YOUR_API_KEY'
-BASE_URL = 'https://api.paycrest.io/v1'
+BASE_URL = 'https://api.paycrest.io/v2'
 
 response = requests.get(
     f'{BASE_URL}/sender/orders',
@@ -324,13 +350,13 @@ package main
 
 import (
     "fmt"
-    "io/ioutil"
+    "io"
     "net/http"
     "net/url"
 )
 
 func main() {
-    baseURL := "https://api.paycrest.io/v1/sender/orders"
+    baseURL := "https://api.paycrest.io/v2/sender/orders"
     params := url.Values{}
     params.Add("page", "2")
     params.Add("pageSize", "10")
@@ -342,7 +368,7 @@ func main() {
     resp, _ := client.Do(req)
     defer resp.Body.Close()
     
-    body, _ := ioutil.ReadAll(resp.Body)
+    body, _ := io.ReadAll(resp.Body)
     fmt.Println(string(body))
 }
 ```
@@ -371,25 +397,57 @@ Set up webhooks to receive real-time updates:
 
 ### Webhook Events
 
-- **`order.initiated`** - Order initiated via API (before Gateway creation)
-- **`order.pending`** - Order awaiting provider assignment
-- **`order.validated`** - Order validated and ready for settlement
-- **`order.settled`** - Order settled on blockchain
-- **`order.refunded`** - Order refunded to sender
-- **`order.expired`** - Order expired because no transfer was made to the receive address within the time limit
+- **`payment_order.deposited`** - Deposit detected on the receive address
+- **`payment_order.pending`** - Order matched and awaiting provider fulfillment
+- **`payment_order.validated`** - Provider confirmed fiat delivery
+- **`payment_order.settling`** - Settlement transaction broadcast on-chain
+- **`payment_order.settled`** - Settlement confirmed on-chain
+- **`payment_order.refunding`** - Refund transaction initiated
+- **`payment_order.refunded`** - Deposit refunded to sender (fulfillment failed)
+- **`payment_order.expired`** - Order expired with no deposit received
 
 ### Webhook Payload
 
+Webhook signatures use HMAC-SHA256. Verify against the raw request body, not re-serialized JSON.
+
 ```json
 {
-  "event": "order.settled",
-  "orderId": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "settled",
-  "timestamp": "2024-01-15T10:30:00Z",
+  "event": "payment_order.settled",
+  "webhookVersion": "2",
   "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "direction": "offramp",
+    "status": "settled",
+    "amount": "100",
+    "amountInUsd": "100",
+    "amountPaid": "100",
+    "amountReturned": "0",
+    "percentSettled": "100",
+    "senderFee": "1",
+    "transactionFee": "0.01",
+    "rate": "1580.5",
+    "gatewayId": "0xabc...",
+    "senderId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "source": {
+      "type": "crypto",
+      "currency": "USDT",
+      "network": "base",
+      "refundAddress": "0xSenderWallet..."
+    },
+    "destination": {
+      "type": "fiat",
+      "currency": "NGN",
+      "recipient": {
+        "institution": "ACCESS",
+        "accountIdentifier": "0123456789",
+        "accountName": "Jane Doe",
+        "memo": ""
+      }
+    },
+    "fromAddress": "0xReceiverAddress...",
+    "reference": "ref-001",
     "txHash": "0x1234567890abcdef...",
-    "providerId": "provider-123",
-    "settlementAmount": "50000"
+    "timestamp": "2024-01-15T10:30:00Z"
   }
 }
 ```

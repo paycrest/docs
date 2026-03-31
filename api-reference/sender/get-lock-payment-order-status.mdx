@@ -1,6 +1,6 @@
 ---
-title: 'Get Lock Payment Order Status'
-openapi: 'GET /orders/{chain_id}/{id}'
+title: 'Get Order Status by Gateway ID'
+openapi: 'GET /v2/orders/{chain_id}/{id}'
 ---
 
-Get the status of a lock payment order. 
+Retrieve the status of an order by its onchain Gateway ID and chain ID. Use this for smart contract integrations where you have the Gateway order ID from the blockchain rather than the API order UUID.
