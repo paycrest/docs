@@ -127,13 +127,30 @@
                 "pages": [
                   "api-reference/sender/initiate-payment-order",
                   "api-reference/sender/list-payment-orders",
-                  "api-reference/sender/get-payment-order-by-id"
+                  "api-reference/sender/get-payment-order-by-id",
+                  "api-reference/sender/get-sender-stats-v1"
                 ]
               },
               {
                 "group": "Provider",
                 "pages": [
-                  "api-reference/provider/list-lock-payment-orders"
+                  "api-reference/provider/list-lock-payment-orders",
+                  "api-reference/provider/get-market-rate-v1",
+                  "api-reference/provider/get-provider-stats-v1",
+                  "api-reference/provider/get-node-info-v1"
+                ]
+              },
+              {
+                "group": "General",
+                "pages": [
+                  "api-reference/general/list-supported-currencies-v1",
+                  "api-reference/general/list-supported-institutions-v1",
+                  "api-reference/general/list-supported-tokens-v1",
+                  "api-reference/general/get-token-rate-v1",
+                  "api-reference/general/get-aggregator-public-key-v1",
+                  "api-reference/general/verify-account-v1",
+                  "api-reference/sender/get-lock-payment-order-status-v1",
+                  "api-reference/general/reindex-transaction-v1"
                 ]
               }
             ]
