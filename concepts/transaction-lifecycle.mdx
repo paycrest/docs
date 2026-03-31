@@ -297,4 +297,4 @@ There are two distinct failure paths:
 - PSP unavailability in the corridor
 - Deposited amount doesn't match the quoted rate within tolerance
 
-Monitor `payment_order.refunded` and `payment_order.expired` webhook events and implement retry logic in your integration. You can also poll [GET /sender/orders/:id](/api-reference/sender/get-order-by-id) directly.
+Monitor `payment_order.refunded` and `payment_order.expired` webhook events and implement retry logic in your integration. You can also poll [GET /v2/sender/orders/:id](/api-reference/sender/get-payment-order-by-id-v2) directly.

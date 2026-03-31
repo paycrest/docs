@@ -65,21 +65,32 @@ For mobile payment providers, local banks without SWIFT codes, and other financi
 
 ## API Usage
 
-When making API calls, always use the correct code format:
+When making API calls, always use the correct code format. For **new integrations**, use **[POST /v2/sender/orders](/api-reference/sender/initiate-payment-order-v2)** (offramp: stablecoin → fiat). Fiat currency is **`destination.currency`**; the bank or mobile-money institution is **`destination.recipient.institution`**. Crypto asset and chain are on **`source`** (`source.currency`, `source.network`).
 
 ```javascript
-// Correct currency code format
+// v2 offramp — correct institution and currency codes (see OpenAPI for full required fields)
 const order = {
   amount: "100",
-  token: "USDT",
-  network: "base",
-  recipient: {
-    institution: "GTBINGLA", // Correct institution code
-    accountIdentifier: "1234567890",
-    currency: "NGN" // Correct currency code
-  }
+  source: {
+    type: "crypto",
+    currency: "USDT",
+    network: "base",
+    refundAddress: "0xYourRefundAddress",
+  },
+  destination: {
+    type: "fiat",
+    currency: "NGN", // ISO 4217 — correct fiat currency code
+    recipient: {
+      institution: "GTBINGLA", // Correct institution code
+      accountIdentifier: "1234567890",
+      accountName: "John Doe",
+      memo: "Payment",
+    },
+  },
 };
 ```
+
+Legacy **[POST /v1/sender/orders](/api-reference/sender/initiate-payment-order)** uses a flatter body (`amount`, `token`, `network`, `recipient`) with the **same** uppercase institution and currency strings; prefer v2 for new work.
 
 ## Finding Institution Codes
 

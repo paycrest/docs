@@ -11,8 +11,6 @@ tags:
     description: Endpoints for providers to manage and fulfill orders
   - name: General
     description: General protocol and utility endpoints
-servers:
-  - url: https://api.paycrest.io/v1
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -457,7 +455,6 @@ components:
           nullable: true
           description: "null on most errors; an array of field-level errors on validation failures"
           oneOf:
-            - type: "null"
             - type: array
               items:
                 type: object
@@ -466,6 +463,8 @@ components:
                     type: string
                   message:
                     type: string
+            - type: object
+              additionalProperties: true
     StandardResponse:
       type: object
       properties:
@@ -854,156 +853,10 @@ components:
 
 
 
+servers:
+  - url: https://api.paycrest.io/v2
 paths:
 
-  # Sender Endpoints
-  /sender/orders:
-    post:
-      tags:
-        - Sender
-      summary: Initiate payment order
-      security:
-        - ApiKeyAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewPaymentOrderPayload'
-      responses:
-        '201':
-          description: Payment order initiated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ReceiveAddressResponse'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    get:
-      tags:
-        - Sender
-      summary: List payment orders
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - in: query
-          name: status
-          schema:
-            type: string
-        - in: query
-          name: token
-          schema:
-            type: string
-        - in: query
-          name: network
-          schema:
-            type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
-            description: Network identifier for the blockchain
-        - in: query
-          name: ordering
-          schema:
-            type: string
-      responses:
-        '200':
-          description: List of payment orders
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/SenderPaymentOrderList'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /sender/orders/{id}:
-    get:
-      tags:
-        - Sender
-      summary: Get payment order by ID
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Payment order
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/SenderOrderResponse'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /sender/stats:
     get:
       tags:
@@ -1011,6 +864,8 @@ paths:
       summary: Get sender stats
       security:
         - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
       responses:
         '200':
           description: Sender stats
@@ -1029,17 +884,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+
   /orders/{chain_id}/{id}:
     get:
       tags:
-        - Sender
+        - General
       summary: Get order status by Gateway ID
+      description: Retrieve the status of an order by its onchain Gateway ID and chain ID. Use this for smart contract integrations.
+      servers:
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: chain_id
@@ -1065,506 +918,10 @@ paths:
                         $ref: '#/components/schemas/ProviderOrderStatusResponse'
         '400':
           description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
-  # Provider Endpoints
-  /provider/orders:
-    get:
-      tags:
-        - Provider
-      summary: List orders (provider)
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - in: query
-          name: currency
-          schema:
-            type: string
-        - in: query
-          name: status
-          schema:
-            type: string
-        - in: query
-          name: ordering
-          schema:
-            type: string
-      responses:
-        '200':
-          description: List of lock payment orders
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProviderOrderList'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /provider/rates/{token}/{fiat}:
-    get:
-      tags:
-        - Provider
-      summary: Get market rate
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - in: path
-          name: token
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: fiat
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Market rate
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/MarketRateResponse'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /provider/stats:
-    get:
-      tags:
-        - Provider
-      summary: Get provider stats
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - in: query
-          name: currency
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Provider stats
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProviderStatsResponse'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /provider/node-info:
-    get:
-      tags:
-        - Provider
-      summary: Get node info
-      security:
-        - ApiKeyAuth: []
-      responses:
-        '200':
-          description: Node info
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '503':
-          description: Service unavailable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-
-
-  # General Endpoints
-  /currencies:
-    get:
-      tags:
-        - General
-      summary: List supported fiat currencies
-      responses:
-        '200':
-          description: List of currencies
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: Operation successful
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/SupportedCurrencies'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /institutions/{currency_code}:
-    get:
-      tags:
-        - General
-      summary: List supported institutions for a currency
-      parameters:
-        - in: path
-          name: currency_code
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: List of institutions
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: Operation successful
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/SupportedInstitutions'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /tokens:
-    get:
-      tags:
-        - General
-      summary: List supported tokens
-      parameters:
-        - in: query
-          name: network
-          schema:
-            type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
-            description: Network identifier for the blockchain
-      responses:
-        '200':
-          description: List of tokens
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: Operation successful
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/SupportedTokenResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /rates/{token}/{amount}/{fiat}:
-    get:
-      tags:
-        - General
-      summary: Get token rate
-      parameters:
-        - in: path
-          name: token
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: amount
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: fiat
-          required: true
-          schema:
-            type: string
-        - in: query
-          name: network
-          schema:
-            type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
-            description: Network identifier for the blockchain (optional, filters tokens by network)
-        - in: query
-          name: provider_id
-          schema:
-            type: string
-            description: Provider ID to get the rate for a specific provider. If not provided, returns rate from the public queue.
-      responses:
-        '200':
-          description: Token rate
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: Operation successful
-                  data:
-                    type: number
-                    description: The exchange rate for the token to fiat currency conversion
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /pubkey:
-    get:
-      tags:
-        - General
-      summary: Get aggregator public key
-      responses:
-        '200':
-          description: Public key
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: Operation successful
-                  data:
-                    type: string
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /verify-account:
-    post:
-      tags:
-        - General
-      summary: Verify account
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VerifyAccountRequest'
-      responses:
-        '200':
-          description: Account verified
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: Operation successful
-                  data:
-                    type: string
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '502':
-          description: Bad gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '503':
-          description: Service unavailable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /reindex/{network}/{tx_hash_or_address}:
-    get:
-      tags:
-        - General
-      summary: Reindex transaction
-      parameters:
-        - in: path
-          name: network
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: tx_hash_or_address
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Transaction reindexed
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          events:
-                            type: object
-                            properties:
-                              Transfer:
-                                type: integer
-                              OrderCreated:
-                                type: integer
-                              SettleOut:
-                                type: integer
-                              SettleIn:
-                                type: integer
-                              OrderRefunded:
-                                type: integer
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  # ─── Provider Action Endpoints (v1) ─────────────────────────────────────────
+  # ─── V2 Provider Action Endpoints ────────────────────────────────────────────
 
   /provider/orders/{id}/accept:
     post:
@@ -1574,6 +931,8 @@ paths:
       description: Provider accepts an assigned order, signalling intent to fulfill.
       security:
         - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: id
@@ -1590,22 +949,10 @@ paths:
                 $ref: '#/components/schemas/StandardResponse'
         '400':
           description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Order not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   /provider/orders/{id}/decline:
     post:
@@ -1615,6 +962,8 @@ paths:
       description: Provider declines an assigned order. The aggregator will reassign it to another provider.
       security:
         - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: id
@@ -1644,6 +993,8 @@ paths:
       description: Provider reports that the fiat payment has been disbursed to the recipient.
       security:
         - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: id
@@ -1682,6 +1033,8 @@ paths:
       description: Provider cancels a previously accepted order. The aggregator will attempt reassignment.
       security:
         - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: id
@@ -1720,6 +1073,8 @@ paths:
       description: Provider node reports current available liquidity balances per currency.
       security:
         - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
       requestBody:
         required: true
         content:
@@ -1753,260 +1108,7 @@ paths:
         '401':
           description: Unauthorized
 
-  # ─── V2 Sender — Stats & Gateway Lookup ─────────────────────────────────────
-
-  /v2/sender/stats:
-    get:
-      tags:
-        - Sender
-      summary: Get sender stats
-      security:
-        - ApiKeyAuth: []
-      servers:
-        - url: https://api.paycrest.io
-      responses:
-        '200':
-          description: Sender stats
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/SenderStatsResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /v2/orders/{chain_id}/{id}:
-    get:
-      tags:
-        - General
-      summary: Get order status by Gateway ID
-      description: Retrieve the status of an order by its onchain Gateway ID and chain ID. Use this for smart contract integrations.
-      servers:
-        - url: https://api.paycrest.io
-      parameters:
-        - in: path
-          name: chain_id
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Order status
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ProviderOrderStatusResponse'
-        '400':
-          description: Bad request
-        '404':
-          description: Not found
-
-  # ─── V2 Provider Action Endpoints ────────────────────────────────────────────
-
-  /v2/provider/orders/{id}/accept:
-    post:
-      tags:
-        - Provider
-      summary: Accept an order
-      description: Provider accepts an assigned order, signalling intent to fulfill.
-      security:
-        - ApiKeyAuth: []
-      servers:
-        - url: https://api.paycrest.io
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Order accepted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Bad request
-        '401':
-          description: Unauthorized
-        '404':
-          description: Order not found
-
-  /v2/provider/orders/{id}/decline:
-    post:
-      tags:
-        - Provider
-      summary: Decline an order
-      description: Provider declines an assigned order. The aggregator will reassign it to another provider.
-      security:
-        - ApiKeyAuth: []
-      servers:
-        - url: https://api.paycrest.io
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Order declined
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Bad request
-        '401':
-          description: Unauthorized
-        '404':
-          description: Order not found
-
-  /v2/provider/orders/{id}/fulfill:
-    post:
-      tags:
-        - Provider
-      summary: Fulfill an order
-      description: Provider reports that the fiat payment has been disbursed to the recipient.
-      security:
-        - ApiKeyAuth: []
-      servers:
-        - url: https://api.paycrest.io
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                txId:
-                  type: string
-                  description: PSP transaction ID or reference for the payout
-      responses:
-        '200':
-          description: Order fulfilled
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Bad request
-        '401':
-          description: Unauthorized
-        '404':
-          description: Order not found
-
-  /v2/provider/orders/{id}/cancel:
-    post:
-      tags:
-        - Provider
-      summary: Cancel an order
-      description: Provider cancels a previously accepted order. The aggregator will attempt reassignment.
-      security:
-        - ApiKeyAuth: []
-      servers:
-        - url: https://api.paycrest.io
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-                  description: Reason for cancellation
-      responses:
-        '200':
-          description: Order cancelled
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Bad request
-        '401':
-          description: Unauthorized
-        '404':
-          description: Order not found
-
-  /v2/provider/balances:
-    post:
-      tags:
-        - Provider
-      summary: Update provider balances
-      description: Provider node reports current available liquidity balances per currency.
-      security:
-        - ApiKeyAuth: []
-      servers:
-        - url: https://api.paycrest.io
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                balances:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - currency
-                      - availableBalance
-                    properties:
-                      currency:
-                        type: string
-                        description: Fiat currency code (e.g. NGN, KES)
-                      availableBalance:
-                        type: string
-                        description: Available balance in fiat units
-      responses:
-        '200':
-          description: Balances updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Bad request
-        '401':
-          description: Unauthorized
-
-  /v2/provider/rates/{token}/{fiat}:
+  /provider/rates/{token}/{fiat}:
     get:
       tags:
         - Provider
@@ -2014,7 +1116,7 @@ paths:
       security:
         - ApiKeyAuth: []
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: token
@@ -2043,7 +1145,7 @@ paths:
         '401':
           description: Unauthorized
 
-  /v2/provider/stats:
+  /provider/stats:
     get:
       tags:
         - Provider
@@ -2051,7 +1153,7 @@ paths:
       security:
         - ApiKeyAuth: []
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: query
           name: currency
@@ -2074,7 +1176,7 @@ paths:
         '401':
           description: Unauthorized
 
-  /v2/provider/node-info:
+  /provider/node-info:
     get:
       tags:
         - Provider
@@ -2082,7 +1184,7 @@ paths:
       security:
         - ApiKeyAuth: []
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       responses:
         '200':
           description: Node info
@@ -2102,13 +1204,13 @@ paths:
 
   # ─── V2 General Endpoints ─────────────────────────────────────────────────────
 
-  /v2/currencies:
+  /currencies:
     get:
       tags:
         - General
       summary: List supported fiat currencies
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       responses:
         '200':
           description: List of currencies
@@ -2127,13 +1229,13 @@ paths:
                     items:
                       $ref: '#/components/schemas/SupportedCurrencies'
 
-  /v2/institutions/{currency_code}:
+  /institutions/{currency_code}:
     get:
       tags:
         - General
       summary: List supported institutions for a currency
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: currency_code
@@ -2160,13 +1262,13 @@ paths:
         '400':
           description: Bad request
 
-  /v2/tokens:
+  /tokens:
     get:
       tags:
         - General
       summary: List supported tokens
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: query
           name: network
@@ -2191,13 +1293,13 @@ paths:
                     items:
                       $ref: '#/components/schemas/SupportedTokenResponse'
 
-  /v2/rates/{token}/{amount}/{fiat}:
+  /rates/{token}/{amount}/{fiat}:
     get:
       tags:
         - General
       summary: Get token rate
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: token
@@ -2243,13 +1345,13 @@ paths:
         '404':
           description: Not found
 
-  /v2/pubkey:
+  /pubkey:
     get:
       tags:
         - General
       summary: Get aggregator public key
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       responses:
         '200':
           description: Public key
@@ -2266,13 +1368,13 @@ paths:
                   data:
                     type: string
 
-  /v2/verify-account:
+  /verify-account:
     post:
       tags:
         - General
       summary: Verify account
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       requestBody:
         required: true
         content:
@@ -2301,13 +1403,13 @@ paths:
         '503':
           description: Service unavailable
 
-  /v2/reindex/{network}/{tx_hash_or_address}:
+  /reindex/{network}/{tx_hash_or_address}:
     get:
       tags:
         - General
       summary: Reindex transaction
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: network
@@ -2339,7 +1441,7 @@ paths:
 
   # ─── V2 Sender Endpoints ─────────────────────────────────────────────────────
 
-  /v2/sender/orders:
+  /sender/orders:
     post:
       tags:
         - Sender
@@ -2354,7 +1456,7 @@ paths:
       security:
         - ApiKeyAuth: []
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       requestBody:
         required: true
         content:
@@ -2439,7 +1541,7 @@ paths:
       security:
         - ApiKeyAuth: []
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: query
           name: page
@@ -2471,7 +1573,7 @@ paths:
         '401':
           description: Unauthorized
 
-  /v2/sender/orders/{id}:
+  /sender/orders/{id}:
     get:
       tags:
         - Sender
@@ -2479,7 +1581,7 @@ paths:
       security:
         - ApiKeyAuth: []
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: id
@@ -2506,7 +1608,7 @@ paths:
 
   # ─── V2 Provider Endpoints ────────────────────────────────────────────────────
 
-  /v2/provider/orders:
+  /provider/orders:
     get:
       tags:
         - Provider
@@ -2515,7 +1617,7 @@ paths:
       security:
         - ApiKeyAuth: []
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: query
           name: currency
@@ -2588,7 +1690,7 @@ paths:
         '401':
           description: Unauthorized
 
-  /v2/provider/orders/{id}:
+  /provider/orders/{id}:
     get:
       tags:
         - Provider
@@ -2597,7 +1699,7 @@ paths:
       security:
         - ApiKeyAuth: []
       servers:
-        - url: https://api.paycrest.io
+        - url: https://api.paycrest.io/v2
       parameters:
         - in: path
           name: id
