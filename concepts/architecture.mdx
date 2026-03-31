@@ -1,367 +1,186 @@
 ---
 title: "Protocol Architecture"
-description: "Understanding the technical architecture and components of the Paycrest protocol"
+description: "The technical components behind Paycrest's payment routing — Gateway contract, aggregator, and provision nodes"
 ---
 
-![Paycrest Protocol Architecture](https://camo.githubusercontent.com/14713b95da20b26a882bc565d87c7c956af8ed560cf8a4c1c53bde0b88f7f3cb/68747470733a2f2f6c68372d72742e676f6f676c6575736572636f6e74656e742e636f6d2f646f63737a2f41445f346e5864397644686272776a33696b4a396768735650633471615a375f526d677a4e6e33436a6257326a76415765705959426d496174384d7469646964384f43427a75503753722d5f7a616236676a6a704d3674534a6d33703030616b66523978686b6b7a636b446f5a4f684f396a6971676e4f30456b5a52794834516f786747415852656c43534e78513f6b65793d7866512d43645268746a4764415837674c3431744b38742d)
+Paycrest is a payment routing protocol built on three cooperating layers: a Gateway smart contract for onchain escrow, an aggregator for order routing and coordination, and provision nodes for fiat execution. This page explains how those components interact.
 
-> **Note:** If you cannot view the image, here is a summary:
-> The diagram illustrates a payment flow: a Payment Intent is processed by a set of Aggregator nodes (which coordinate and route the transaction), which then interact with a network of Provision nodes (liquidity providers or processors). These nodes ultimately deliver funds to end users/recipients.
+```mermaid
+flowchart TD
+    APP["Sender App"]
 
----
+    subgraph PROTO["Paycrest Protocol"]
+        AGG["Aggregator Node"]
+        GW["Gateway Contract\nonchain escrow"]
+    end
 
-The Paycrest protocol is built on a modular, decentralized architecture that enables seamless stablecoin-to-fiat and fiat-to-stablecoin transactions. This section explains the core technical components and how they work together.
+    subgraph PROV["Provider"]
+        NODE["Provision Node"]
+        PSP["PSP"]
+    end
+
+    RECIP(["Recipient"])
+
+    APP -->|"initiate order"| AGG
+    APP <-->|"stablecoin lock / release"| GW
+    GW -.->|"order events"| AGG
+    AGG -->|"route order"| NODE
+    NODE <-->|"fiat execution"| PSP
+    PSP <-->|"fiat / stablecoins"| RECIP
+    NODE -.->|"fulfillment confirmed"| AGG
+    AGG -.->|"webhook"| APP
+```
 
 ## Core Components
 
 ### Gateway Contract
 
-The **Gateway contract** is the central entry point for all payment orders in the protocol.
+The **Gateway contract** is the onchain entry point for all payment orders. It holds stablecoins in escrow during the settlement process — neither Paycrest nor any provider ever custodies the funds directly.
 
 #### Key Functions
 
-- **Order Creation**: Accepts payment orders from senders
-- **Order Validation**: Validates order parameters and sender authorization
-- **Order Indexing**: Emits events for aggregators to monitor
-- **Settlement Coordination**: Manages onchain settlement processes
+- **Order Creation**: Accepts payment orders from senders; locks stablecoins in escrow (offramp) or coordinates stablecoin release to recipients (onramp)
+- **Event Emission**: Emits events that the aggregator monitors to begin routing
+- **Escrow Settlement**: Releases escrowed funds to providers after fulfillment is verified, or returns them to senders if the order can't be completed
 
-#### Order Lifecycle
+#### Payment Flow
 
 <Steps>
   <Step title="Order Creation">
-    Sender creates order via API or direct contract interaction
+    Sender creates an order via the Sender API or direct contract interaction. For offramp, stablecoins are locked in escrow. For onramp, the contract coordinates stablecoin release once fiat receipt is confirmed.
   </Step>
-  <Step title="Liquidity Aggregation">
-    Aggregator assigns order to suitable provider and coordinates liquidity
+  <Step title="Routing">
+    Aggregator picks up the onchain event and routes the order to the most suitable liquidity provider based on rate, availability, and corridor.
   </Step>
   <Step title="Fulfillment">
-    Provider executes payment to recipient
+    For offramp, the provider disburses fiat to the recipient via a local PSP. For onramp, the provider receives the user's fiat deposit and reports confirmation.
   </Step>
-  <Step title="Settlement">
-    Onchain settlement and fee distribution
+  <Step title="Completion">
+    After fulfillment is verified, the contract settles atomically: escrowed stablecoins are released to the provider (offramp), or stablecoins are transferred to the recipient's wallet (onramp). If fulfillment fails, funds are automatically returned.
   </Step>
 </Steps>
 
-### Aggregator Nodes
+### Aggregator Node
 
-**Aggregator nodes** are high-availability services that coordinate the entire order routing process.
+The **aggregator node** is the coordination layer: it monitors onchain events, manages provider routing, and oversees the settlement pipeline.
 
 #### Core Functions
 
-- **Order Monitoring**: Monitor Gateway contract for new orders
-- **Provider Management**: Maintain provider registry and ratings
-- **Order Matching**: Match orders with optimal providers
-- **Settlement Coordination**: Coordinate multi-provider settlements
-- **Compliance Verification**: Verify KYC and regulatory compliance
+- **Order Monitoring**: Watches the Gateway contract for new orders
+- **Provider Matching**: Routes orders to the optimal provider based on rate and availability
+- **Settlement Coordination**: Manages the fulfillment → validation → settlement flow
+- **Webhook Delivery**: Notifies senders of order status changes
 
-#### Node Architecture
+<Note>
+  Paycrest currently operates the **sole aggregator** in the network (federated model). All order matching and coordination fees flow to Paycrest. The protocol is designed to support multiple independent aggregators in a future phase. See the [Decentralization Path](/introduction#decentralization-path).
+</Note>
+
+#### API Layers
 
 <CardGroup cols={2}>
   <Card title="Blockchain Layer">
-    - Event monitoring
-    - Transaction submission
-    - State synchronization
-    - Gas optimization
+    - Gateway contract event monitoring
+    - Transaction submission and confirmation
+    - Multi-chain support
   </Card>
   <Card title="Business Logic Layer">
-    - Order matching algorithms
-    - Provider selection logic
-    - Rate optimization
-    - Compliance checks
+    - Order matching and provider selection
+    - Rate validation and optimization
+    - Refund and timeout handling
   </Card>
   <Card title="API Layer">
-    - REST API endpoints
-    - WebSocket connections
-    - Webhook management
-    - Rate limiting
+    - REST API (v1 and v2 sender/provider endpoints)
+    - Webhook delivery to senders
+    - Rate limiting and authentication
   </Card>
   <Card title="Data Layer">
-    - Order database
-    - Provider registry
-    - Transaction logs
-    - Analytics data
+    - Order state management
+    - Provider registry and availability
+    - Transaction logs and audit trail
   </Card>
 </CardGroup>
 
 ### Provision Nodes
 
-**Provision nodes** handle the execution of payments to recipients.
+**Provision nodes** handle fiat execution: disbursing fiat to recipients for offramp orders, or receiving and confirming fiat deposits for onramp orders. They are run by independent liquidity providers who connect their own PSP integrations.
 
 #### Components
 
-- **PSP Integration**: Connect to local payment service providers
-- **Rate Management**: Set and update competitive rates
-- **Order Processing**: Execute assigned payment orders
-- **Settlement Reporting**: Report successful settlements
-- **Compliance Monitoring**: Monitor regulatory compliance
+- **PSP Integration**: Connects to local payment service providers (banks, mobile wallets)
+- **Rate Management**: Sets and updates competitive rates per corridor
+- **Order Processing**: Executes assigned payment orders
+- **Settlement Reporting**: Reports fulfillment status back to the aggregator
 
 #### Integration Types
 
 <CardGroup cols={2}>
   <Card title="Bank APIs">
-    - Direct bank integration
-    - SWIFT/SEPA transfers
-    - Real-time payments
+    - Direct bank integrations
+    - Real-time payment rails
     - Batch processing
   </Card>
-  <Card title="Mobile">
-    - M-Pesa integration
-    - Airtel Money
-    - MTN Mobile Money
+  <Card title="Mobile Money">
+    - M-Pesa, Airtel Money, MTN Mobile Money
+    - PIX (Brazil)
     - Other mobile wallets
-  </Card>
-  <Card title="Crypto Exchanges">
-    - OTC desk integration
-    - Exchange APIs
-    - Liquidity pools
-    - Automated trading
-  </Card>
-  <Card title="Payment Processors">
-    - Stripe integration
-    - PayPal integration
-    - Local payment processors
-    - Digital wallets
   </Card>
 </CardGroup>
 
 #### Deployment Options
 
-Provision Nodes can be deployed in two ways:
-
 **Self-Hosted Deployment**
-- Complete control over infrastructure
-- Custom security configurations
-- No dependency on third-party services
-- Potential cost savings at scale
+- Complete control over infrastructure and PSP connections
 - Requires technical expertise for setup and maintenance
+- Recommended for providers with existing PSP relationships
 
 **Managed Deployment via Blockops**
 - One-click deployment through [Blockops](https://blockops.network/)
 - Automated scaling and monitoring
-- Dedicated support and expertise
-- Built-in security best practices
-- Pay-as-you-use pricing model
-- Recommended for most providers
+- Recommended for providers new to infrastructure management
 
-For detailed deployment instructions, see the [Provision Node Deployment Guide](/guides/provision-node-deployment).
+## Multi-Chain Support
 
-## Network Architecture
+The protocol is live on 8 EVM-compatible networks:
 
-### Multi-Chain Support
+| Network | Chain ID | Primary Use |
+|---------|----------|-------------|
+| Ethereum | 1 | USDT, USDC, cNGN |
+| Base | 8453 | USDT, USDC, cNGN |
+| Arbitrum One | 42161 | USDT, USDC |
+| Polygon | 137 | USDT, USDC, cNGN |
+| BNB Smart Chain | 56 | USDT, USDC, cNGN |
+| Lisk | 1135 | USDT, USDC |
+| Celo | 42220 | USDT, USDC |
+| Scroll | 534352 | USDT, USDC |
 
-The protocol supports multiple blockchain networks for maximum flexibility.
-
-#### Supported Networks
-
-- **Base**: Primary network for USDT/USDC transactions
-- **Polygon**: Cost-effective transactions
-- **BNB Smart Chain**: Binance ecosystem support
-- **Arbitrum One**: High-performance L2 network
-- **Lisk**: Alternative blockchain network
-- **Celo**: Mobile-first blockchain
-- **Tron**: USDT transactions
-
-#### Network Selection
-
-<Steps>
-  <Step title="Sender Preference">
-    Sender specifies preferred network
-  </Step>
-  <Step title="Provider Availability">
-    Check provider support for network
-  </Step>
-  <Step title="Cost Optimization">
-    Select network with lowest fees
-  </Step>
-  <Step title="Settlement Speed">
-    Consider network confirmation times
-  </Step>
-</Steps>
-
-### Decentralized Infrastructure
-
-The protocol operates on a decentralized infrastructure for reliability and censorship resistance.
-
-#### Node Distribution
-
-- **Geographic Distribution**: Nodes distributed globally
-- **Provider Diversity**: Multiple providers per region
-- **Redundancy**: Multiple aggregators for reliability
-- **Failover**: Automatic failover between nodes
-
-#### Consensus Mechanism
-
-- **Order Assignment**: Consensus on order provider assignment
-- **Rate Validation**: Consensus on fair market rates
-- **Settlement Confirmation**: Consensus on successful settlements
-- **Dispute Resolution**: Consensus on dispute outcomes
+See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the full deployment table, and [Supported Stablecoins](/resources/supported-stablecoins) for per-network token details.
 
 ## Security Architecture
 
 ### Smart Contract Security
 
-The Gateway contract implements multiple security measures.
+The Gateway contract implements multiple security measures:
 
-#### Security Features
+- **Non-custodial escrow**: Funds are locked onchain, not held by Paycrest or providers
+- **Automatic refunds**: Orders not fulfilled within 5 minutes trigger automatic fund return
+- **Access control**: Role-based permissions and multi-signature governance for protocol changes
+- **Audited contracts**: Gateway contracts are security-audited; see the [contracts repository](https://github.com/paycrest/contracts)
 
-- **Access Control**: Role-based access control
-- **Rate Limiting**: Prevent spam and abuse
-- **Emergency Pause**: Ability to pause in emergencies
-- **Upgradeability**: Controlled upgrade mechanism
-- **Audit Trail**: Complete transaction audit trail
+### Data Protection
 
-#### Vulnerability Mitigation
+- **Encrypted recipient data**: Recipient bank details are encrypted in transit and at rest
+- **API key authentication**: All API requests authenticated via API Key + API Secret
+- **Webhook signature verification**: HMAC-SHA256 signatures on all webhook payloads
 
-<CardGroup cols={2}>
-  <Card title="Reentrancy Protection">
-    - Secure state management
-    - External call protection
-    - State validation
-  </Card>
-  <Card title="Overflow Protection">
-    - Safe math operations
-    - Input validation
-    - Boundary checks
-  </Card>
-  <Card title="Access Control">
-    - Role-based permissions
-    - Multi-signature support
-    - Time-locked operations
-  </Card>
-  <Card title="Data Integrity">
-    - Hash verification
-    - Signature validation
-    - Merkle proof verification
-  </Card>
-</CardGroup>
+## Integration Paths
 
-### Network Security
-
-#### DDoS Protection
-
-- **Rate Limiting**: API rate limiting per client
-- **Geographic Distribution**: Global node distribution
-- **Load Balancing**: Automatic load balancing
-- **Monitoring**: Real-time attack detection
-
-#### Data Protection
-
-- **Encryption**: End-to-end encryption
-- **Privacy**: Zero-knowledge proofs where applicable
-- **Compliance**: GDPR and local privacy law compliance
-- **Audit**: Regular security audits
-
-## Scalability Architecture
-
-### Horizontal Scaling
-
-The protocol is designed for horizontal scaling across multiple dimensions.
-
-#### Scaling Dimensions
-
-- **Geographic Scaling**: Add nodes in new regions
-- **Provider Scaling**: Add more providers per region
-- **Network Scaling**: Support additional blockchain networks
-- **Volume Scaling**: Handle increased transaction volume
-
-#### Performance Optimization
+Senders have two integration options:
 
 <CardGroup cols={2}>
-  <Card title="Database Optimization">
-    - Read replicas
-    - Connection pooling
-    - Query optimization
-    - Caching layers
+  <Card title="Sender API" href="/implementation-guides/sender-api-integration" icon="code">
+    REST API integration — fastest time to integration. Paycrest handles the onchain interaction on your behalf.
   </Card>
-  <Card title="Network Optimization">
-    - CDN distribution
-    - Edge computing
-    - Load balancing
-    - Caching strategies
-  </Card>
-  <Card title="Blockchain Optimization">
-    - Gas optimization
-    - Batch processing
-    - Layer 2 scaling
-    - Cross-chain bridges
-  </Card>
-  <Card title="API Optimization">
-    - GraphQL support
-    - Pagination
-    - Compression
-    - Caching headers
+  <Card title="Smart Contract" href="/implementation-guides/smart-contract-interaction" icon="file-contract">
+    Direct Gateway contract integration — full onchain composability. Automated flows like yield-to-fiat and liquidation-to-bank work natively.
   </Card>
 </CardGroup>
-
-## Integration Architecture
-
-### API Design
-
-The protocol provides comprehensive APIs for all participant types.
-
-#### API Layers
-
-<Steps>
-  <Step title="Authentication Layer">
-    API key management and validation
-  </Step>
-  <Step title="Rate Limiting Layer">
-    Request throttling and quotas
-  </Step>
-  <Step title="Validation Layer">
-    Input validation and sanitization
-  </Step>
-  <Step title="Business Logic Layer">
-    Core business logic and rules
-  </Step>
-  <Step title="Data Layer">
-    Database operations and caching
-  </Step>
-</Steps>
-
-#### API Standards
-
-- **RESTful Design**: Standard REST API conventions
-- **OpenAPI Specification**: Complete API documentation
-- **Error Handling**: Consistent error responses
-- **Versioning**: API version management
-- **Deprecation**: Graceful API deprecation
-
-## Monitoring and Observability
-
-### Metrics Collection
-
-The protocol collects comprehensive metrics for monitoring and optimization.
-
-#### Key Metrics
-
-- **Transaction Volume**: Orders per hour/day
-- **Success Rates**: Order fulfillment success rates
-- **Latency**: API response times and settlement times
-- **Error Rates**: API error rates and types
-- **Provider Performance**: Provider success rates and ratings
-
-#### Monitoring Tools
-
-- **Application Monitoring**: APM tools for performance tracking
-- **Infrastructure Monitoring**: Server and network monitoring
-- **Business Metrics**: Custom business intelligence dashboards
-- **Alerting**: Proactive alerting for issues
-
-### Logging and Tracing
-
-#### Logging Strategy
-
-- **Structured Logging**: JSON-formatted logs
-- **Log Levels**: Appropriate log level usage
-- **Log Aggregation**: Centralized log collection
-- **Log Retention**: Configurable log retention policies
-
-#### Distributed Tracing
-
-- **Request Tracing**: Track requests across services
-- **Performance Profiling**: Identify performance bottlenecks
-- **Error Correlation**: Correlate errors across services
-- **Dependency Mapping**: Map service dependencies
-
-> **Note:** The Paycrest protocol architecture is designed for maximum reliability, scalability, and security while maintaining simplicity for developers and end users. 

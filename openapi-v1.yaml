@@ -11,8 +11,6 @@ tags:
     description: Endpoints for providers to manage and fulfill orders
   - name: General
     description: General protocol and utility endpoints
-servers:
-  - url: https://api.paycrest.io/v1
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -35,12 +33,12 @@ components:
           type: number
         token:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         rate:
           type: number
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
         recipient:
           $ref: '#/components/schemas/PaymentOrderRecipient'
@@ -86,10 +84,10 @@ components:
           type: string
         token:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
         receiveAddress:
           type: string
@@ -97,34 +95,38 @@ components:
           type: string
           format: date-time
         senderFee:
-          type: number
+          type: string
         transactionFee:
-          type: number
+          type: string
         reference:
           type: string
-    PaymentOrderResponse:
+        orderType:
+          type: string
+    SenderOrderResponse:
       type: object
       properties:
         id:
           type: string
         amount:
-          type: number
+          type: string
+        amountInUsd:
+          type: string
         amountPaid:
-          type: number
+          type: string
         amountReturned:
-          type: number
+          type: string
         token:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         senderFee:
-          type: number
+          type: string
         transactionFee:
-          type: number
+          type: string
         rate:
-          type: number
+          type: string
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
         gatewayId:
           type: string
@@ -134,11 +136,16 @@ components:
           type: string
         returnAddress:
           type: string
+          description: Deprecated — use refundAddress
+        refundAddress:
+          type: string
         receiveAddress:
           type: string
         feeAddress:
           type: string
         reference:
+          type: string
+        orderType:
           type: string
         createdAt:
           type: string
@@ -157,7 +164,7 @@ components:
     SenderPaymentOrderList:
       type: object
       properties:
-        totalRecords:
+        total:
           type: integer
         page:
           type: integer
@@ -166,7 +173,7 @@ components:
         orders:
           type: array
           items:
-            $ref: '#/components/schemas/PaymentOrderResponse'
+            $ref: '#/components/schemas/SenderOrderResponse'
     SenderStatsResponse:
       type: object
       properties:
@@ -178,10 +185,10 @@ components:
           type: string
 
     # Provider Schemas
-    ProviderLockOrderList:
+    ProviderOrderList:
       type: object
       properties:
-        totalRecords:
+        total:
           type: integer
         page:
           type: integer
@@ -190,21 +197,27 @@ components:
         orders:
           type: array
           items:
-            $ref: '#/components/schemas/LockPaymentOrderResponse'
-    LockPaymentOrderResponse:
+            $ref: '#/components/schemas/ProviderOrderResponse'
+    ProviderOrderResponse:
       type: object
       properties:
         id:
           type: string
         token:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         gatewayId:
           type: string
         amount:
-          type: number
+          type: string
+        amountInUsd:
+          type: string
         rate:
-          type: number
+          type: string
+        blockNumber:
+          type: integer
+        txHash:
+          type: string
         institution:
           type: string
           description: Institution code (SWIFT code or custom PayCrest code ending with 'PC'). See [Code Standards](/resources/code-standards) for details.
@@ -212,12 +225,16 @@ components:
           type: string
         accountName:
           type: string
+        providerId:
+          type: string
         memo:
           type: string
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
+        orderType:
+          type: string
         status:
           type: string
         updatedAt:
@@ -276,21 +293,23 @@ components:
     MarketRateResponse:
       type: object
       properties:
-        marketRate:
-          type: number
+        marketBuyRate:
+          type: string
+        marketSellRate:
+          type: string
         minimumRate:
-          type: number
+          type: string
         maximumRate:
-          type: number
+          type: string
     ProviderStatsResponse:
       type: object
       properties:
         totalOrders:
           type: integer
         totalFiatVolume:
-          type: number
+          type: string
         totalCryptoVolume:
-          type: number
+          type: string
 
     # General Schemas
     SupportedCurrencies:
@@ -307,8 +326,10 @@ components:
           type: integer
         symbol:
           type: string
-        marketRate:
-          type: number
+        marketBuyRate:
+          type: string
+        marketSellRate:
+          type: string
     SupportedInstitutions:
       type: object
       properties:
@@ -324,7 +345,7 @@ components:
       properties:
         symbol:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         contractAddress:
           type: string
         decimals:
@@ -333,26 +354,28 @@ components:
           type: string
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
 
     # Order Status Schemas
-    LockPaymentOrderStatusResponse:
+    ProviderOrderStatusResponse:
       type: object
       properties:
         orderId:
           type: string
         amount:
-          type: number
+          type: string
+        amountInUsd:
+          type: string
         token:
           type: string
-          description: Token symbol (USDT, USDC, CUSD, CNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
+          description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
         settlePercent:
-          type: number
+          type: string
         status:
           type: string
         txHash:
@@ -360,26 +383,26 @@ components:
         settlements:
           type: array
           items:
-            $ref: '#/components/schemas/LockPaymentOrderSplitOrder'
+            $ref: '#/components/schemas/PaymentOrderSplitOrder'
         txReceipts:
           type: array
           items:
-            $ref: '#/components/schemas/LockPaymentOrderTxReceipt'
+            $ref: '#/components/schemas/PaymentOrderTxReceipt'
         updatedAt:
           type: string
           format: date-time
-    LockPaymentOrderSplitOrder:
+    PaymentOrderSplitOrder:
       type: object
       properties:
         splitOrderId:
           type: string
         amount:
-          type: number
+          type: string
         rate:
-          type: number
+          type: string
         orderPercent:
-          type: number
-    LockPaymentOrderTxReceipt:
+          type: string
+    PaymentOrderTxReceipt:
       type: object
       properties:
         status:
@@ -429,8 +452,19 @@ components:
           type: string
           example: Error message
         data:
-          type: object
           nullable: true
+          description: "null on most errors; an array of field-level errors on validation failures"
+          oneOf:
+            - type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+            - type: object
+              additionalProperties: true
     StandardResponse:
       type: object
       properties:
@@ -444,11 +478,385 @@ components:
           type: object
           description: The actual response data (e.g., ReceiveAddressResponse, etc.)
 
+    # ─── V2 Schemas ────────────────────────────────────────────────────────────
+
+    V2PaymentOrderPayload:
+      type: object
+      required:
+        - amount
+        - source
+        - destination
+      properties:
+        amount:
+          type: string
+          description: Payment amount. Denomination is determined by `amountIn` (defaults to crypto units).
+          example: "100"
+        amountIn:
+          type: string
+          enum: [crypto, fiat]
+          description: Specifies whether `amount` is denominated in crypto or fiat. Defaults to `crypto`.
+        rate:
+          type: string
+          description: Quoted exchange rate (fiat per crypto unit). Optional — protocol uses best available rate if omitted.
+        senderFee:
+          type: string
+          description: Fixed sender fee in crypto units.
+        senderFeePercent:
+          type: string
+          description: Sender fee as a percentage of the order amount (alternative to senderFee).
+        reference:
+          type: string
+          description: Your internal reference ID for this order.
+        source:
+          description: "Polymorphic source — set `type: \"crypto\"` for offramp or `type: \"fiat\"` for onramp."
+          oneOf:
+            - $ref: '#/components/schemas/V2CryptoSource'
+            - $ref: '#/components/schemas/V2FiatSource'
+          discriminator:
+            propertyName: type
+            mapping:
+              crypto: '#/components/schemas/V2CryptoSource'
+              fiat: '#/components/schemas/V2FiatSource'
+        destination:
+          description: "Polymorphic destination — set `type: \"fiat\"` for offramp or `type: \"crypto\"` for onramp."
+          oneOf:
+            - $ref: '#/components/schemas/V2FiatDestination'
+            - $ref: '#/components/schemas/V2CryptoDestination'
+          discriminator:
+            propertyName: type
+            mapping:
+              fiat: '#/components/schemas/V2FiatDestination'
+              crypto: '#/components/schemas/V2CryptoDestination'
+
+    V2CryptoSource:
+      type: object
+      required: [type, currency, network, refundAddress]
+      properties:
+        type:
+          type: string
+          enum: [crypto]
+        currency:
+          type: string
+          description: Stablecoin symbol (e.g. USDT, USDC, cNGN)
+        network:
+          type: string
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon]
+        refundAddress:
+          type: string
+          description: Wallet address for refunds if the order can't be fulfilled
+
+    V2FiatSource:
+      type: object
+      required: [type, currency, refundAccount]
+      properties:
+        type:
+          type: string
+          enum: [fiat]
+        currency:
+          type: string
+          description: Fiat currency code (e.g. NGN, KES, BRL)
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code (optional)
+        refundAccount:
+          $ref: '#/components/schemas/V2FiatRefundAccount'
+
+    V2FiatRefundAccount:
+      type: object
+      required: [institution, accountIdentifier, accountName]
+      properties:
+        institution:
+          type: string
+          description: Bank or mobile provider code (SWIFT prefix or Paycrest institution code)
+        accountIdentifier:
+          type: string
+          description: Account number or mobile number
+        accountName:
+          type: string
+          description: Account holder name
+
+    V2FiatDestination:
+      type: object
+      required: [type, currency, recipient]
+      properties:
+        type:
+          type: string
+          enum: [fiat]
+        currency:
+          type: string
+          description: Fiat currency code (e.g. NGN, KES)
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code (optional)
+        providerId:
+          type: string
+          description: Pin order to a specific provider (optional)
+        recipient:
+          $ref: '#/components/schemas/V2FiatRecipient'
+
+    V2FiatRecipient:
+      type: object
+      required: [institution, accountIdentifier, accountName, memo]
+      properties:
+        institution:
+          type: string
+        accountIdentifier:
+          type: string
+        accountName:
+          type: string
+        memo:
+          type: string
+          description: Payment narration / reference
+
+    V2CryptoDestination:
+      type: object
+      required: [type, currency, network, recipient]
+      properties:
+        type:
+          type: string
+          enum: [crypto]
+        currency:
+          type: string
+          description: Stablecoin symbol (e.g. USDT, USDC)
+        network:
+          type: string
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon]
+        providerId:
+          type: string
+        recipient:
+          $ref: '#/components/schemas/V2CryptoRecipient'
+
+    V2CryptoRecipient:
+      type: object
+      required: [address, network]
+      properties:
+        address:
+          type: string
+          description: Wallet address to receive stablecoins
+        network:
+          type: string
+          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon]
+
+    V2CryptoProviderAccount:
+      type: object
+      description: Returned for offramp orders — the address to send stablecoins to
+      properties:
+        network:
+          type: string
+        receiveAddress:
+          type: string
+          description: EVM address to send stablecoins to
+        validUntil:
+          type: string
+          format: date-time
+          description: Deadline for the stablecoin deposit
+
+    V2FiatProviderAccount:
+      type: object
+      description: Returned for onramp orders — the virtual account to deposit fiat into
+      properties:
+        institution:
+          type: string
+          description: Bank or mobile provider code
+        accountIdentifier:
+          type: string
+          description: Account number or mobile number to send fiat to
+        accountName:
+          type: string
+        amountToTransfer:
+          type: string
+          description: Exact fiat amount the user must deposit
+        currency:
+          type: string
+          description: Fiat currency code
+        validUntil:
+          type: string
+          format: date-time
+          description: Deadline — order expires if fiat not received by this time
+
+    V2PaymentOrderResponse:
+      type: object
+      description: Response returned when creating an order
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        orderType:
+          type: string
+          enum: [regular, otc]
+        timestamp:
+          type: string
+          format: date-time
+        amount:
+          type: string
+          description: Crypto amount in token units
+        rate:
+          type: string
+        senderFee:
+          type: string
+        senderFeePercent:
+          type: string
+        transactionFee:
+          type: string
+        reference:
+          type: string
+        providerAccount:
+          description: Crypto provider account for offramp; fiat provider account (virtual account) for onramp
+          oneOf:
+            - $ref: '#/components/schemas/V2CryptoProviderAccount'
+            - $ref: '#/components/schemas/V2FiatProviderAccount'
+        source:
+          oneOf:
+            - $ref: '#/components/schemas/V2CryptoSource'
+            - $ref: '#/components/schemas/V2FiatSource'
+        destination:
+          oneOf:
+            - $ref: '#/components/schemas/V2FiatDestination'
+            - $ref: '#/components/schemas/V2CryptoDestination'
+
+    V2PaymentOrderGetResponse:
+      type: object
+      description: Response for a single order (or list item)
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [initiated, deposited, pending, fulfilling, fulfilled, validated, settling, settled, cancelled, refunding, refunded, expired]
+        orderType:
+          type: string
+          enum: [regular, otc]
+        direction:
+          type: string
+          enum: [offramp, onramp]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        amount:
+          type: string
+        amountInUsd:
+          type: string
+        amountPaid:
+          type: string
+        amountReturned:
+          type: string
+        percentSettled:
+          type: string
+        rate:
+          type: string
+        senderFee:
+          type: string
+        senderFeePercent:
+          type: string
+        transactionFee:
+          type: string
+        reference:
+          type: string
+        txHash:
+          type: string
+        providerAccount:
+          oneOf:
+            - $ref: '#/components/schemas/V2CryptoProviderAccount'
+            - $ref: '#/components/schemas/V2FiatProviderAccount'
+        source:
+          oneOf:
+            - $ref: '#/components/schemas/V2CryptoSource'
+            - $ref: '#/components/schemas/V2FiatSource'
+        destination:
+          oneOf:
+            - $ref: '#/components/schemas/V2FiatDestination'
+            - $ref: '#/components/schemas/V2CryptoDestination'
+
+    V2PaymentOrderListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/V2PaymentOrderGetResponse'
+
+    V2WebhookPayload:
+      type: object
+      description: Webhook payload for v2 payment order events
+      properties:
+        event:
+          type: string
+          enum: [payment_order.deposited, payment_order.pending, payment_order.validated, payment_order.settling, payment_order.settled, payment_order.refunding, payment_order.refunded, payment_order.expired]
+        webhookVersion:
+          type: string
+          enum: ["2"]
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            direction:
+              type: string
+              enum: [offramp, onramp]
+            status:
+              type: string
+            amount:
+              type: string
+            amountInUsd:
+              type: string
+            amountPaid:
+              type: string
+            amountReturned:
+              type: string
+            percentSettled:
+              type: string
+            senderFee:
+              type: string
+            transactionFee:
+              type: string
+            rate:
+              type: string
+            gatewayId:
+              type: string
+            senderId:
+              type: string
+              format: uuid
+            providerAccount:
+              oneOf:
+                - $ref: '#/components/schemas/V2CryptoProviderAccount'
+                - $ref: '#/components/schemas/V2FiatProviderAccount'
+            source:
+              oneOf:
+                - $ref: '#/components/schemas/V2CryptoSource'
+                - $ref: '#/components/schemas/V2FiatSource'
+            destination:
+              oneOf:
+                - $ref: '#/components/schemas/V2FiatDestination'
+                - $ref: '#/components/schemas/V2CryptoDestination'
+            fromAddress:
+              type: string
+            reference:
+              type: string
+            txHash:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
 
 
+
+servers:
+  - url: https://api.paycrest.io/v1
 paths:
 
-  # Sender Endpoints
   /sender/orders:
     post:
       tags:
@@ -517,7 +925,7 @@ paths:
           name: network
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
             description: Network identifier for the blockchain
         - in: query
           name: ordering
@@ -571,7 +979,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/PaymentOrderResponse'
+                        $ref: '#/components/schemas/SenderOrderResponse'
         '400':
           description: Bad request
           content:
@@ -631,7 +1039,7 @@ paths:
     get:
       tags:
         - Sender
-      summary: Get lock payment order status
+      summary: Get order status by Gateway ID
       parameters:
         - in: path
           name: chain_id
@@ -654,7 +1062,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/LockPaymentOrderStatusResponse'
+                        $ref: '#/components/schemas/ProviderOrderStatusResponse'
         '400':
           description: Bad request
           content:
@@ -679,7 +1087,7 @@ paths:
     get:
       tags:
         - Provider
-      summary: List lock payment orders
+      summary: List orders (provider)
       security:
         - ApiKeyAuth: []
       parameters:
@@ -706,7 +1114,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/ProviderLockOrderList'
+                        $ref: '#/components/schemas/ProviderOrderList'
         '400':
           description: Bad request
           content:
@@ -924,7 +1332,7 @@ paths:
           name: network
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
             description: Network identifier for the blockchain
       responses:
         '200':
@@ -975,7 +1383,7 @@ paths:
           name: network
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain]
+            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
             description: Network identifier for the blockchain (optional, filters tokens by network)
         - in: query
           name: provider_id
@@ -1101,7 +1509,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /reindex/{network}/{tx_hash}:
+  /reindex/{network}/{tx_hash_or_address}:
     get:
       tags:
         - General
@@ -1113,7 +1521,7 @@ paths:
           schema:
             type: string
         - in: path
-          name: tx_hash
+          name: tx_hash_or_address
           required: true
           schema:
             type: string
@@ -1137,7 +1545,9 @@ paths:
                                 type: integer
                               OrderCreated:
                                 type: integer
-                              OrderSettled:
+                              SettleOut:
+                                type: integer
+                              SettleIn:
                                 type: integer
                               OrderRefunded:
                                 type: integer
@@ -1152,4 +1562,196 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse' 
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─── Provider Action Endpoints (v1) ─────────────────────────────────────────
+
+  /provider/orders/{id}/accept:
+    post:
+      tags:
+        - Provider
+      summary: Accept an order
+      description: Provider accepts an assigned order, signalling intent to fulfill.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /provider/orders/{id}/decline:
+    post:
+      tags:
+        - Provider
+      summary: Decline an order
+      description: Provider declines an assigned order. The aggregator will reassign it to another provider.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order declined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /provider/orders/{id}/fulfill:
+    post:
+      tags:
+        - Provider
+      summary: Fulfill an order
+      description: Provider reports that the fiat payment has been disbursed to the recipient.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                txId:
+                  type: string
+                  description: PSP transaction ID or reference for the payout
+      responses:
+        '200':
+          description: Order fulfilled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /provider/orders/{id}/cancel:
+    post:
+      tags:
+        - Provider
+      summary: Cancel an order
+      description: Provider cancels a previously accepted order. The aggregator will attempt reassignment.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for cancellation
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Order not found
+
+  /provider/balances:
+    post:
+      tags:
+        - Provider
+      summary: Update provider balances
+      description: Provider node reports current available liquidity balances per currency.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                balances:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - currency
+                      - availableBalance
+                    properties:
+                      currency:
+                        type: string
+                        description: Fiat currency code (e.g. NGN, KES)
+                      availableBalance:
+                        type: string
+                        description: Available balance in fiat units
+      responses:
+        '200':
+          description: Balances updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  # ─── V2 Sender — Stats & Gateway Lookup ─────────────────────────────────────
+

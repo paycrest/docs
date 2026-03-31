@@ -85,10 +85,10 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
       ```javascript
       const crypto = require('crypto');
       
-      function verifyWebhookSignature(payload, signature, secret) {
+      function verifyWebhookSignature(rawBody, signature, secret) {
         const expectedSignature = crypto
           .createHmac('sha256', secret)
-          .update(JSON.stringify(payload))
+          .update(rawBody) // rawBody is the raw request body string/Buffer
           .digest('hex');
         
         return crypto.timingSafeEqual(
@@ -102,12 +102,12 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
       ```python
       import hmac
       import hashlib
-      import json
       
-      def verify_webhook_signature(payload, signature, secret):
+      def verify_webhook_signature(raw_body, signature, secret):
+          # raw_body is the raw request body bytes
           expected_signature = hmac.new(
               secret.encode('utf-8'),
-              json.dumps(payload, separators=(',', ':')).encode('utf-8'),
+              raw_body if isinstance(raw_body, bytes) else raw_body.encode('utf-8'),
               hashlib.sha256
           ).hexdigest()
           
@@ -122,14 +122,13 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
           "crypto/hmac"
           "crypto/sha256"
           "encoding/hex"
-          "encoding/json"
           "fmt"
       )
       
-      func verifyWebhookSignature(payload interface{}, signature, secret string) bool {
-          payloadBytes, _ := json.Marshal(payload)
+      func verifyWebhookSignature(rawBody []byte, signature, secret string) bool {
+          // rawBody is the raw request body bytes
           h := hmac.New(sha256.New, []byte(secret))
-          h.Write(payloadBytes)
+          h.Write(rawBody)
           expectedSignature := hex.EncodeToString(h.Sum(nil))
           
           return hmac.Equal([]byte(signature), []byte(expectedSignature))
@@ -161,8 +160,9 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
       </Card>
       <Card title="Other Networks" icon="network">
         <ul>
+          <li>Ethereum</li>
           <li>BNB Smart Chain</li>
-          <li>Tron</li>
+          <li>Scroll</li>
         </ul>
       </Card>
     </CardGroup>

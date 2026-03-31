@@ -12,8 +12,9 @@ Paycrest is building the infrastructure for a more inclusive, transparent, and e
 
 ```
 docs/
-├── mint.json                 # Mintlify configuration
-├── openapi.yaml             # OpenAPI specification
+├── docs.json                 # Mintlify configuration (navigation, theme)
+├── openapi-v1.yaml          # OpenAPI spec — legacy v1 API
+├── openapi-v2.yaml          # OpenAPI spec — current v2 API
 ├── logo/                    # Brand assets
 │   ├── dark.svg
 │   └── light.svg
@@ -96,23 +97,24 @@ The documentation will be available at `http://localhost:3000`.
 
 ## Configuration
 
-### mint.json
+### docs.json
 
 The main configuration file that defines:
 
-- **Navigation structure**: How pages are organized
+- **Navigation structure**: How pages are organized (including version tabs)
 - **Branding**: Logo, colors, and theme
-- **API integration**: OpenAPI specification integration
-- **Social links**: GitHub, Discord, etc.
+- **Social links**: GitHub, Community, etc.
 
-### openapi.yaml
+### openapi-v1.yaml and openapi-v2.yaml
 
-The OpenAPI specification that defines:
+Split OpenAPI specs (v1 legacy vs v2 current) that define:
 
-- **API endpoints**: All available API endpoints
-- **Request/response schemas**: Data structures
-- **Authentication**: API key authentication
-- **Examples**: Code examples for different languages
+- **API endpoints** for that version
+- **Request/response schemas**
+- **Authentication**: API key (`API-Key` header)
+- **Examples** used by Mintlify API pages
+
+API Reference `.mdx` files reference the appropriate file in frontmatter (e.g. `openapi: "openapi-v2.yaml POST /sender/orders"`).
 
 ## Customization
 
@@ -120,7 +122,7 @@ The OpenAPI specification that defines:
 
 1. Create a new `.mdx` file in the appropriate directory
 2. Add frontmatter with title and description
-3. Update `mint.json` navigation to include the new page
+3. Update `docs.json` navigation to include the new page
 
 ### Styling
 
@@ -133,10 +135,10 @@ The documentation uses Mintlify's built-in components:
 
 ### API Documentation
 
-The API documentation is automatically generated from the `openapi.yaml` file. To update:
+The API documentation is generated from `openapi-v1.yaml` / `openapi-v2.yaml` and the `api-reference/**/*.mdx` pages. To update:
 
-1. Modify the OpenAPI specification
-2. The changes will be reflected in the API reference section
+1. Modify the correct spec file for the version you are changing
+2. Restart or refresh local preview; changes show under API Reference
 
 ## Deployment
 
@@ -159,13 +161,12 @@ The API documentation is automatically generated from the `openapi.yaml` file. T
 1. Create a new `.mdx` file
 2. Follow the existing structure and formatting
 3. Include frontmatter with title and description
-4. Update navigation in `mint.json`
+4. Update navigation in `docs.json`
 
 ### Updating API Documentation
 
-1. Modify `openapi.yaml` with new endpoints or schemas
-2. The API reference will automatically update
-3. Test the changes locally with `mintlify dev`
+1. Modify `openapi-v1.yaml` and/or `openapi-v2.yaml` (and any linked MDX `openapi:` frontmatter)
+2. Test locally with `mintlify dev`
 
 ### Code Examples
 

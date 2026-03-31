@@ -1,43 +1,81 @@
 ---
 title: "Compliance & Security"
-description: "General approach to compliance and security in the Paycrest protocol."
+description: "How compliance works in the Paycrest protocol — and what security guarantees the protocol provides."
 ---
 
-Paycrest protocol is in an early stage and is designed with a focus on responsible practices, but it is not a regulated financial service. The protocol is open, evolving, and may change as the ecosystem matures.
+Paycrest is a payment routing and settlement protocol, not a financial institution. It does not hold funds, process payments, or act as a licensed financial intermediary. This shapes how compliance works: **responsibility is distributed to the edges, not centralized in the protocol**.
 
-## Compliance Approach
+## Compliance Model: Compliance at the Edges
 
-### KYC/KYB Requirements
+Unlike centralized settlement networks that vet every participant at the network level, Paycrest pushes compliance responsibility to the participants who are best positioned to own it:
 
-All participants in the Paycrest protocol must complete Know Your Customer (KYC) or Know Your Business (KYB) verification:
+<CardGroup cols={2}>
+  <Card title="Providers own local compliance" icon="building">
+    Each liquidity provider is responsible for their local regulatory obligations — PSP licensing, AML/CFT requirements, and any reporting obligations in their jurisdiction.
+  </Card>
+  <Card title="Senders own their compliance" icon="paper-plane">
+    Senders (apps integrating Paycrest) are responsible for their own user KYC/KYB, sanctions screening, and applicable regulations in the markets they serve.
+  </Card>
+  <Card title="Protocol coordinates requirements" icon="sitemap">
+    The protocol coordinates the exchange of compliance attestations between participants — it does not itself make compliance judgments.
+  </Card>
+  <Card title="KYC/KYB gated participation" icon="shield-check">
+    All senders and providers currently undergo identity verification before being granted API access. This is the federated phase; permissionless participation is a future phase.
+  </Card>
+</CardGroup>
 
-- **Senders**: Individual or business verification required
-- **Providers**: Business verification and licensing requirements
-- **Aggregators**: Business verification and compliance oversight
+This model is how Paycrest achieves coverage in markets where a single centralized compliance framework cannot span all jurisdictions.
 
-### Regulatory Considerations
+## KYC/KYB Requirements
 
-- **Local Compliance**: Participants must comply with local regulations
-- **Cross-Border**: International transfer regulations apply
-- **AML/CFT**: Anti-money laundering and counter-terrorism financing requirements
-- **Data Protection**: GDPR and local privacy law compliance
+### For Senders
 
-## Security Measures
+Senders are companies or developers who integrate Paycrest to provide on- or offramp services to their users:
+
+- Business verification (KYB) required before API access is granted
+- Register at [app.paycrest.io](https://app.paycrest.io) and complete the KYB process
+- Verification typically takes 1–3 business days
+
+### For Providers
+
+Providers are entities supplying fiat liquidity in exchange for stablecoins:
+
+- Business verification required, including PSP licensing documentation
+- Must demonstrate operational readiness in target corridors
+- Ongoing compliance monitoring as a condition of continued participation
+
+## Security
 
 ### Smart Contract Security
 
-- **Audited Contracts**: All Gateway contracts undergo security audits
-- **Multi-Signature**: Critical operations require multi-signature approval
-- **Timelock Mechanisms**: Protocol upgrades have built-in delays
-- **Emergency Pause**: Ability to pause operations in security incidents
+The Gateway contract is the only place where funds are held — and only temporarily, in escrow:
 
-### Infrastructure Security
+- **Audited contracts**: All Gateway contracts undergo security audits before deployment. See [github.com/paycrest/contracts](https://github.com/paycrest/contracts) for audit reports.
+- **Non-custodial escrow**: Funds are locked onchain until either (a) payout is verified and stablecoins are released to the provider, or (b) the 5-minute timeout triggers an automatic refund to the sender.
+- **Multi-signature governance**: Protocol parameter changes require multi-signature approval
 
-- **High Availability**: Redundant infrastructure for reliability
-- **DDoS Protection**: Protection against distributed denial of service attacks
-- **API Security**: Rate limiting, authentication, and encryption
-- **Data Encryption**: All sensitive data encrypted in transit and at rest
+### API Security
+
+- **API Key authentication**: Every API request requires a valid `API-Key` header
+- **API Secret**: Used for webhook signature verification — never exposed in client-side code
+- **Webhook HMAC verification**: All webhooks include an `X-Paycrest-Signature` header using HMAC-SHA256, allowing receivers to verify payload authenticity
+- **TLS required**: All API communication over HTTPS; never disable SSL verification in your HTTP client
+
+### Data Protection
+
+- **Encrypted recipient data**: Bank account and mobile wallet details are encrypted in transit and at rest
+- **Minimal data retention**: The protocol stores only what is necessary for order routing and settlement
+
+## Sender Monetization & Fee Transparency
+
+Paycrest is designed so that end users pay nothing to the protocol:
+
+- The **aggregator fee** (currently 0.5%) is embedded in the provider's rate — not charged to senders or recipients
+- **Sender fees** are optional and set by the integrating app, settled atomically onchain in the same transaction as the aggregator fee
+- No off-chain billing or reconciliation is required
+
+This means the "zero fees" claim is precise: there are no additional charges to the sender or recipient on top of the exchange rate offered by the provider.
 
 <Note>
-  Paycrest protocol is not a licensed financial institution. This documentation does not constitute legal or regulatory advice. Compliance requirements and security practices may change as the protocol evolves.
-</Note> 
+  Paycrest is not a licensed financial institution. This documentation does not constitute legal or regulatory advice. Participants are responsible for their own compliance obligations in their respective jurisdictions.
+</Note>
