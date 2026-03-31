@@ -610,7 +610,7 @@ components:
 
     V2CryptoDestination:
       type: object
-      required: [type, currency, network, recipient]
+      required: [type, currency, recipient]
       properties:
         type:
           type: string
@@ -618,9 +618,6 @@ components:
         currency:
           type: string
           description: Stablecoin symbol (e.g. USDT, USDC)
-        network:
-          type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon]
         providerId:
           type: string
         recipient:
@@ -1496,7 +1493,6 @@ paths:
                   destination:
                     type: crypto
                     currency: USDT
-                    network: base
                     recipient:
                       address: "0xRecipientWalletAddress"
                       network: base
