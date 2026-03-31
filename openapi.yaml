@@ -97,10 +97,12 @@ components:
           type: string
           format: date-time
         senderFee:
-          type: number
+          type: string
         transactionFee:
-          type: number
+          type: string
         reference:
+          type: string
+        orderType:
           type: string
     SenderOrderResponse:
       type: object
@@ -108,20 +110,22 @@ components:
         id:
           type: string
         amount:
-          type: number
+          type: string
+        amountInUsd:
+          type: string
         amountPaid:
-          type: number
+          type: string
         amountReturned:
-          type: number
+          type: string
         token:
           type: string
           description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         senderFee:
-          type: number
+          type: string
         transactionFee:
-          type: number
+          type: string
         rate:
-          type: number
+          type: string
         network:
           type: string
           enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
@@ -134,11 +138,16 @@ components:
           type: string
         returnAddress:
           type: string
+          description: Deprecated — use refundAddress
+        refundAddress:
+          type: string
         receiveAddress:
           type: string
         feeAddress:
           type: string
         reference:
+          type: string
+        orderType:
           type: string
         createdAt:
           type: string
@@ -157,7 +166,7 @@ components:
     SenderPaymentOrderList:
       type: object
       properties:
-        totalRecords:
+        total:
           type: integer
         page:
           type: integer
@@ -181,7 +190,7 @@ components:
     ProviderOrderList:
       type: object
       properties:
-        totalRecords:
+        total:
           type: integer
         page:
           type: integer
@@ -202,9 +211,15 @@ components:
         gatewayId:
           type: string
         amount:
-          type: number
+          type: string
+        amountInUsd:
+          type: string
         rate:
-          type: number
+          type: string
+        blockNumber:
+          type: integer
+        txHash:
+          type: string
         institution:
           type: string
           description: Institution code (SWIFT code or custom PayCrest code ending with 'PC'). See [Code Standards](/resources/code-standards) for details.
@@ -212,12 +227,16 @@ components:
           type: string
         accountName:
           type: string
+        providerId:
+          type: string
         memo:
           type: string
         network:
           type: string
           enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
+        orderType:
+          type: string
         status:
           type: string
         updatedAt:
@@ -276,21 +295,23 @@ components:
     MarketRateResponse:
       type: object
       properties:
-        marketRate:
-          type: number
+        marketBuyRate:
+          type: string
+        marketSellRate:
+          type: string
         minimumRate:
-          type: number
+          type: string
         maximumRate:
-          type: number
+          type: string
     ProviderStatsResponse:
       type: object
       properties:
         totalOrders:
           type: integer
         totalFiatVolume:
-          type: number
+          type: string
         totalCryptoVolume:
-          type: number
+          type: string
 
     # General Schemas
     SupportedCurrencies:
@@ -307,8 +328,10 @@ components:
           type: integer
         symbol:
           type: string
-        marketRate:
-          type: number
+        marketBuyRate:
+          type: string
+        marketSellRate:
+          type: string
     SupportedInstitutions:
       type: object
       properties:
@@ -343,7 +366,9 @@ components:
         orderId:
           type: string
         amount:
-          type: number
+          type: string
+        amountInUsd:
+          type: string
         token:
           type: string
           description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
@@ -352,7 +377,7 @@ components:
           enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
           description: Network identifier for the blockchain
         settlePercent:
-          type: number
+          type: string
         status:
           type: string
         txHash:
@@ -374,11 +399,11 @@ components:
         splitOrderId:
           type: string
         amount:
-          type: number
+          type: string
         rate:
-          type: number
+          type: string
         orderPercent:
-          type: number
+          type: string
     PaymentOrderTxReceipt:
       type: object
       properties:
@@ -429,8 +454,18 @@ components:
           type: string
           example: Error message
         data:
-          type: object
           nullable: true
+          description: "null on most errors; an array of field-level errors on validation failures"
+          oneOf:
+            - type: "null"
+            - type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
     StandardResponse:
       type: object
       properties:
@@ -1510,7 +1545,9 @@ paths:
                                 type: integer
                               OrderCreated:
                                 type: integer
-                              OrderSettled:
+                              SettleOut:
+                                type: integer
+                              SettleIn:
                                 type: integer
                               OrderRefunded:
                                 type: integer
