@@ -10,6 +10,10 @@ The Sender API lets your app create payment orders in two directions:
 
 Both flows go through the same endpoint: `POST /v2/sender/orders`. The direction is determined by the `source` and `destination` object types you pass.
 
+<Note>
+  A valid **`POST /v2/sender/orders`** is enough to create an order: the API validates bank accounts and resolves rates inside that request. The steps below marked **optional** help you **prefetch** resolved account names and **show** a quote in your UI before the user commits—they are not strict prerequisites.
+</Note>
+
 ## Flow Overview
 
 <Tabs>
@@ -76,13 +80,16 @@ const headers = {
 
 ### 2. Configure Tokens (Optional)
 
-In the dashboard settings, you can set a default `refundAddress` and `feeAddress` per token/network. These can also be passed per-request via `source.refundAddress`.
+In the dashboard settings, you can set defaults per token/network. **Offramp:** default `refundAddress` (crypto) and `feeAddress`; you can also pass `source.refundAddress` on the request. **Onramp:** you supply **`source.refundAccount`** (fiat bank or mobile details for refunds) in the order payload—configure related defaults in the dashboard where available.
 
 ---
 
-## Step 1: Verify the Recipient Account
+## Step 1 (Optional): Verify the bank account
 
-Before creating an order, verify the recipient's bank or mobile account. This reduces failed orders.
+Calling **`POST /v2/verify-account`** before create is **optional**. The create-order endpoint runs the same validation again, but prefetching reduces surprises and gives you a canonical **`accountName`** for your UI.
+
+- **Offramp** — verify the **fiat recipient** you will send in `destination.recipient` (same `institution`, `accountIdentifier`, and `currency` as the order).
+- **Onramp** — verify **`source.refundAccount`** (the account fiat refunds would return to), not the crypto wallet in `destination.recipient`.
 
 ```bash
 curl -X POST "https://api.paycrest.io/v2/verify-account" \
@@ -99,9 +106,13 @@ A `200 OK` response returns the resolved `accountName` in the `data` field. If `
 
 ---
 
-## Step 2: Fetch a Rate
+## Step 2 (Optional): Fetch a rate for display
 
-The rates endpoint is public (no API key required). Always fetch a fresh rate immediately before creating an order.
+The public rates URL is **optional**. On **`POST /v2/sender/orders`**, the **`rate` field is optional**—if you omit it, the API picks an available rate. Call **`GET /v2/rates/...`** when you want to **show** the user a quote, or when you intend to **pass `rate`** on create (it must be within tolerance of the market rate).
+
+<Note>
+  Today’s **`GET /v2/rates/:token/:amount/:fiat`** response reflects a **sell-side** quote for the given **crypto** notional. For **onramp** (buying crypto with fiat), you can still omit **`rate`** on create and rely on the API to resolve the **buy** side, or pass **`rate`** on the order when you have a value you want locked in.
+</Note>
 
 <Tabs>
   <Tab title="cURL">
@@ -131,7 +142,7 @@ rate = res.json()["data"]  # e.g. "1500.50"
 
 `POST /v2/sender/orders`
 
-Pass a `source` and `destination` object. The `type` field on each determines the direction.
+Pass a `source` and `destination` object. The `type` field on each determines the direction. **Offramp** and **onramp** use the same endpoint; examples below include **`curl`** for both directions. The extra **JavaScript** and **Python** snippets are **offramp**-shaped—mirror the **onramp** `curl` payload (`source.type: "fiat"`, `destination.type: "crypto"`, `refundAccount`, etc.) in your language.
 
 <Tabs>
   <Tab title="Offramp (stablecoin → fiat)">
@@ -256,6 +267,69 @@ order = requests.post(
 ).json()
 ```
   </Tab>
+  <Tab title="JavaScript (onramp)">
+```javascript
+const res = await fetch("https://api.paycrest.io/v2/sender/orders", {
+  method: "POST",
+  headers: { "API-Key": "YOUR_API_KEY", "Content-Type": "application/json" },
+  body: JSON.stringify({
+    amount: "50000",
+    amountIn: "fiat",
+    source: {
+      type: "fiat",
+      currency: "NGN",
+      refundAccount: {
+        institution: "GTBINGLA",
+        accountIdentifier: "1234567890",
+        accountName: "John Doe",
+      },
+    },
+    destination: {
+      type: "crypto",
+      currency: "USDT",
+      recipient: {
+        address: "0xRecipientWalletAddress",
+        network: "base",
+      },
+    },
+    reference: "order-002",
+  }),
+});
+const order = await res.json();
+```
+  </Tab>
+  <Tab title="Python (onramp)">
+```python
+import requests
+
+order = requests.post(
+    "https://api.paycrest.io/v2/sender/orders",
+    headers={"API-Key": "YOUR_API_KEY", "Content-Type": "application/json"},
+    json={
+        "amount": "50000",
+        "amountIn": "fiat",
+        "source": {
+            "type": "fiat",
+            "currency": "NGN",
+            "refundAccount": {
+                "institution": "GTBINGLA",
+                "accountIdentifier": "1234567890",
+                "accountName": "John Doe",
+            },
+        },
+        "destination": {
+            "type": "crypto",
+            "currency": "USDT",
+            "recipient": {
+                "address": "0xRecipientWalletAddress",
+                "network": "base",
+            },
+        },
+        "reference": "order-002",
+    },
+).json()
+```
+  </Tab>
 </Tabs>
 
 ### Request Fields
@@ -264,7 +338,7 @@ order = requests.post(
 |-------|------|----------|-------------|
 | `amount` | string | ✅ | Payment amount. Denomination set by `amountIn` (defaults to crypto units). |
 | `amountIn` | string | — | `"crypto"` (default) or `"fiat"`. Set to `"fiat"` when `amount` is in the fiat currency. |
-| `rate` | string | — | Exchange rate (fiat per crypto). Omit to use the best available rate. |
+| `rate` | string | — | Exchange rate (fiat per crypto). **Omit** to let the API choose the best available rate. Use **`GET /v2/rates/...`** when you need to **display** a quote or when you will **send `rate`** on create (must stay within market tolerance). |
 | `senderFeePercent` | string | — | Optional fee percentage you collect, settled atomically onchain. |
 | `reference` | string | — | Your internal order ID. |
 | `source` | object | ✅ | `{ type: "crypto", ... }` for offramp; `{ type: "fiat", ... }` for onramp. |
@@ -274,7 +348,7 @@ order = requests.post(
 
 ## Step 4: Handle the Provider Account Response
 
-The create response includes a `providerAccount` that differs by direction.
+The create response includes a `providerAccount` whose shape depends on direction: **offramp** gives a **crypto receive address**; **onramp** gives **virtual account / fiat transfer** instructions.
 
 ### Offramp — send tokens to `receiveAddress`
 
@@ -294,52 +368,6 @@ The create response includes a `providerAccount` that differs by direction.
 
 Send **exactly** `amount + senderFee + transactionFee` (all returned in the response) in the specified token to `providerAccount.receiveAddress` before `validUntil`.
 
-<Warning>
-  Always use `decimals` from [GET /tokens](/api-reference/general/list-supported-tokens) to compute the token amount — do not hardcode. BNB Smart Chain USDT and USDC use 18 decimals; all other chains use 6.
-</Warning>
-
-<Tabs>
-  <Tab title="JavaScript (viem)">
-```javascript
-import { parseUnits } from 'viem';
-
-// Fetch token decimals from GET /v2/tokens or use known value
-const tokenDecimals = 6; // USDT on Base; confirm via /v2/tokens
-
-const totalAmount = parseUnits(
-  (parseFloat(order.amount) + parseFloat(order.senderFee) + parseFloat(order.transactionFee)).toString(),
-  tokenDecimals
-);
-
-const hash = await walletClient.writeContract({
-  address: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', // USDT on Base
-  abi: ERC20_ABI,
-  functionName: 'transfer',
-  args: [order.providerAccount.receiveAddress, totalAmount]
-});
-```
-  </Tab>
-  <Tab title="Python (web3.py)">
-```python
-from web3 import Web3
-
-# USDT on Base; fetch decimals from GET /v2/tokens
-USDT_ADDRESS = '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2'
-token_decimals = 6
-
-total_amount = int(
-    (float(order['amount']) + float(order['senderFee']) + float(order['transactionFee']))
-    * 10**token_decimals
-)
-
-tx = usdt_contract.functions.transfer(
-    order['providerAccount']['receiveAddress'],
-    total_amount
-).build_transaction({ ... })
-```
-  </Tab>
-</Tabs>
-
 ### Onramp — present virtual account to user
 
 ```json
@@ -347,9 +375,9 @@ tx = usdt_contract.functions.transfer(
   "id": "550e8400-...",
   "status": "initiated",
   "providerAccount": {
-    "institution": "GTBINGLA",
+    "institution": "Guaranty Trust Bank",
     "accountIdentifier": "0123456789",
-    "accountName": "Paycrest / John Doe",
+    "accountName": "Provider A / John Doe",
     "amountToTransfer": "50000",
     "currency": "NGN",
     "validUntil": "2026-03-01T10:05:00Z"
@@ -359,7 +387,7 @@ tx = usdt_contract.functions.transfer(
 }
 ```
 
-Display the `providerAccount` details to your user. They must transfer exactly `amountToTransfer` in `currency` to `accountIdentifier` before `validUntil`.
+Display the `providerAccount` details to your user. They must transfer exactly `amountToTransfer` in `currency` to `accountIdentifier` before `validUntil`. (There is no on-chain token `transfer` from your app for this path—the user moves **fiat** through their bank or mobile wallet.)
 
 ---
 
@@ -508,13 +536,15 @@ You can optionally charge your users a fee on each order. It's settled atomicall
 }
 ```
 
-The total the user sends to the `providerAccount` is `amount + senderFee + transactionFee`, all returned in the create response.
+**Offramp:** the total stablecoin amount the user sends to `providerAccount.receiveAddress` is `amount + senderFee + transactionFee`, all returned in the create response. **Onramp:** the user pays **fiat** using `providerAccount.amountToTransfer` (and currency); fee line items in the response still describe what applies on settlement—follow the fields returned for your order.
 
 ---
 
 ## Testing
 
 Paycrest runs on mainnet only. Test with the minimum order size: **$0.50 on any supported chain**. Use small amounts until you've verified your integration end-to-end.
+
+The **minimum** integration path is **API credentials + a valid `POST /v2/sender/orders`**. Optional **`verify-account`** and **`GET /v2/rates`** calls are recommended for UX but are not required to place an order.
 
 ---
 
@@ -555,7 +585,7 @@ The response includes `receiveAddress` (string) and `validUntil`. Send tokens to
 | Offramp | ✅ | ✅ |
 | Onramp | ❌ | ✅ |
 | Schema | Flat: `token`, `network`, `recipient` | Polymorphic: `source`, `destination` with `type` |
-| `refundAddress` | `returnAddress` (top-level) | `source.refundAddress` |
+| `refundAddress` | `returnAddress` (top-level) | `source.refundAddress` (offramp); onramp uses `source.refundAccount` |
 | Amount direction | Always crypto | `amountIn: "fiat"` or `"crypto"` |
 | Sender fee | Fixed via dashboard | Dashboard (fixed) **or** `senderFeePercent` on request |
 | Numeric types | Number | String |
