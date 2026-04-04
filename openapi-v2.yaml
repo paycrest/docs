@@ -290,17 +290,53 @@ components:
       properties:
         reason:
           type: string
-    MarketRateResponse:
+    MarketRateSide:
       type: object
+      description: Tolerance band for one side (buy or sell) of the market rate.
       properties:
-        marketBuyRate:
+        marketRate:
           type: string
-        marketSellRate:
-          type: string
+          description: Reference market rate for this side (fiat per crypto).
         minimumRate:
           type: string
+          description: Minimum allowed rate for this side.
         maximumRate:
           type: string
+          description: Maximum allowed rate for this side.
+    MarketRateResponse:
+      type: object
+      description: Market rate bounds split by side. Either or both of `buy` and `sell` may be present depending on corridor configuration.
+      properties:
+        buy:
+          $ref: '#/components/schemas/MarketRateSide'
+        sell:
+          $ref: '#/components/schemas/MarketRateSide'
+    V2RateQuoteSide:
+      type: object
+      description: Quote details for one side from the public v2 rates endpoint.
+      properties:
+        rate:
+          type: string
+          description: Achievable rate (fiat per crypto) for this side and notional.
+        providerIds:
+          type: array
+          items:
+            type: string
+          description: Provider id(s) tied to the quote (single id when `provider_id` was requested).
+        orderType:
+          type: string
+          description: Order flow type, e.g. `regular` or `otc`.
+        refundTimeoutMinutes:
+          type: integer
+          description: Minutes until automatic refund for this flow.
+    V2RateQuoteResponse:
+      type: object
+      description: Public token rate quote. Omit `side` to receive both buy and sell; use `side=buy` or `side=sell` for a single side.
+      properties:
+        buy:
+          $ref: '#/components/schemas/V2RateQuoteSide'
+        sell:
+          $ref: '#/components/schemas/V2RateQuoteSide'
     ProviderStatsResponse:
       type: object
       properties:
@@ -1290,57 +1326,75 @@ paths:
                     items:
                       $ref: '#/components/schemas/SupportedTokenResponse'
 
-  /rates/{token}/{amount}/{fiat}:
+  /rates/{network}/{token}/{amount}/{fiat}:
     get:
       tags:
         - General
-      summary: Get token rate
+      summary: Get token rate (v2)
+      description: |
+        Public quote for a crypto notional on a specific network. Returns **buy** and/or **sell** quotes (fiat per crypto), provider id(s), order type, and refund timeout.
+
+        For the legacy single-number response, use **`GET /v1/rates/{token}/{amount}/{fiat}`** with optional `network` query.
       servers:
         - url: https://api.paycrest.io/v2
       parameters:
+        - in: path
+          name: network
+          required: true
+          schema:
+            type: string
+            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
+          description: Blockchain network identifier (lowercase in URL).
         - in: path
           name: token
           required: true
           schema:
             type: string
+          description: Token symbol (e.g. USDT, USDC).
         - in: path
           name: amount
           required: true
           schema:
             type: string
+          description: Token amount the quote applies to.
         - in: path
           name: fiat
           required: true
           schema:
             type: string
+          description: Fiat currency code (e.g. NGN, KES).
         - in: query
-          name: network
+          name: side
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, scroll, celo, arbitrum-one, polygon, asset-chain]
+            enum: [buy, sell]
+          description: Return only the buy or sell quote. Omit for both sides.
         - in: query
           name: provider_id
           schema:
             type: string
+            pattern: '^[A-Za-z]{8}$'
+          description: Optional. When set, limits the quote to this provider. Must be exactly 8 alphabetic characters (A–Z, a–z).
       responses:
         '200':
-          description: Token rate
+          description: Token rate quote(s)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                  data:
-                    type: number
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/V2RateQuoteResponse'
         '400':
-          description: Bad request
+          description: Bad request (invalid amount, side, provider_id, unsupported token/fiat/network, etc.)
         '404':
-          description: Not found
+          description: No provider available for the requested swap
+        '500':
+          description: Internal error while resolving rate
+        '503':
+          description: Temporary provider or banking/network issue for the currency
 
   /pubkey:
     get:

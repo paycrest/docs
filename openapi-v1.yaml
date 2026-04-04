@@ -290,17 +290,24 @@ components:
       properties:
         reason:
           type: string
-    MarketRateResponse:
+    MarketRateSide:
       type: object
+      description: Tolerance band for one side (buy or sell) of the market rate.
       properties:
-        marketBuyRate:
-          type: string
-        marketSellRate:
+        marketRate:
           type: string
         minimumRate:
           type: string
         maximumRate:
           type: string
+    MarketRateResponse:
+      type: object
+      description: Market rate bounds split by side (same shape as `GET /v2/provider/rates/{token}/{fiat}`).
+      properties:
+        buy:
+          $ref: '#/components/schemas/MarketRateSide'
+        sell:
+          $ref: '#/components/schemas/MarketRateSide'
     ProviderStatsResponse:
       type: object
       properties:

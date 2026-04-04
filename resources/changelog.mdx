@@ -9,6 +9,31 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q1 2026
 
+### Public v2 rates path and buy/sell quotes (April 2026)
+
+**`GET /v2/rates/{network}/{token}/{amount}/{fiat}`** is the supported public rates URL. The network is a **path** segment (not the `network` query used on v1). Responses use structured **`buy`** and **`sell`** objects (`rate`, `providerIds`, `orderType`, `refundTimeoutMinutes`) instead of a single scalar `data` value.
+
+Optional query parameters:
+
+- **`side`**: `buy` or `sell` to return only one side.
+- **`provider_id`**: exactly **8 alphabetic** characters to pin the quote to one provider.
+
+**Legacy:** **`GET /v1/rates/{token}/{amount}/{fiat}`** with optional `network` query is unchanged and still returns a single rate in `data`.
+
+**Provider market rate:** **`GET /v1/provider/rates/{token}/{fiat}`** and **`GET /v2/provider/rates/{token}/{fiat}`** now return **`buy`** and **`sell`** objects, each with `marketRate`, `minimumRate`, and `maximumRate` (replacing the previous flat `marketBuyRate` / `marketSellRate` fields).
+
+See [Get Token Rate](/api-reference/general/get-token-rate) and [Get Market Rate](/api-reference/provider/get-market-rate).
+
+---
+
+### FX onramp settleIn principal alignment (April 2026)
+
+No REST schema changes. For **FX onramp** pay-in, the aggregator now sizes onchain **`settleIn`** principal using Gateway fee settings (`providerToAggregatorFx`) so that, after the contract’s **floored** aggregator fee, the recipient still receives at least the **quoted net** crypto amount. Liquidity **reserve** and ERC-20 **approve** amounts align with that gross principal plus sender fee, and snapshots stored on the order keep release/cleanup consistent if chain settings move later.
+
+Onchain principal amounts may differ slightly from older builds that used a looser ceiling gross-up; recipients should match the quoted net more precisely.
+
+---
+
 ### v2 API — Onramp & Offramp (March 2026)
 
 The v2 API introduces a unified endpoint for both offramp and onramp flows, replacing the v1 offramp-only schema.

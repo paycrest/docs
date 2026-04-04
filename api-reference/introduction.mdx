@@ -58,7 +58,7 @@ For liquidity providers that fulfill orders:
 
 - **`GET /provider/orders`** - List orders available for fulfillment
 - **`GET /provider/orders/{id}`** - Get a specific order
-- **`GET /provider/rates/{token}/{fiat}`** - Get market rates
+- **`GET /provider/rates/{token}/{fiat}`** - Get market rate bands (`buy` / `sell` sides)
 - **`GET /provider/stats`** - Get provider statistics
 - **`GET /provider/node-info`** - Get provision node information
 
@@ -69,7 +69,7 @@ For protocol information and utilities:
 - **`GET /currencies`** - List supported fiat currencies
 - **`GET /institutions/{currency_code}`** - List supported institutions
 - **`GET /tokens`** - List supported tokens and contract addresses
-- **`GET /rates/{token}/{amount}/{fiat}`** - Get exchange rate for a token/fiat pair
+- **`GET /rates/{network}/{token}/{amount}/{fiat}`** - Get public buy/sell rate quotes for a token/fiat pair on a network (no API key)
 - **`GET /pubkey`** - Get aggregator public key
 - **`POST /verify-account`** - Verify bank account details before creating an order
 - **`GET /orders/{chain_id}/{id}`** - Get order status by onchain Gateway ID
@@ -396,8 +396,8 @@ Set up webhooks to receive real-time updates:
 - **`payment_order.deposited`** - Deposit detected on the receive address
 - **`payment_order.pending`** - Order matched and awaiting provider fulfillment
 - **`payment_order.validated`** - Provider confirmed fiat delivery
-- **`payment_order.settling`** - Settlement transaction broadcast on-chain
-- **`payment_order.settled`** - Settlement confirmed on-chain
+- **`payment_order.settling`** - Settlement transaction broadcast onchain
+- **`payment_order.settled`** - Settlement confirmed onchain
 - **`payment_order.refunding`** - Refund transaction initiated
 - **`payment_order.refunded`** - Deposit refunded to sender (fulfillment failed)
 - **`payment_order.expired`** - Order expired with no deposit received

@@ -3,4 +3,6 @@ title: 'Get Market Rate'
 openapi: "openapi-v1.yaml GET /provider/rates/{token}/{fiat}"
 ---
 
-Retrieve the market rate for a token and fiat pair (legacy v1 API).
+Retrieve the market rate for a token and fiat pair (v1 path; **same response shape** as `GET /v2/provider/rates/{token}/{fiat}`).
+
+The `data` object contains **`buy`** and **`sell`** sides when applicable, each with `marketRate`, `minimumRate`, and `maximumRate` (strings). The older flat fields `marketBuyRate` / `marketSellRate` / `minimumRate` / `maximumRate` at the top level are **no longer** returned.

@@ -3,4 +3,17 @@ title: 'Get Market Rate'
 openapi: "openapi-v2.yaml GET /provider/rates/{token}/{fiat}"
 ---
 
-Get the market rate for a token/fiat pair as a provider. 
+Returns **buy** and **sell** market rate **bands** (reference rate plus min/max tolerance) for a token/fiat pair. Use this to validate whether a sender-provided `rate` on order creation is within allowed bounds.
+
+## Response shape (`data`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `buy` | object (optional) | Buy-side band: `marketRate`, `minimumRate`, `maximumRate` |
+| `sell` | object (optional) | Sell-side band: `marketRate`, `minimumRate`, `maximumRate` |
+
+Numeric values are returned as **strings** (decimal). Either side may be omitted depending on corridor configuration.
+
+<Note>
+  **`GET /v1/provider/rates/{token}/{fiat}`** uses the same response shape as this v2 route.
+</Note>

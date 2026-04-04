@@ -11,7 +11,7 @@ Interact directly with the Paycrest Gateway smart contract for onchain <strong>s
 
 ## Overview
 
-The Gateway contract is a multi-chain EVM-based smart contract that facilitates the on-chain lifecycle of payment orders. It empowers users to create off-ramp orders while enabling liquidity providers to facilitate those orders at competitive exchange rates.
+The Gateway contract is a multi-chain EVM-based smart contract that facilitates the onchain lifecycle of payment orders. It empowers users to create off-ramp orders while enabling liquidity providers to facilitate those orders at competitive exchange rates.
 
 ## Prerequisites
 
@@ -323,9 +323,10 @@ func createOffRampOrder(amount string, recipient map[string]interface{}, refundA
   <Tab title="JavaScript">
 ```javascript
 async function getExchangeRate() {
-  const response = await fetch("https://api.paycrest.io/v2/rates/usdt/1/ngn?network=base");
-  const data = await response.json();
-  return Number(data.data);
+  const response = await fetch("https://api.paycrest.io/v2/rates/base/usdt/1/ngn");
+  const body = await response.json();
+  const rateStr = body.data?.sell?.rate ?? body.data?.buy?.rate;
+  return rateStr != null ? Number(rateStr) : NaN;
 }
 
 async function verifyAccount(recipient) {
@@ -347,9 +348,12 @@ async function verifyAccount(recipient) {
 import requests
 
 async def get_exchange_rate():
-    response = requests.get("https://api.paycrest.io/v2/rates/usdt/1/ngn?network=base")
+    response = requests.get("https://api.paycrest.io/v2/rates/base/usdt/1/ngn")
     data = response.json()
-    return float(data['data'])
+    d = data.get("data") or {}
+    side = d.get("sell") or d.get("buy") or {}
+    rate = side.get("rate")
+    return float(rate) if rate is not None else float("nan")
 
 async def verify_account(recipient):
     response = requests.post(
@@ -367,6 +371,7 @@ async def verify_account(recipient):
   <Tab title="Go">
 ```go
 import (
+    "bytes"
     "encoding/json"
     "fmt"
     "io"
@@ -375,27 +380,40 @@ import (
 )
 
 func getExchangeRate() (float64, error) {
-    resp, err := http.Get("https://api.paycrest.io/v2/rates/usdt/1/ngn?network=base")
+    resp, err := http.Get("https://api.paycrest.io/v2/rates/base/usdt/1/ngn")
     if err != nil {
         return 0, err
     }
     defer resp.Body.Close()
-    
+
     body, err := io.ReadAll(resp.Body)
     if err != nil {
         return 0, err
     }
-    
-    var result map[string]interface{}
-    json.Unmarshal(body, &result)
-    
-    rateStr := result["data"].(string)
-    rate, err := strconv.ParseFloat(rateStr, 64)
-    if err != nil {
+
+    var result struct {
+        Data struct {
+            Sell *struct {
+                Rate string `json:"rate"`
+            } `json:"sell"`
+            Buy *struct {
+                Rate string `json:"rate"`
+            } `json:"buy"`
+        } `json:"data"`
+    }
+    if err := json.Unmarshal(body, &result); err != nil {
         return 0, err
     }
-    
-    return rate, nil
+    var rateStr string
+    if result.Data.Sell != nil {
+        rateStr = result.Data.Sell.Rate
+    } else if result.Data.Buy != nil {
+        rateStr = result.Data.Buy.Rate
+    }
+    if rateStr == "" {
+        return 0, fmt.Errorf("no rate in response")
+    }
+    return strconv.ParseFloat(rateStr, 64)
 }
 
 func verifyAccount(recipient map[string]interface{}) (string, error) {
@@ -428,8 +446,8 @@ func verifyAccount(recipient map[string]interface{}) (string, error) {
   </Tab>
   <Tab title="cURL">
 ```bash
-# Get exchange rate
-curl -X GET "https://api.paycrest.io/v2/rates/usdt/1/ngn?network=base"
+# Get exchange rate (see data.sell.rate / data.buy.rate in JSON)
+curl -X GET "https://api.paycrest.io/v2/rates/base/usdt/1/ngn"
 
 # Verify account
 curl -X POST "https://api.paycrest.io/v2/verify-account" \

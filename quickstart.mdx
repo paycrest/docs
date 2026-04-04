@@ -15,28 +15,28 @@ This guide walks through creating a payment order using the Sender API, the reco
 
 ## Step 1: Get an Exchange Rate
 
-The rate endpoint is public (no API key needed). Fetch a fresh rate immediately before creating each order.
+The rate endpoint is public (no API key needed). Fetch a fresh quote immediately before creating each order.
+
+Path: **`GET /v2/rates/{network}/{token}/{amount}/{fiat}`** — network is the **first** path segment (e.g. `base`). The JSON `data` object has **`sell`** and **`buy`** sides; for a typical offramp, use **`data.sell.rate`**.
 
 <Tabs>
   <Tab title="cURL">
 ```bash
-curl "https://api.paycrest.io/v2/rates/USDT/100/NGN?network=base"
+curl "https://api.paycrest.io/v2/rates/base/USDT/100/NGN"
 ```
   </Tab>
   <Tab title="JavaScript">
 ```javascript
-const rate = await fetch("https://api.paycrest.io/v2/rates/USDT/100/NGN?network=base")
-  .then(r => r.json())
-  .then(r => r.data);
-console.log(rate); // e.g. "1500.50"
+const res = await fetch("https://api.paycrest.io/v2/rates/base/USDT/100/NGN").then((r) => r.json());
+console.log(res.data?.sell?.rate); // offramp: fiat per crypto
 ```
   </Tab>
   <Tab title="Python">
 ```python
 import requests
-res = requests.get("https://api.paycrest.io/v2/rates/USDT/100/NGN", params={"network": "base"})
-rate = res.json()["data"]
-print(rate)  # e.g. "1500.50"
+res = requests.get("https://api.paycrest.io/v2/rates/base/USDT/100/NGN")
+data = res.json()["data"]
+print((data.get("sell") or {}).get("rate"))
 ```
   </Tab>
   <Tab title="Go">
@@ -44,16 +44,25 @@ print(rate)  # e.g. "1500.50"
 package main
 
 import (
-    "fmt"
-    "io"
-    "net/http"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 )
 
 func main() {
-    resp, _ := http.Get("https://api.paycrest.io/v2/rates/USDT/100/NGN?network=base")
-    defer resp.Body.Close()
-    body, _ := io.ReadAll(resp.Body)
-    fmt.Println(string(body))
+	resp, _ := http.Get("https://api.paycrest.io/v2/rates/base/USDT/100/NGN")
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	var out struct {
+		Data struct {
+			Sell struct {
+				Rate string `json:"rate"`
+			} `json:"sell"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(body, &out)
+	fmt.Println(out.Data.Sell.Rate)
 }
 ```
   </Tab>

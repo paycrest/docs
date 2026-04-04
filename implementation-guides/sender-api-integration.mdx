@@ -1,6 +1,6 @@
 ---
 title: "Sender API Integration"
-description: "Integrate Paycrest to offer stablecoin offramp and onramp in your app — one API, two directions."
+description: "Ship offramp and onramp with one create call; add verify-account and public rates when you want a richer checkout UX."
 ---
 
 The Sender API lets your app create payment orders in two directions:
@@ -8,11 +8,9 @@ The Sender API lets your app create payment orders in two directions:
 - **Offramp** — user sends stablecoins, recipient receives local fiat (bank or mobile wallet)
 - **Onramp** — user deposits fiat into a virtual account, recipient receives stablecoins
 
-Both flows go through the same endpoint: `POST /v2/sender/orders`. The direction is determined by the `source` and `destination` object types you pass.
+Both flows use the same endpoint: **`POST /v2/sender/orders`**. Direction comes from the `source` and `destination` types you pass.
 
-<Note>
-  A valid **`POST /v2/sender/orders`** is enough to create an order: the API validates bank accounts and resolves rates inside that request. The steps below marked **optional** help you **prefetch** resolved account names and **show** a quote in your UI before the user commits—they are not strict prerequisites.
-</Note>
+**Fastest path to production:** one authenticated create call. The API **validates** bank or mobile account details and **resolves** an acceptable rate inside that request—you are **not** required to call verify-account or the public rates URL first. The sections after [Create a payment order](#create-a-payment-order) cover what happens next (response shape, webhooks). [Optional: prefetch quotes and account names](#optional-prefetch-quotes-and-account-names) explains how to polish checkout when you want prefetching—not because it is required.
 
 ## Flow Overview
 
@@ -84,65 +82,11 @@ In the dashboard settings, you can set defaults per token/network. **Offramp:** 
 
 ---
 
-## Step 1 (Optional): Verify the bank account
+## Create a payment order
 
-Calling **`POST /v2/verify-account`** before create is **optional**. The create-order endpoint runs the same validation again, but prefetching reduces surprises and gives you a canonical **`accountName`** for your UI.
+**`POST /v2/sender/orders`**
 
-- **Offramp** — verify the **fiat recipient** you will send in `destination.recipient` (same `institution`, `accountIdentifier`, and `currency` as the order).
-- **Onramp** — verify **`source.refundAccount`** (the account fiat refunds would return to), not the crypto wallet in `destination.recipient`.
-
-```bash
-curl -X POST "https://api.paycrest.io/v2/verify-account" \
-  -H "API-Key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "institution": "GTBINGLA",
-    "accountIdentifier": "1234567890",
-    "currency": "NGN"
-  }'
-```
-
-A `200 OK` response returns the resolved `accountName` in the `data` field. If `data` is an actual name (e.g. `"JOHN DOE"`), use that exact value as `accountName` in your order. If `data` is `"OK"`, account name lookup is not available for that corridor — pass your own `accountName` value instead.
-
----
-
-## Step 2 (Optional): Fetch a rate for display
-
-The public rates URL is **optional**. On **`POST /v2/sender/orders`**, the **`rate` field is optional**—if you omit it, the API picks an available rate. Call **`GET /v2/rates/...`** when you want to **show** the user a quote, or when you intend to **pass `rate`** on create (it must be within tolerance of the market rate).
-
-<Note>
-  Today’s **`GET /v2/rates/:token/:amount/:fiat`** response reflects a **sell-side** quote for the given **crypto** notional. For **onramp** (buying crypto with fiat), you can still omit **`rate`** on create and rely on the API to resolve the **buy** side, or pass **`rate`** on the order when you have a value you want locked in.
-</Note>
-
-<Tabs>
-  <Tab title="cURL">
-```bash
-curl "https://api.paycrest.io/v2/rates/USDT/100/NGN?network=base"
-```
-  </Tab>
-  <Tab title="JavaScript">
-```javascript
-const rate = await fetch("https://api.paycrest.io/v2/rates/USDT/100/NGN?network=base")
-  .then(r => r.json())
-  .then(r => r.data); // e.g. "1500.50"
-```
-  </Tab>
-  <Tab title="Python">
-```python
-import requests
-res = requests.get("https://api.paycrest.io/v2/rates/USDT/100/NGN", params={"network": "base"})
-rate = res.json()["data"]  # e.g. "1500.50"
-```
-  </Tab>
-</Tabs>
-
----
-
-## Step 3: Create an Order
-
-`POST /v2/sender/orders`
-
-Pass a `source` and `destination` object. The `type` field on each determines the direction. **Offramp** and **onramp** use the same endpoint; examples below include **`curl`** for both directions. The extra **JavaScript** and **Python** snippets are **offramp**-shaped—mirror the **onramp** `curl` payload (`source.type: "fiat"`, `destination.type: "crypto"`, `refundAccount`, etc.) in your language.
+Pass a `source` and a `destination` object. The `type` field on each determines the direction. **Offramp** and **onramp** use the same endpoint; examples below include **`curl`** for both directions. The extra **JavaScript** and **Python** snippets are **offramp**-shaped—mirror the **onramp** `curl` payload (`source.type: "fiat"`, `destination.type: "crypto"`, `refundAccount`, etc.) in your language.
 
 <Tabs>
   <Tab title="Offramp (stablecoin → fiat)">
@@ -338,7 +282,7 @@ order = requests.post(
 |-------|------|----------|-------------|
 | `amount` | string | ✅ | Payment amount. Denomination set by `amountIn` (defaults to crypto units). |
 | `amountIn` | string | — | `"crypto"` (default) or `"fiat"`. Set to `"fiat"` when `amount` is in the fiat currency. |
-| `rate` | string | — | Exchange rate (fiat per crypto). **Omit** to let the API choose the best available rate. Use **`GET /v2/rates/...`** when you need to **display** a quote or when you will **send `rate`** on create (must stay within market tolerance). |
+| `rate` | string | — | Exchange rate (fiat per crypto). **Omit** to let the API choose a valid rate. Pass **`rate`** only when you lock a quote from the user; it must stay within market tolerance. See [Prefetch a quote for the UI](#prefetch-a-quote-for-the-ui) if you display rates before create. |
 | `senderFeePercent` | string | — | Optional fee percentage you collect, settled atomically onchain. |
 | `reference` | string | — | Your internal order ID. |
 | `source` | object | ✅ | `{ type: "crypto", ... }` for offramp; `{ type: "fiat", ... }` for onramp. |
@@ -346,7 +290,7 @@ order = requests.post(
 
 ---
 
-## Step 4: Handle the Provider Account Response
+## Handle the create response
 
 The create response includes a `providerAccount` whose shape depends on direction: **offramp** gives a **crypto receive address**; **onramp** gives **virtual account / fiat transfer** instructions.
 
@@ -387,11 +331,11 @@ Send **exactly** `amount + senderFee + transactionFee` (all returned in the resp
 }
 ```
 
-Display the `providerAccount` details to your user. They must transfer exactly `amountToTransfer` in `currency` to `accountIdentifier` before `validUntil`. (There is no on-chain token `transfer` from your app for this path—the user moves **fiat** through their bank or mobile wallet.)
+Display the `providerAccount` details to your user. They must transfer exactly `amountToTransfer` in `currency` to `accountIdentifier` before `validUntil`. (There is no onchain token `transfer` from your app for this path—the user moves **fiat** through their bank or mobile wallet.)
 
 ---
 
-## Step 5: Monitor Order Status
+## Monitor completion
 
 Listen for webhooks or poll `GET /v2/sender/orders/:id`.
 
@@ -426,7 +370,7 @@ Configure your webhook URL in the [Sender Dashboard](https://app.paycrest.io). W
 | `payment_order.expired` | No deposit received before `validUntil` |
 
 <Note>
-  You can notify the user of a successful offramp at `payment_order.validated` — that's when the provider has confirmed fiat delivery. For onramp, use `payment_order.settled` — that's when stablecoins are confirmed on-chain.
+  You can notify the user of a successful offramp at `payment_order.validated` — that's when the provider has confirmed fiat delivery. For onramp, use `payment_order.settled` — that's when stablecoins are confirmed onchain.
 </Note>
 
 ### Verify Webhook Signatures
@@ -514,7 +458,7 @@ async function getOrderStatus(orderId) {
 
   switch (data.status) {
     case 'validated': // offramp: fiat delivered — safe to notify user
-    case 'settled':   // onramp: stablecoins delivered — or offramp fully on-chain
+    case 'settled':   // onramp: stablecoins delivered — or offramp fully onchain
     case 'refunded':  // funds returned
     case 'expired':   // no deposit received
   }
@@ -524,9 +468,67 @@ async function getOrderStatus(orderId) {
 
 ---
 
+## Optional: Prefetch quotes and account names
+
+Use this when you want **clearer UX** before the user confirms—not because the API requires extra calls.
+
+### Resolve the account display name early
+
+**`POST /v2/verify-account`** runs the **same checks** again on create, but calling it first cuts down “invalid account” surprises and returns a canonical **`accountName`** for your form.
+
+- **Offramp** — verify the **fiat recipient** you will send in `destination.recipient` (same `institution`, `accountIdentifier`, and `currency` as the order).
+- **Onramp** — verify **`source.refundAccount`** (where fiat refunds go), not the crypto wallet in `destination.recipient`.
+
+```bash
+curl -X POST "https://api.paycrest.io/v2/verify-account" \
+  -H "API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "institution": "GTBINGLA",
+    "accountIdentifier": "1234567890",
+    "currency": "NGN"
+  }'
+```
+
+A `200 OK` response returns the resolved `accountName` in `data`. If `data` is a real name (e.g. `"JOHN DOE"`), use that exact string as `accountName` on the order. If `data` is `"OK"`, name lookup is not available for that corridor—supply your own `accountName`.
+
+### Prefetch a quote for the UI
+
+**`GET /v2/rates/{network}/{token}/{amount}/{fiat}`** is **public** (no API key). Use it when you want to **show** a rate before submit, or when you will pass **`rate`** on create (it must stay within market tolerance). If you omit **`rate`** on create, the API still picks an acceptable rate.
+
+<Note>
+  The JSON `data` object includes **`buy`** and **`sell`** (unless you pass `?side=buy` or `?side=sell`). Use **`data.sell.rate`** for **offramp** and **`data.buy.rate`** for **onramp** when displaying a quote. **`provider_id`** is optional and must be exactly **8 letters** (`A–Z` or `a–z`) if you pin a provider.
+</Note>
+
+<Tabs>
+  <Tab title="cURL">
+```bash
+curl "https://api.paycrest.io/v2/rates/base/USDT/100/NGN"
+```
+  </Tab>
+  <Tab title="JavaScript">
+```javascript
+const res = await fetch("https://api.paycrest.io/v2/rates/base/USDT/100/NGN").then((r) => r.json());
+const sellRate = res.data?.sell?.rate; // offramp display
+const buyRate = res.data?.buy?.rate;   // onramp display
+```
+  </Tab>
+  <Tab title="Python">
+```python
+import requests
+res = requests.get("https://api.paycrest.io/v2/rates/base/USDT/100/NGN")
+data = res.json()["data"]
+sell_rate = (data.get("sell") or {}).get("rate")
+buy_rate = (data.get("buy") or {}).get("rate")
+```
+  </Tab>
+</Tabs>
+
+---
+
 ## Sender Fees
 
-You can optionally charge your users a fee on each order. It's settled atomically onchain — no off-chain billing required. Configure your fee in [Sender Dashboard](https://app.paycrest.io) settings (required). You can override it per-request by passing `senderFeePercent` in the order payload.
+You can optionally charge your users a fee on each order. It's settled atomically onchain — no offchain billing required. Configure your fee in [Sender Dashboard](https://app.paycrest.io) settings (required). You can override it per-request by passing `senderFeePercent` in the order payload.
 
 ```json
 {
@@ -544,7 +546,7 @@ You can optionally charge your users a fee on each order. It's settled atomicall
 
 Paycrest runs on mainnet only. Test with the minimum order size: **$0.50 on any supported chain**. Use small amounts until you've verified your integration end-to-end.
 
-The **minimum** integration path is **API credentials + a valid `POST /v2/sender/orders`**. Optional **`verify-account`** and **`GET /v2/rates`** calls are recommended for UX but are not required to place an order.
+**Smoke test:** credentials + **`POST /v2/sender/orders`** + handle **`providerAccount`** + one webhook or poll. Add **`verify-account`** and **`GET /v2/rates`** when you are polishing the checkout experience—they are not required to go live.
 
 ---
 

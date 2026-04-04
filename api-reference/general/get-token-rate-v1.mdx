@@ -3,4 +3,6 @@ title: 'Get Token Rate'
 openapi: "openapi-v1.yaml GET /rates/{token}/{amount}/{fiat}"
 ---
 
-Retrieve an exchange rate for a token amount and fiat pair (legacy v1 API).
+Retrieve an exchange rate for a token amount and fiat pair (legacy v1 API). Response `data` is a **single** rate value (string/number).
+
+For **network in the path** and **buy/sell** quotes, use [Get Token Rate (v2)](/api-reference/general/get-token-rate) — `GET /v2/rates/{network}/{token}/{amount}/{fiat}`.
