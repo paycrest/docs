@@ -3,7 +3,7 @@ title: "Quickstart"
 description: "Create your first Paycrest payment order in minutes."
 ---
 
-This guide walks through creating a payment order using the Sender API, the recommended path for all new integrations. You'll have a working offramp in under 10 minutes.
+This guide walks through creating a payment order using the Sender API, the recommended path for all new integrations. You'll have a working offramp in under 10 minutes. You do **not** need to call the public rates API first—`POST /v2/sender/orders` resolves an acceptable rate unless you pass a locked **`rate`** on create (see the [Sender API integration guide](/implementation-guides/sender-api-integration)).
 
 ## Prerequisites
 
@@ -13,64 +13,13 @@ This guide walks through creating a payment order using the Sender API, the reco
 
 ---
 
-## Step 1: Get an Exchange Rate
+## Optional: Prefetch a quote for the UI
 
-The rate endpoint is public (no API key needed). Fetch a fresh quote immediately before creating each order.
-
-Path: **`GET /v2/rates/{network}/{token}/{amount}/{fiat}`** — network is the **first** path segment (e.g. `base`). The JSON `data` object has **`sell`** and **`buy`** sides; for a typical offramp, use **`data.sell.rate`**.
-
-<Tabs>
-  <Tab title="cURL">
-```bash
-curl "https://api.paycrest.io/v2/rates/base/USDT/100/NGN"
-```
-  </Tab>
-  <Tab title="JavaScript">
-```javascript
-const res = await fetch("https://api.paycrest.io/v2/rates/base/USDT/100/NGN").then((r) => r.json());
-console.log(res.data?.sell?.rate); // offramp: fiat per crypto
-```
-  </Tab>
-  <Tab title="Python">
-```python
-import requests
-res = requests.get("https://api.paycrest.io/v2/rates/base/USDT/100/NGN")
-data = res.json()["data"]
-print((data.get("sell") or {}).get("rate"))
-```
-  </Tab>
-  <Tab title="Go">
-```go
-package main
-
-import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-)
-
-func main() {
-	resp, _ := http.Get("https://api.paycrest.io/v2/rates/base/USDT/100/NGN")
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	var out struct {
-		Data struct {
-			Sell struct {
-				Rate string `json:"rate"`
-			} `json:"sell"`
-		} `json:"data"`
-	}
-	_ = json.Unmarshal(body, &out)
-	fmt.Println(out.Data.Sell.Rate)
-}
-```
-  </Tab>
-</Tabs>
+If you want to **show** an exchange rate in checkout before create, call the public **`GET /v2/rates/{network}/{from}/{amount}/{to}`** endpoint (no API key). For when to pass **`rate`** on create and full examples, see [Optional: prefetch quotes and account names](/implementation-guides/sender-api-integration#optional-prefetch-quotes-and-account-names). Endpoint reference: [Get Token Rate (v2)](/api-reference/general/get-token-rate).
 
 ---
 
-## Step 2: Create a Payment Order
+## Step 1: Create a Payment Order
 
 Use `POST /v2/sender/orders`. Set `source.type` and `destination.type` to choose the direction.
 
@@ -244,7 +193,7 @@ func main() {
 
 ---
 
-## Step 3: Complete the Payment
+## Step 2: Complete the Payment
 
 The response includes a `providerAccount` that tells you (or your user) where to send funds.
 
@@ -261,7 +210,7 @@ The response includes a `providerAccount` that tells you (or your user) where to
 
 ---
 
-## Step 4: Track Order Status
+## Step 3: Track Order Status
 
 Poll `GET /v2/sender/orders/:id` or listen for webhooks configured in your dashboard.
 
