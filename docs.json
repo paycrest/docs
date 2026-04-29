@@ -12,6 +12,11 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
+  "seo": {
+    "metatags": {
+      "base:app_id": "69f2113a05020c0316bbbf92"
+    }
+  },
   "navigation": {
     "versions": [
       {
