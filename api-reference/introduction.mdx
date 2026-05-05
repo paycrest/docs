@@ -404,7 +404,7 @@ Set up webhooks to receive real-time updates:
 
 ### Webhook Payload
 
-Webhook signatures use HMAC-SHA256. Verify against the raw request body, not re-serialized JSON.
+Webhook signatures use HMAC-SHA256 over the **exact raw request body**. Do not re-serialize parsed JSON (key ordering differs). The `X-Paycrest-Signature` header is a **hex string** — compare using timing-safe equality on the **UTF-8 bytes of the hex strings** (see the [Sender API integration guide](/implementation-guides/sender-api-integration#verify-webhook-signatures)). If verification fails with the correct API secret, check the guide note on **legacy trailing newline** on the body.
 
 ```json
 {

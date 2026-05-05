@@ -251,25 +251,30 @@ const express = require('express');
 const crypto = require('crypto');
 const app = express();
 
-app.use(express.json());
-
-// Webhook signature verification
-function verifySignature(rawBody, signature, secret) {
-  const hash = crypto.createHmac('sha256', secret)
-    .update(rawBody) // rawBody is the raw request body string/Buffer
-    .digest('hex');
-  return signature === hash;
+// Use raw body for this route only — do not use express.json() before webhook verification
+function verifyPaycrestSignature(rawBody, signature, secret) {
+  const sig = (signature && String(signature).trim().toLowerCase()) || '';
+  const key = String(secret || '').trim();
+  if (!sig || !key) return false;
+  const bodyBuf = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody, 'utf8');
+  const computed = crypto.createHmac('sha256', key).update(bodyBuf).digest('hex').toLowerCase();
+  if (computed.length !== sig.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(computed, 'utf8'), Buffer.from(sig, 'utf8'));
+  } catch {
+    return false;
+  }
 }
 
-// Webhook endpoint for order updates
-app.post('/webhooks/paycrest', async (req, res) => {
+// Webhook endpoint for order updates (raw JSON bytes for HMAC)
+app.post('/webhooks/paycrest', express.raw({ type: 'application/json' }), async (req, res) => {
   const signature = req.get('X-Paycrest-Signature');
-  
-  if (!verifySignature(req.body, signature, process.env.WEBHOOK_SECRET)) {
+
+  if (!verifyPaycrestSignature(req.body, signature, process.env.WEBHOOK_SECRET)) {
     return res.status(401).send('Invalid signature');
   }
-  
-  const { event, orderId, status, data } = req.body;
+
+  const { event, orderId, status, data } = JSON.parse(req.body);
   
   try {
     // Update order status in database
