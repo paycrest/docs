@@ -379,10 +379,6 @@ Verify the `X-Paycrest-Signature` header using HMAC-SHA256 with your API Secret:
 
 The header value is a **hex string** (64 characters for SHA-256). Compare it to your computed hex using **timing-safe equality on the UTF-8 bytes of those strings** (do not `Buffer.from(hex, 'hex')` for the header — that compares raw digest bytes and does not match how the aggregator compares signatures). Normalize the header with **trim** and **lowercase** before comparing.
 
-<Note>
-  Older aggregator builds signed **`json.Marshal`** bytes but sent the body with **`json.Encoder.Encode`**, which appends a trailing newline. If verification fails with a correct secret, retry HMAC on the same body **with one trailing `\n` or `\r\n` removed**. Current aggregators send the exact JSON bytes that were signed.
-</Note>
-
 <Tabs>
   <Tab title="JavaScript">
 ```javascript

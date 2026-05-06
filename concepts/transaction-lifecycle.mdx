@@ -226,7 +226,7 @@ The v2 payload adds a `direction` field and uses polymorphic `source`/`destinati
 
 Verify the authenticity of webhook payloads using your API Secret to compute an HMAC-SHA256 signature and compare it against the `X-Paycrest-Signature` header. Always verify against the **raw request body bytes** — do not parse and re-serialize the JSON, as key ordering may differ.
 
-The `X-Paycrest-Signature` value is a **hex string**. Use **timing-safe** comparison on the **UTF-8 bytes** of the hex strings (`Buffer.from(hex, 'utf8')`), not `Buffer.from(hex, 'hex')`. Trim and lowercase the header first. If verification fails with the correct secret, see the Sender API guide note on **legacy trailing newline** on the request body.
+The `X-Paycrest-Signature` value is a **hex string**. Use **timing-safe** comparison on the **UTF-8 bytes** of the hex strings (`Buffer.from(hex, 'utf8')`), not `Buffer.from(hex, 'hex')`. Trim and lowercase the header first.
 
 <Tabs>
   <Tab title="JavaScript">
