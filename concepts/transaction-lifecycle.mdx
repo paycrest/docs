@@ -224,7 +224,9 @@ The v2 payload adds a `direction` field and uses polymorphic `source`/`destinati
 
 ## Webhook Verification
 
-Verify the authenticity of webhook payloads using your API Secret to compute an HMAC-SHA256 signature and compare it against the `X-Paycrest-Signature` header. Always verify against the **raw request body bytes** — do not parse and re-serialize the JSON, as key ordering may differ:
+Verify the authenticity of webhook payloads using your API Secret to compute an HMAC-SHA256 signature and compare it against the `X-Paycrest-Signature` header. Always verify against the **raw request body bytes** — do not parse and re-serialize the JSON, as key ordering may differ.
+
+The `X-Paycrest-Signature` value is a **hex string**. Use **timing-safe** comparison on the **UTF-8 bytes** of the hex strings (`Buffer.from(hex, 'utf8')`), not `Buffer.from(hex, 'hex')`. Trim and lowercase the header first.
 
 <Tabs>
   <Tab title="JavaScript">
@@ -232,14 +234,18 @@ Verify the authenticity of webhook payloads using your API Secret to compute an 
 const crypto = require('crypto');
 
 function verifyWebhook(rawBody, signature, secret) {
-  const computed = crypto
-    .createHmac('sha256', secret)
-    .update(rawBody) // rawBody is the raw request body Buffer/string
-    .digest('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(computed),
-    Buffer.from(signature)
-  );
+  const sig = (signature && String(signature).trim().toLowerCase()) || '';
+  const key = String(secret || '').trim();
+  if (!sig || !key) return false;
+
+  const bodyBuf = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody, 'utf8');
+  const computed = crypto.createHmac('sha256', key).update(bodyBuf).digest('hex').toLowerCase();
+  if (computed.length !== sig.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(computed, 'utf8'), Buffer.from(sig, 'utf8'));
+  } catch {
+    return false;
+  }
 }
 ```
   </Tab>
@@ -250,12 +256,14 @@ import hashlib
 
 def verify_webhook(raw_body, signature, secret):
     # raw_body is request.data (raw bytes)
+    sig = (signature or "").strip().lower()
+    body = raw_body if isinstance(raw_body, bytes) else raw_body.encode()
     computed = hmac.new(
-        secret.encode(),
-        raw_body if isinstance(raw_body, bytes) else raw_body.encode(),
-        hashlib.sha256
-    ).hexdigest()
-    return hmac.compare_digest(computed, signature)
+        secret.strip().encode("utf-8"),
+        body,
+        hashlib.sha256,
+    ).hexdigest().lower()
+    return hmac.compare_digest(computed, sig)
 ```
   </Tab>
   <Tab title="Go">
@@ -264,13 +272,15 @@ import (
     "crypto/hmac"
     "crypto/sha256"
     "encoding/hex"
+    "strings"
 )
 
 func verifyWebhook(payload []byte, signature, secret string) bool {
-    mac := hmac.New(sha256.New, []byte(secret))
+    mac := hmac.New(sha256.New, []byte(strings.TrimSpace(secret)))
     mac.Write(payload)
     computed := hex.EncodeToString(mac.Sum(nil))
-    return hmac.Equal([]byte(computed), []byte(signature))
+    sig := strings.ToLower(strings.TrimSpace(signature))
+    return hmac.Equal([]byte(computed), []byte(sig))
 }
 ```
   </Tab>

@@ -86,15 +86,21 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
       const crypto = require('crypto');
       
       function verifyWebhookSignature(rawBody, signature, secret) {
-        const expectedSignature = crypto
-          .createHmac('sha256', secret)
-          .update(rawBody) // rawBody is the raw request body string/Buffer
-          .digest('hex');
-        
-        return crypto.timingSafeEqual(
-          Buffer.from(signature),
-          Buffer.from(expectedSignature)
-        );
+        const sig = (signature && String(signature).trim().toLowerCase()) || '';
+        const key = String(secret || '').trim();
+        if (!sig || !key) return false;
+
+        const bodyBuf = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody, 'utf8');
+        const expected = crypto.createHmac('sha256', key).update(bodyBuf).digest('hex').toLowerCase();
+        if (expected.length !== sig.length) return false;
+        try {
+          return crypto.timingSafeEqual(
+            Buffer.from(expected, 'utf8'),
+            Buffer.from(sig, 'utf8')
+          );
+        } catch {
+          return false;
+        }
       }
       ```
       </Tab>
@@ -105,13 +111,14 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
       
       def verify_webhook_signature(raw_body, signature, secret):
           # raw_body is the raw request body bytes
-          expected_signature = hmac.new(
-              secret.encode('utf-8'),
-              raw_body if isinstance(raw_body, bytes) else raw_body.encode('utf-8'),
-              hashlib.sha256
-          ).hexdigest()
-          
-          return hmac.compare_digest(signature, expected_signature)
+          sig = (signature or "").strip().lower()
+          body = raw_body if isinstance(raw_body, bytes) else raw_body.encode("utf-8")
+          expected = hmac.new(
+              secret.strip().encode("utf-8"),
+              body,
+              hashlib.sha256,
+          ).hexdigest().lower()
+          return hmac.compare_digest(expected, sig)
       ```
       </Tab>
       <Tab title="Go">
@@ -122,16 +129,16 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
           "crypto/hmac"
           "crypto/sha256"
           "encoding/hex"
-          "fmt"
+          "strings"
       )
       
       func verifyWebhookSignature(rawBody []byte, signature, secret string) bool {
           // rawBody is the raw request body bytes
-          h := hmac.New(sha256.New, []byte(secret))
+          h := hmac.New(sha256.New, []byte(strings.TrimSpace(secret)))
           h.Write(rawBody)
-          expectedSignature := hex.EncodeToString(h.Sum(nil))
-          
-          return hmac.Equal([]byte(signature), []byte(expectedSignature))
+          expected := hex.EncodeToString(h.Sum(nil))
+          sig := strings.ToLower(strings.TrimSpace(signature))
+          return hmac.Equal([]byte(expected), []byte(sig))
       }
       ```
       </Tab>
