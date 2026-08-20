@@ -814,6 +814,18 @@ Fixed fee alternative:
 
 ---
 
+## Onchain attribution
+
+On EVM networks, the aggregator tags the transactions it submits for your orders (creation, settlement, and refunds) with an [ERC-8021](https://eip.tools/eip/8021) data suffix carrying the **trading name** from your KYB profile. It makes your orders publicly attributable to your business onchain.
+
+- **Automatic.** There is nothing to configure or send. Senders with no trading name on file simply get no suffix.
+- **EVM only.** Starknet and Tron transactions carry no suffix.
+- **Display only.** The suffix does not affect order processing, sender resolution, or webhooks, and it is not read back by the aggregator. It costs roughly 16 gas per non-zero byte.
+
+If you call the Gateway contract directly instead of using this API, see [Onchain Attribution (ERC-8021)](/implementation-guides/smart-contract-interaction#onchain-attribution-erc-8021) for appending your own suffix.
+
+---
+
 ## Testing
 
 Paycrest runs on mainnet only. Test with the minimum order size: **$0.50 on any supported chain**. Use small amounts until you've verified your integration end-to-end.

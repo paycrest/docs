@@ -9,6 +9,20 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q3 2026
 
+### Onchain sender attribution via ERC-8021 (August 2026)
+
+**New:** The aggregator now stamps the EVM transactions it submits with an [ERC-8021](https://eip.tools/eip/8021) schema-0 data suffix carrying the sender's **trading name** from their KYB profile. It is applied to the transactions the aggregator submits for an order: creation, settlement, and refunds. Orders placed through the Sender API carry public onchain attribution with no integration work.
+
+- **Sender code**: the sender's KYB trading name (for example, `AcmeCorp`). Senders with no trading name on file get no suffix.
+- **Suffix layout** (parsed backwards from the end of calldata): comma-joined ASCII `codes` · 1-byte length · 1-byte schema `0x00` · 16-byte marker `0x8021...8021`.
+- **EVM only**: Starknet and Tron transactions carry no suffix.
+
+**Important:** the suffix is a public, human-readable attribution tag. It is **not** used for sender identification. Sender resolution, webhook delivery, and order lookup continue to use `metadata.apiKey` inside the encrypted `messageHash`, which is unchanged and not deprecated.
+
+Direct Gateway integrators can append their own suffix to `createOrder` calldata for public attribution. See [Onchain Attribution (ERC-8021)](/implementation-guides/smart-contract-interaction#onchain-attribution-erc-8021).
+
+---
+
 ### Optional `senderFeeAddress` on V2 create order (July 2026)
 
 **Updated:** `POST /v2/sender/orders` accepts an optional top-level **`senderFeeAddress`**.

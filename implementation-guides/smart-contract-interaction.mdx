@@ -476,6 +476,10 @@ The recipient object is encrypted with the aggregator's public key to produce th
   Your API Key is available in the dashboard at [app.paycrest.io](https://app.paycrest.io).
 </Note>
 
+<Note>
+  On EVM networks you can additionally (or instead) attribute orders with an onchain ERC-8021 data suffix. See [Onchain Attribution (ERC-8021)](#onchain-attribution-erc-8021).
+</Note>
+
 <Tabs>
   <Tab title="JavaScript">
 ```javascript
@@ -584,6 +588,306 @@ curl -X GET "https://api.paycrest.io/v2/pubkey"
 ```
   </Tab>
 </Tabs>
+
+## Onchain Attribution (ERC-8021)
+
+Paycrest tags EVM transactions with an [ERC-8021](https://eip.tools/eip/8021) schema-0 data suffix that carries a sender's **trading name** as a public, human-readable attribution tag.
+
+The suffix is execution-inert: the Gateway contract ignores trailing bytes beyond its expected ABI arguments, so it passes through without affecting execution. Cost is roughly 16 gas per non-zero byte.
+
+<Note>
+  **The suffix is public attribution only.** It is not read for sender identification. Sender resolution, webhook delivery, and order lookup use `metadata.apiKey` inside the encrypted `messageHash`, which remains the authoritative and only mechanism.
+</Note>
+
+### Who appends the suffix
+
+| Path | Who appends it | Code used |
+|------|----------------|-----------|
+| **Sender API** (aggregator-relayed orders) | The aggregator, automatically | The sender's KYB trading name |
+| **Direct Gateway integration** (this guide) | You, on your own `createOrder` calldata | Whatever you choose to publish |
+| **Noblocks** on Base mainnet | The Noblocks app | Its registered Base Builder Code |
+
+On the Sender API path the aggregator appends the suffix to the transactions it submits for an order: creation, settlement, and refunds. Senders with no trading name on their KYB profile get no suffix. There is nothing to configure.
+
+If you call the Gateway contract directly, nothing is appended for you. The rest of this section covers appending your own.
+
+### Your sender code
+
+Pick a printable-ASCII code that identifies you publicly. Paycrest uses the **trading name** from the KYB profile for its own attribution, so matching that keeps your direct transactions consistent with your Sender API ones.
+
+```javascript
+// Your trading name from your KYB profile at app.paycrest.io
+const senderCode = "AcmeCorp";
+```
+
+<Callout type="warning">
+  Whatever you put in the suffix is **permanently public onchain**. Use a business identifier you are happy to publish. Never place an API secret, key ID, or any credential in the suffix: your API secret stays for webhooks and REST authentication only.
+</Callout>
+
+### Suffix layout
+
+Schema 0, parsed **backwards from the end** of the calldata:
+
+| Field | Size | Value |
+|-------|------|-------|
+| `codes` | variable | Comma-joined ASCII codes |
+| `length` | 1 byte | Byte length of `codes` |
+| `schemaId` | 1 byte | `0x00` |
+| `marker` | 16 bytes | `0x8021` repeated 8 times |
+
+Constraints: `codes` must be non-empty printable ASCII (`0x20` to `0x7e`), individual codes must not contain a comma (the delimiter), and the joined string must be at most **255 bytes**. Violating any of these makes the suffix unparseable by ERC-8021 readers. It has no effect on your order, which is processed from `metadata.apiKey` either way.
+
+**Worked example** for trading name `AcmeCorp`:
+
+```text
+41636d65436f7270 08 00 80218021802180218021802180218021
+└── "AcmeCorp" ──┘ len schema        marker
+                  0x08  0x00
+```
+
+### Encoding the suffix
+
+<Tabs>
+  <Tab title="JavaScript">
+```javascript
+import { concatHex, stringToHex, toHex } from "viem";
+
+const ERC8021_MARKER = `0x${"8021".repeat(8)}`;
+
+function encodeAttributionSuffix(codes) {
+  for (const code of codes) {
+    if (!code || code.includes(",")) {
+      throw new Error("ERC-8021 codes must be non-empty and comma-free");
+    }
+  }
+  const joined = codes.join(",");
+  if (!joined || joined.length > 255) {
+    throw new Error("ERC-8021 codes must be 1-255 bytes once joined");
+  }
+  for (let i = 0; i < joined.length; i++) {
+    const c = joined.charCodeAt(i);
+    if (c < 0x20 || c > 0x7e) {
+      throw new Error("ERC-8021 codes must be printable ASCII");
+    }
+  }
+  return concatHex([
+    stringToHex(joined),
+    toHex(joined.length, { size: 1 }),
+    "0x00",
+    ERC8021_MARKER,
+  ]);
+}
+```
+  </Tab>
+  <Tab title="Python">
+```python
+ERC8021_MARKER = bytes.fromhex("8021" * 8)
+
+def encode_attribution_suffix(codes):
+    for code in codes:
+        if not code or "," in code:
+            raise ValueError("ERC-8021 codes must be non-empty and comma-free")
+    joined = ",".join(codes)
+    if not joined or len(joined) > 255:
+        raise ValueError("ERC-8021 codes must be 1-255 bytes once joined")
+    encoded = joined.encode("ascii")
+    if any(b < 0x20 or b > 0x7e for b in encoded):
+        raise ValueError("ERC-8021 codes must be printable ASCII")
+    return encoded + bytes([len(encoded), 0x00]) + ERC8021_MARKER
+```
+  </Tab>
+  <Tab title="Go">
+```go
+import (
+    "fmt"
+    "strings"
+
+    "github.com/ethereum/go-ethereum/common"
+)
+
+var erc8021Marker = common.Hex2Bytes("80218021802180218021802180218021")
+
+func encodeAttributionSuffix(codes []string) ([]byte, error) {
+    for _, code := range codes {
+        if code == "" || strings.Contains(code, ",") {
+            return nil, fmt.Errorf("ERC-8021 codes must be non-empty and comma-free")
+        }
+    }
+    joined := strings.Join(codes, ",")
+    if joined == "" || len(joined) > 255 {
+        return nil, fmt.Errorf("ERC-8021 codes must be 1-255 bytes once joined")
+    }
+    for i := 0; i < len(joined); i++ {
+        if joined[i] < 0x20 || joined[i] > 0x7e {
+            return nil, fmt.Errorf("ERC-8021 codes must be printable ASCII")
+        }
+    }
+    out := make([]byte, 0, len(joined)+2+len(erc8021Marker))
+    out = append(out, joined...)
+    out = append(out, byte(len(joined)), 0x00)
+    out = append(out, erc8021Marker...)
+    return out, nil
+}
+```
+  </Tab>
+  <Tab title="cURL">
+```bash
+# Suffix encoding is a calldata construction step and has no cURL equivalent.
+# Use one of the programming language examples above.
+```
+  </Tab>
+</Tabs>
+
+### Appending to createOrder
+
+The suffix must be appended to the calldata **before signing and gas estimation** so it is covered by the signature and paid for in the gas limit. Keep sending `metadata.apiKey`: the suffix is additive, not a replacement.
+
+<Callout type="warning">
+  Viem's `writeContract` and `simulate` helpers build calldata internally and give you no place to append raw bytes. To attach a suffix, encode the call yourself with `encodeFunctionData` and send it with `sendTransaction`.
+</Callout>
+
+<Tabs>
+  <Tab title="JavaScript">
+```javascript
+import { concatHex, encodeFunctionData, parseUnits, zeroAddress } from "viem";
+
+async function createOffRampOrderAttributed(amount, recipient, refundAddress) {
+  const rate = await getExchangeRate();
+  const accountName = await verifyAccount(recipient);
+  const messageHash = await encryptRecipientData({
+    ...recipient,
+    accountName,
+    // Required: this is how the aggregator identifies you. The suffix does not replace it.
+    metadata: { apiKey: process.env.PAYCREST_API_KEY },
+  });
+  await approveUSDT(amount);
+
+  const callData = encodeFunctionData({
+    abi: GATEWAY_ABI,
+    functionName: "createOrder",
+    args: [
+      USDT_ADDRESS,
+      parseUnits(amount, 6),
+      rate,
+      zeroAddress,
+      0n,
+      refundAddress,
+      messageHash,
+    ],
+  });
+
+  const senderCode = "AcmeCorp"; // Your public attribution code
+  const data = concatHex([callData, encodeAttributionSuffix([senderCode])]);
+
+  const hash = await walletClient.sendTransaction({
+    to: GATEWAY_ADDRESS,
+    data,
+  });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return { orderId: extractOrderId(receipt), transactionHash: receipt.transactionHash };
+}
+```
+  </Tab>
+  <Tab title="Python">
+```python
+tx = gateway.functions.createOrder(
+    USDT_ADDRESS,
+    w3.to_wei(amount, 'ether'),
+    rate,
+    '0x0000000000000000000000000000000000000000',
+    0,
+    refund_address,
+    message_hash
+).build_transaction({
+    'from': user_address,
+    'nonce': w3.eth.get_transaction_count(user_address),
+})
+
+sender_code = "AcmeCorp"  # Your public attribution code
+tx['data'] = tx['data'] + encode_attribution_suffix([sender_code]).hex()
+
+# Estimate gas AFTER appending so the suffix is covered.
+tx['gas'] = w3.eth.estimate_gas(tx)
+tx['gasPrice'] = w3.eth.gas_price
+
+signed_tx = w3.eth.account.sign_transaction(tx, private_key)
+tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+```
+  </Tab>
+  <Tab title="Go">
+```go
+callData, err := gatewayABI.Pack(
+    "createOrder",
+    tokenAddress, amount, rate, senderFeeRecipient, senderFee, refundAddress, messageHash,
+)
+if err != nil {
+    return err
+}
+
+senderCode := "AcmeCorp" // Your public attribution code
+suffix, err := encodeAttributionSuffix([]string{senderCode})
+if err != nil {
+    return err
+}
+data := append(callData, suffix...)
+
+// Estimate gas against the suffixed calldata.
+gasLimit, err := client.EstimateGas(ctx, ethereum.CallMsg{
+    From: fromAddress,
+    To:   &gatewayAddress,
+    Data: data,
+})
+```
+  </Tab>
+  <Tab title="cURL">
+```bash
+# Smart contract interactions are typically done in your application code
+# rather than with cURL. Use one of the programming language examples above.
+```
+  </Tab>
+</Tabs>
+
+### Where the suffix must live
+
+ERC-8021 readers parse the **outer transaction calldata** backwards from its final byte, so the suffix has to be the last thing in the top-level input.
+
+- **EOA senders**: append to `tx.data`.
+- **Account abstraction / smart accounts**: append to the **outer** `userOp.callData`, the top-level input that lands onchain.
+- **Do not** bury the suffix inside a nested or inner call. A suffix on an inner call is invisible to the parser, because ABI encoding pads inner `bytes` fields and the outer calldata will not end with the marker.
+
+Anything that appends bytes after your suffix breaks parsing too, since only the trailing suffix is read.
+
+### Codes and the Base Builder Code
+
+The `codes` field is a list, so a transaction can carry more than one code, comma-joined. For direct integrators the default is **your own code alone**, on every EVM network including Base.
+
+<Callout type="warning">
+  `bc_julg9gbq` is **Paycrest/Noblocks' own registered Base Builder Code**, appended by the Noblocks app on Base mainnet for base.dev analytics and rewards. It identifies Noblocks as the originating app. Do not include it in your own transactions unless you have an explicit co-branding arrangement with Paycrest: it is not a code for arbitrary senders to claim.
+</Callout>
+
+### Relationship to `metadata.apiKey`
+
+`metadata.apiKey` is unchanged, **not deprecated**, and remains the single mechanism by which the aggregator identifies the sender behind an order. Keep sending it exactly as before.
+
+| Present | Sender resolution |
+|---------|-------------------|
+| `metadata.apiKey` only | `metadata.apiKey` |
+| Onchain suffix only | **Order is not attributed to a sender.** The suffix is not read for identification |
+| Both | `metadata.apiKey` |
+| Suffix malformed or absent | No effect: resolution uses `metadata.apiKey` |
+
+<Callout type="warning">
+  Appending a suffix does **not** replace `metadata.apiKey`. An order created with a suffix but without `metadata.apiKey` will not be linked to your sender profile, and you will not receive webhooks for it.
+</Callout>
+
+Adding a suffix can never break order indexing. A malformed suffix, an unrecognized code, or no suffix at all leaves order processing untouched.
+
+### Network support
+
+Onchain attribution applies to **EVM networks only**. On **Starknet** and **Tron** no suffix is appended or read, and attribution works from `metadata.apiKey` exclusively.
+
+**References:** [ERC-8021 specification](https://eip.tools/eip/8021)
+
 
 ## Token Approval
 
