@@ -24,6 +24,16 @@ Paycrest Gateway contracts are deployed across multiple networks (EVM-compatible
 | **Tron** | 728126428 | `THyFP5ST9YyLZn6EzjKjFhZti6aKPgEXNU` | ✅ Live |
 | **Optimism** | 10 | `0xD293fCd3dBc025603911853d893A4724CF9f70a0` | 🚧 Coming Soon |
 
+## OTC Gateway
+
+OTC orders settle through a separate escrow contract, the OTC Gateway. It is deployed at one address on every supported network, so the same value can be checked against the `gateway` field of any OTC order.
+
+| Network | Chain ID | OTC Gateway Address | Status |
+|---------|----------|---------------------|--------|
+| **Base** | 8453 | TBA | 🚧 Coming Soon |
+
+See [OTC Desk Integration](/implementation-guides/otc-desk-integration) for how the escrow is used.
+
 ## Network Status Legend
 
 - **✅ Live**: Fully supported by the Paycrest aggregator

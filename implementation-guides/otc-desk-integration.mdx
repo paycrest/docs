@@ -1,0 +1,288 @@
+---
+title: "OTC Desk Integration"
+description: "Settle large tickets through an escrow with a liquidity desk on the other side. Same create call, same statuses, a few extra steps and one rule that keeps everyone's money safe."
+---
+
+Retail orders are sized for everyday payments. When a ticket is bigger than any retail offer will take, Paycrest routes it to an **OTC desk**: a liquidity provider who settles large amounts by ordinary bank transfer while the stablecoins wait in an escrow contract. This guide is for senders who want to place those orders through the API. Providers who want to run a desk, with our dashboard or their own software, will find their half at the [end](#running-a-desk-as-a-provider).
+
+If you already integrate the Sender API, almost everything you know still holds:
+
+- You create the order with the same `POST /v2/sender/orders` call.
+- The order moves through the same `status` values and sends the same `payment_order.*` webhooks.
+- You never connect a wallet and never sign anything. Every step is an API call, and Paycrest signs on your behalf, the same way it handles your retail receive addresses.
+
+What is new is that the person on the other side is a desk, not a payment processor. Both of you tell the API when you have paid and when you have been paid, and the escrow releases the stablecoins only when the right side says so. That gives the order a few extra stages, a handful of extra endpoints, and one rule you must not break.
+
+<Warning>
+**Never send fiat before the API says the stablecoins are committed.** On a buy, that means calling *Start payment* first and waiting for it to confirm. Until then the desk can still take its stablecoins back, and a transfer sent early is a transfer you would have to chase by hand. The API hides the desk's bank details until this point for exactly that reason.
+</Warning>
+
+## Getting enabled
+
+OTC settlement is switched on per sender account. Ask your Paycrest contact to enable it once you have read this guide. Until it is enabled, large tickets are refused rather than routed somewhere you did not expect.
+
+## How an order lands on the desk
+
+You do not choose OTC. The amount does. Every provider posts retail offers with a maximum ticket size, and some also post an OTC offer above that. If your amount is bigger than every retail offer and fits an OTC offer, the order is an OTC order. You can see this coming before you create anything: the rate endpoint returns `orderType: "otc"` for such an amount.
+
+```bash
+curl "https://api.paycrest.io/v2/rates/base/USDC/25000/NGN?side=sell"
+```
+
+```json
+{
+  "status": "success",
+  "data": {
+    "sell": {
+      "rate": "1500",
+      "orderType": "otc",
+      "refundTimeoutMinutes": 1440,
+      "providerIds": ["desk_a1b2c3"]
+    }
+  }
+}
+```
+
+Desks are ranked by how much of their currency they still have available, so a full desk drops out and the next one is quoted. You can also pin a particular desk with `destination.providerId`, as you would any provider.
+
+## The stages of an OTC order
+
+An OTC order keeps the retail `status` you already handle. Underneath it, the order also has a `substate` that says where the escrow is. Both are on the order and on every webhook, in an `otc` block.
+
+| Substate | What it means | `status` on a sell | `status` on a buy |
+|---|---|---|---|
+| `awaiting_accept` | The desk has a short window to accept or decline. | `pending` | `pending` |
+| `awaiting_lock` | Accepted. Waiting for the stablecoins to be put in escrow. | `pending` | `pending` |
+| `locked` | The stablecoins are in escrow. | `pending` | `fulfilling` |
+| `paying` | The fiat payer has committed to pay. The bank details are now visible to them. | `fulfilling`, then `fulfilled` once they record the transfer | `fulfilled` |
+| `released` | The fiat receiver confirmed the money landed. Settlement is on its way. | `validated`, then `settled` | `validated`, then `settled` |
+| `arbitration` | Under review by support after a dispute. | unchanged | unchanged |
+
+An order that ends without settling becomes `refunded` (the stablecoins left escrow and went back) or `cancelled` (nothing ever reached the chain).
+
+## Selling stablecoins for fiat
+
+You send USDC. The desk pays your recipient's bank account. You confirm when the money lands.
+
+<Steps>
+  <Step title="Create the order">
+    The same call as retail. `source.refundAddress` is required: if the order does not go through, your deposit is returned there.
+
+    ```json
+    {
+      "amount": "25000",
+      "source": {
+        "type": "crypto",
+        "currency": "USDC",
+        "network": "base",
+        "refundAddress": "0xYourAddress"
+      },
+      "destination": {
+        "type": "fiat",
+        "currency": "NGN",
+        "recipient": {
+          "institution": "GTBINGLA",
+          "accountIdentifier": "0123456789",
+          "accountName": "Your Company Ltd"
+        }
+      }
+    }
+    ```
+
+    The response looks like a retail one, with `orderType: "otc"` and a `providerAccount` that carries the deposit address plus the OTC state.
+
+    ```json
+    {
+      "id": "0f1e2d3c-…",
+      "status": "pending",
+      "orderType": "otc",
+      "amount": "25000",
+      "rate": "1500",
+      "senderFee": "125",
+      "transactionFee": "0.5",
+      "otcExpiry": "2026-09-22T10:30:00Z",
+      "providerAccount": {
+        "rail": "otc_gateway",
+        "substate": "awaiting_accept",
+        "gateway": "0xOTCGatewayAddress",
+        "chainId": 8453,
+        "network": "base",
+        "receiveAddress": "0xDepositAddress",
+        "validUntil": "2026-09-23T10:00:00Z",
+        "depositRequired": "25125.5",
+        "narration": "PC-7Q2M9KDA",
+        "nextAction": "deposit"
+      }
+    }
+    ```
+  </Step>
+  <Step title="Send the deposit">
+    Transfer exactly `depositRequired` USDC on the named network to `receiveAddress` before `validUntil`. That figure is the order amount plus your sender fee plus the network fee, the same arithmetic as retail. You can send before or after the desk accepts. Once both have happened, Paycrest puts your deposit into the escrow for you and forwards your sender fee to your fee address.
+  </Step>
+  <Step title="Wait for the desk to accept">
+    The desk has until `otcExpiry` to accept. If it declines, or the window passes, your deposit is sent back to `refundAddress` by itself. If the desk's rate moves too far before the deposit is locked, the order is cancelled the same way. Create a new order at the current rate.
+  </Step>
+  <Step title="The desk pays">
+    When the desk is ready to pay, it commits on-chain first. From that point your stablecoins cannot be pulled back by you: they leave escrow only when you confirm, when the desk gives them back, or after a review. The desk then wires the fiat to your recipient with the order's `narration` as the transfer reference.
+  </Step>
+  <Step title="Confirm receipt">
+    When the money lands with the right narration, tell the API.
+
+    ```bash
+    curl -X POST "https://api.paycrest.io/v2/sender/orders/{id}/otc/validate" \
+      -H "API-Key: YOUR_API_KEY"
+    ```
+
+    Paycrest releases the stablecoins to the desk and the order moves to `validated`, then `settled`. Do not confirm on a promise or a screenshot. Confirm on money in the account.
+  </Step>
+</Steps>
+
+<Note>
+**Changed your mind?** Until the desk commits to paying, `POST /orders/{id}/otc/cancel` takes your deposit back to `refundAddress`. After that point it is no longer yours to cancel; see [when something goes wrong](#when-something-goes-wrong).
+</Note>
+
+## Buying stablecoins with fiat
+
+You pay the desk's bank account. The desk's USDC waits in escrow and is released to your recipient when the desk confirms your money arrived.
+
+<Steps>
+  <Step title="Create the order">
+    Same call as a retail buy. The response has `orderType: "otc"` and the OTC state in `providerAccount`, with no bank details yet.
+  </Step>
+  <Step title="Wait for the desk to accept and lock">
+    The desk accepts, and its software puts the USDC into escrow. The state view shows `substate: "locked"` and `nextAction: "paying"`. You will also get an `otc.locked` webhook.
+  </Step>
+  <Step title="Start payment">
+    This is the step the warning at the top is about.
+
+    ```bash
+    curl -X POST "https://api.paycrest.io/v2/sender/orders/{id}/otc/paying" \
+      -H "API-Key: YOUR_API_KEY"
+    ```
+
+    Paycrest records your commitment on-chain. Once it confirms, the desk can no longer take its USDC back, and the state view now carries the account to pay.
+
+    ```json
+    {
+      "substate": "paying",
+      "narration": "PC-7Q2M9KDA",
+      "providerAccount": {
+        "institution": "Access Bank",
+        "accountIdentifier": "0011223344",
+        "accountName": "Desk Ltd",
+        "amountToTransfer": "37500000",
+        "currency": "NGN"
+      },
+      "nextAction": ""
+    }
+    ```
+  </Step>
+  <Step title="Send the transfer and record it">
+    Transfer exactly `amountToTransfer` with the `narration` as the reference. The desk matches your payment on it. Then record the bank's reference so the desk, and anyone reviewing later, can find the transfer.
+
+    ```bash
+    curl -X POST "https://api.paycrest.io/v2/sender/orders/{id}/otc/paid" \
+      -H "API-Key: YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{ "bankReference": "RTGS/2026/09/0001", "proofUrl": "https://…" }'
+    ```
+  </Step>
+  <Step title="The desk confirms">
+    When the money lands, the desk confirms receipt and the USDC is released to your recipient address, less the protocol fee. You get `otc.released`, then `payment_order.settled`.
+  </Step>
+</Steps>
+
+<Note>
+**Changed your mind?** `POST /orders/{id}/otc/waive` hands the escrowed USDC back to the desk and closes the order. It is always safe for you to call, before or after you pressed Start payment, as long as you have not sent money.
+</Note>
+
+## Endpoints
+
+All under `https://api.paycrest.io/v2/sender`, authenticated like every other sender call. None of them takes a body except `paid`.
+
+| Method | Path | Use it when |
+|---|---|---|
+| `GET` | `/orders/{id}/otc` | You want the current stage and what to do next. Poll it, or rely on webhooks. |
+| `POST` | `/orders/{id}/otc/paying` | Buy only. You are about to wire. Reveals the desk's bank details once confirmed. |
+| `POST` | `/orders/{id}/otc/paid` | Buy only. You have wired. Body: `bankReference`, optional `proofUrl`. |
+| `POST` | `/orders/{id}/otc/validate` | Sell only. The fiat has landed. Releases the stablecoins to the desk. |
+| `POST` | `/orders/{id}/otc/waive` | Buy only. You want out. Returns the desk's stablecoins to them. |
+| `POST` | `/orders/{id}/otc/cancel` | Sell only. You want your deposit back, before the desk commits to paying. |
+
+Calling an endpoint that is not yours to call on this order, for instance `validate` on a buy, returns `400` with a message saying who confirms instead. Calling one at the wrong stage returns `409`. The retail `POST /orders/{id}/validate` also returns `409` for an OTC order and points you to `otc/validate`.
+
+## The state view
+
+`GET /orders/{id}/otc` returns everything about where the order is.
+
+| Field | Meaning |
+|---|---|
+| `substate` | The stage, from the table above. |
+| `nextAction` | What you do next: `deposit`, `paying` or `validate`. Empty when the ball is in the desk's court. |
+| `narration` | The reference that goes on the bank transfer. Unique per order. |
+| `deadline` | When the current stage times out. |
+| `receiveAddress`, `depositRequired`, `validUntil`, `network` | Sell only, while the deposit is awaited. |
+| `providerAccount` | Buy only, and only after your Start payment is confirmed. |
+| `gateway`, `chainId`, `lockTxHash` | The escrow contract, its chain, and the transaction that put the stablecoins in it. Check `gateway` against the published [OTC Gateway address](/resources/gateway-contract-addresses#otc-gateway) if you want to verify the escrow yourself. |
+| `locker`, `counterparty`, `payee` | The on-chain parties. On a sell, `locker` is your deposit address and `payee` is the desk. On a buy, `locker` is the desk and `payee` is your recipient. |
+
+## Webhooks
+
+Your existing webhook endpoint receives the retail events as usual, plus these OTC milestones:
+
+| Event | When |
+|---|---|
+| `otc.awaiting_lock` | The desk accepted. |
+| `otc.locked` | The stablecoins are in escrow. |
+| `otc.paying` | The fiat payer committed to pay. |
+| `otc.paid` | The fiat payer recorded a bank reference. |
+| `otc.released` | The fiat receiver confirmed. Settlement is on its way. |
+
+Every payload carries the `otc` block with `substate`, `narration`, `deadline` and `lockTxHash`, so you can follow the order from webhooks alone. Verification is unchanged; see [Verify Webhook Signatures](/implementation-guides/sender-api-integration#verify-webhook-signatures).
+
+## When something goes wrong
+
+- **The desk declines or does not answer in time.** On a sell, any deposit you sent goes back to `refundAddress` by itself. On a buy, nothing was ever committed. Either way the order ends `cancelled` and you can create a new one.
+- **The desk's rate moved while your deposit was on its way.** The order is cancelled and the deposit returned. Create a new order at the current rate.
+- **You want out.** Sell: `cancel`, while the desk has not committed to paying. Buy: `waive`, any time before you send money.
+- **The other side went quiet after money moved.** Once the fiat payer has committed, the stablecoins leave escrow only on the receiver's confirmation, on the payer's waive, or through a review. If a transfer was made and not confirmed, or confirmed and not received, contact support with your bank evidence. After a dispute delay, support can settle or refund the order based on evidence from both sides.
+
+## Running a desk as a provider
+
+The other half of every OTC order is a provider. If you run a provision node today, you can run a desk with the same node and the same API key.
+
+**Setting up** happens in the [Provider Dashboard](https://app.paycrest.io):
+
+1. Set your **OTC depth** for each currency on the Offers page. This is the most you are prepared to have committed across open OTC orders at once. Orders beyond it are not quoted to you.
+2. Create an offer with the **OTC desk** tier. Its order range starts where your retail offers stop. A buy-side OTC offer also needs a **pay-in account**, the bank account senders wire to. It is shown to a sender only once their side is committed.
+3. Keep your node's EVM wallet funded. On buy orders the USDC is locked from that wallet, and it needs gas on the network.
+
+Your node signs every on-chain step from that wallet. No Paycrest key can move your stablecoins. Nothing is signed in a browser.
+
+**Working orders** can be done from the dashboard's order desk, or from your own software against the same endpoints, under `https://api.paycrest.io/v2/provider`:
+
+| Method | Path | Use it when |
+|---|---|---|
+| `GET` | `/orders/{id}/otc` | You want the current stage and what to do next. |
+| `POST` | `/orders/{id}/otc/accept` | You take the order. On a buy your node then locks the USDC. |
+| `POST` | `/orders/{id}/otc/decline` | You pass on the order. |
+| `POST` | `/orders/{id}/otc/paying` | Sell only. You are about to pay the sender. Reveals their bank details once confirmed. |
+| `POST` | `/orders/{id}/otc/paid` | Sell only. You have paid. Body: `bankReference`, optional `proofUrl`. |
+| `POST` | `/orders/{id}/otc/validate` | Buy only. The sender's fiat has landed. Releases the USDC to them. |
+| `POST` | `/orders/{id}/otc/waive` | Sell only. You want out. Returns the sender's stablecoins to them. |
+| `POST` | `/orders/{id}/otc/cancel` | Buy only. You want your USDC back, before the sender commits to paying. |
+| `POST` | `/orders/{id}/otc/lock-auth` | Buy only. Your window to lock lapsed and you want a fresh one. |
+
+Two things to know if you build your own desk:
+
+- **The node stays in the loop.** For `paying`, `validate`, `waive`, `cancel` and the lock, the API asks your provision node to sign and then relays the transaction. Your software calls the endpoint; your node does the signing. `accept`, `decline` and `paid` need no signature. If you run your own signer instead, you may pass `{ "signature": "0x…" }` in the body; the state view's `typedData` is what to sign.
+- **New orders are polled, not pushed.** List `GET /orders?status=pending` and look for orders whose `otc.substate` is `awaiting_accept`. The accept window is short, so poll often. A push to your node is on the roadmap.
+
+The rule from the top applies to you in the other direction: on a sell order you are the fiat payer, so call `paying` before you wire, and never wire before it confirms.
+
+## Related
+
+- [Sender API Integration](/implementation-guides/sender-api-integration) for the retail flow this builds on
+- [Transaction Lifecycle](/concepts/transaction-lifecycle) for the shared status and webhook model
+- [Provider Setup Guide](/implementation-guides/provider-setup-guide) for running a node
+- [API Reference: Sender OTC](/api-reference/sender/get-otc-state) and [Provider OTC](/api-reference/provider/get-otc-state)

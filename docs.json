@@ -48,6 +48,7 @@
                 "group": "Implementation Guides",
                 "pages": [
                   "implementation-guides/sender-api-integration",
+                  "implementation-guides/otc-desk-integration",
                   "implementation-guides/sender-mcp",
                   "implementation-guides/smart-contract-interaction",
                   "implementation-guides/provider-setup-guide"
@@ -83,6 +84,12 @@
                   "api-reference/sender/initiate-payment-order-v2",
                   "api-reference/sender/list-payment-orders-v2",
                   "api-reference/sender/get-payment-order-by-id-v2",
+                  "api-reference/sender/get-otc-state",
+                  "api-reference/sender/otc-paying",
+                  "api-reference/sender/otc-paid",
+                  "api-reference/sender/otc-validate",
+                  "api-reference/sender/otc-waive",
+                  "api-reference/sender/otc-cancel",
                   "api-reference/sender/get-sender-stats",
                   "api-reference/sender/list-webhook-deliveries",
                   "api-reference/sender/get-webhook-delivery-by-id",
@@ -94,6 +101,15 @@
                 "pages": [
                   "api-reference/provider/list-orders-v2",
                   "api-reference/provider/get-order-by-id-v2",
+                  "api-reference/provider/get-otc-state",
+                  "api-reference/provider/otc-accept",
+                  "api-reference/provider/otc-decline",
+                  "api-reference/provider/otc-lock-auth",
+                  "api-reference/provider/otc-paying",
+                  "api-reference/provider/otc-paid",
+                  "api-reference/provider/otc-validate",
+                  "api-reference/provider/otc-waive",
+                  "api-reference/provider/otc-cancel",
                   "api-reference/provider/get-market-rate",
                   "api-reference/provider/get-provider-stats",
                   "api-reference/provider/get-node-info"

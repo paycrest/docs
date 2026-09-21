@@ -532,6 +532,10 @@ Send **exactly** `amount + senderFee + transactionFee` (all returned in the resp
 
 Display the `providerAccount` details to your user. They must transfer exactly `amountToTransfer` in `currency` to `accountIdentifier` before `validUntil`. (There is no onchain token `transfer` from your app for this path—the user moves **fiat** through their bank or mobile wallet.)
 
+### Large tickets go to an OTC desk
+
+When the amount is bigger than any retail offer will take, the same create call returns `orderType: "otc"` and the order settles through an escrow with a liquidity desk on the other side. The statuses and webhooks are the same, with a few extra steps: on a buy you must call *Start payment* before you wire, and on a sell you confirm receipt yourself. It is switched on per account. See [OTC Desk Integration](/implementation-guides/otc-desk-integration) before you rely on it.
+
 ---
 
 ## Monitor completion
@@ -964,6 +968,7 @@ The response includes `receiveAddress` (string) and `validUntil`. Send tokens to
 
 ## Related
 
+- [OTC Desk Integration](/implementation-guides/otc-desk-integration) — large tickets settled through an escrow with a desk
 - [Transaction Lifecycle](/concepts/transaction-lifecycle) — order statuses, webhook events, expired vs refunded
 - [Supported Stablecoins](/resources/supported-stablecoins) — tokens, networks, contract addresses
 - [Supported Currencies](/resources/supported-currencies) — active fiat corridors

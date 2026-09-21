@@ -121,6 +121,10 @@ The complete set of order status values:
 | `refunded` | Funds returned to sender |
 | `expired` | Receive address or virtual account expired without receiving a deposit |
 
+<Note>
+  OTC orders (`orderType: "otc"`) use the same statuses. They also carry an `otc.substate` that says where the escrow is, and send extra `otc.*` webhooks at each stage. See [OTC Desk Integration](/implementation-guides/otc-desk-integration#the-stages-of-an-otc-order).
+</Note>
+
 ## Webhook Events
 
 Paycrest sends webhooks to your configured endpoint as an order progresses. Most events are named after the status the order just entered (`payment_order.<status>`); a small number report an event that is not a status change, and are marked below. Failed deliveries are retried automatically with exponential backoff, and every delivery is queryable and replayable via the [sender webhook endpoints](/implementation-guides/sender-api-integration#webhook-delivery-logs--retry).
