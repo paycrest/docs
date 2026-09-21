@@ -183,6 +183,16 @@ Expected response:
 **Configure Networks**
 - Add settlement addresses for all supported networks and tokens
 - You can add a settlement address on multiple networks for flexibility
+
+#### Run an OTC Desk (Optional)
+
+Tickets above your retail limits can be settled by bank transfer between you and the sender, with the stablecoins held in an escrow contract until both sides confirm. To take them:
+
+- Set your **OTC depth** per currency on the Offers page: the most you are prepared to have committed across open OTC orders at once
+- Create an offer with the **OTC desk** tier, with an order range that starts where your retail offers stop; a buy-side offer also needs the **pay-in account** senders wire to
+- Keep your node's EVM wallet funded with stablecoins and gas; on buy orders the stablecoins are locked from that wallet, and your node signs every on-chain step
+
+Orders are worked from the dashboard's order desk, or from your own software against the same API. See [OTC Desk Integration](/implementation-guides/otc-desk-integration#running-a-desk-as-a-provider).
 - For **Starknet**, use a Starknet wallet address (`0x` + 63–64 hex characters), not an EVM address — network identifier is `starknet`
 - For **Tron**, use a Tron Base58 address (starts with `T`), not an EVM address — network identifier is `tron`
 

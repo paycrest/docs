@@ -539,7 +539,7 @@ components:
             to `destination.providerIds` on order creation to lock routing to the providers you quoted.
         orderType:
           type: string
-          description: Order flow type, e.g. `regular`.
+          description: Order flow type, `regular` or `otc`. An `otc` quote settles through an escrow with a desk; see the OTC Desk Integration guide.
         refundTimeoutMinutes:
           type: integer
           description: Minutes until automatic refund for this flow.
@@ -1012,7 +1012,14 @@ components:
           type: string
         orderType:
           type: string
-          enum: [regular]
+          enum: [regular, otc]
+          description: "`otc` when the amount is above every retail offer and a desk takes it. See the OTC Desk Integration guide."
+        otcExpiry:
+          type: string
+          format: date-time
+          description: OTC orders only. When the desk's window to accept closes.
+        otc:
+          $ref: '#/components/schemas/V2OTCOrderSummary'
         timestamp:
           type: string
           format: date-time
@@ -1030,10 +1037,11 @@ components:
         reference:
           type: string
         providerAccount:
-          description: Crypto provider account for offramp; fiat provider account (virtual account) for onramp
+          description: Crypto provider account for offramp; fiat provider account (virtual account) for onramp; for an OTC order, the OTC state (with the deposit address on a sell)
           oneOf:
             - $ref: '#/components/schemas/V2CryptoProviderAccount'
             - $ref: '#/components/schemas/V2FiatProviderAccount'
+            - $ref: '#/components/schemas/V2OTCGatewayState'
         source:
           oneOf:
             - $ref: '#/components/schemas/V2CryptoSource'
@@ -1055,7 +1063,14 @@ components:
           enum: [initiated, deposited, pending, fulfilling, fulfilled, validated, settling, settled, cancelled, refunding, refunded, expired]
         orderType:
           type: string
-          enum: [regular]
+          enum: [regular, otc]
+          description: "`otc` when the amount is above every retail offer and a desk takes it. See the OTC Desk Integration guide."
+        otcExpiry:
+          type: string
+          format: date-time
+          description: OTC orders only. When the desk's window to accept closes.
+        otc:
+          $ref: '#/components/schemas/V2OTCOrderSummary'
         direction:
           type: string
           enum: [offramp, onramp]
@@ -1091,6 +1106,7 @@ components:
           oneOf:
             - $ref: '#/components/schemas/V2CryptoProviderAccount'
             - $ref: '#/components/schemas/V2FiatProviderAccount'
+            - $ref: '#/components/schemas/V2OTCGatewayState'
         source:
           oneOf:
             - $ref: '#/components/schemas/V2CryptoSource'
@@ -1293,6 +1309,159 @@ components:
           type: integer
         errorMessage:
           type: string
+    # OTC desk (escrow rail)
+    V2OTCOrderSummary:
+      type: object
+      description: Where an OTC order is in the escrow flow. Present on OTC orders and on every webhook for them.
+      properties:
+        substate:
+          type: string
+          enum: [awaiting_accept, awaiting_lock, locked, paying, released, arbitration]
+          description: The escrow stage. See the OTC Desk Integration guide for what each one means.
+        narration:
+          type: string
+          description: The reference the fiat payer puts on the bank transfer. Unique per order.
+        gateway:
+          type: string
+          description: The OTC Gateway escrow contract holding the stablecoins.
+        chainId:
+          type: integer
+        deadline:
+          type: string
+          format: date-time
+          description: When the current stage times out.
+        payingAt:
+          type: string
+          format: date-time
+          description: When the fiat payer committed to pay.
+        lockTxHash:
+          type: string
+          description: The transaction that put the stablecoins in escrow.
+    V2OTCLockAuth:
+      type: object
+      description: The provider's ticket to lock stablecoins into escrow on a buy order. Provider view only, while it is live. The provision node uses it; a desk with its own signer sends `approveCalldata` to `token` and `lockCalldata` to `gateway`.
+      properties:
+        orderId:
+          type: string
+        token:
+          type: string
+        locker:
+          type: string
+        payee:
+          type: string
+        counterparty:
+          type: string
+        amount:
+          type: string
+        deadline:
+          type: integer
+          format: int64
+        feeBps:
+          type: integer
+        disputeDelay:
+          type: integer
+        quoteHash:
+          type: string
+        validUntil:
+          type: integer
+          format: int64
+        signature:
+          type: string
+        approveCalldata:
+          type: string
+        lockCalldata:
+          type: string
+    V2OTCGatewayState:
+      type: object
+      description: |
+        The full OTC view of an order: where it is, what the caller does next, and the details for the current step. Also returned as `providerAccount` in the create response of an OTC order.
+      properties:
+        rail:
+          type: string
+          example: otc_gateway
+        substate:
+          type: string
+          enum: [awaiting_accept, awaiting_lock, locked, paying, released, arbitration]
+        gateway:
+          type: string
+        chainId:
+          type: integer
+        locker:
+          type: string
+          description: The on-chain party whose stablecoins are in escrow. The sender's deposit address on a sell, the provider's node wallet on a buy.
+        counterparty:
+          type: string
+          description: The fiat payer's on-chain party.
+        payee:
+          type: string
+          description: Where the stablecoins go on settlement.
+        narration:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+        payingAt:
+          type: string
+          format: date-time
+        lockTxHash:
+          type: string
+        network:
+          type: string
+          description: Sell orders, while the deposit is awaited.
+        receiveAddress:
+          type: string
+          description: Sell orders, while the deposit is awaited. Send `depositRequired` here.
+        validUntil:
+          type: string
+          format: date-time
+        depositRequired:
+          type: string
+          description: Amount plus sender fee plus network fee, in token units.
+        lockAuth:
+          $ref: '#/components/schemas/V2OTCLockAuth'
+        providerAccount:
+          description: Buy orders, and only once the sender's Start payment has confirmed. The account to pay.
+          allOf:
+            - $ref: '#/components/schemas/V2FiatProviderAccount'
+        nextAction:
+          type: string
+          enum: ['', deposit, paying, validate]
+          description: What the caller does next. Empty when the other side moves next.
+        typedData:
+          type: object
+          description: Provider view only. The EIP-712 payload the node signs for `nextAction`. Never set for a sender.
+    V2OTCPaidPayload:
+      type: object
+      required: [bankReference]
+      properties:
+        bankReference:
+          type: string
+          maxLength: 70
+          description: The bank's reference for the transfer you sent.
+        proofUrl:
+          type: string
+          format: uri
+          description: Optional link to a receipt.
+    V2OTCSignaturePayload:
+      type: object
+      description: Optional. Leave the body empty and the provision node signs. A desk with its own signer sends the signature over the state view's `typedData`.
+      properties:
+        signature:
+          type: string
+    V2OTCActionResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            txHash:
+              type: string
+              description: The relayed transaction, when the action went on-chain.
 
 
 
@@ -2532,3 +2701,566 @@ paths:
           description: Unauthorized
         '404':
           description: Order not found
+
+  /sender/orders/{id}/otc:
+    get:
+      tags:
+        - Sender
+      summary: Get the OTC state of an order
+      description: |
+        Where the order is in the escrow flow and what you do next. Poll it, or follow the `otc.*` webhooks.
+        See the [OTC Desk Integration](/implementation-guides/otc-desk-integration) guide.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/V2OTCGatewayState'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /sender/orders/{id}/otc/paying:
+    post:
+      tags:
+        - Sender
+      summary: "OTC buy: start payment"
+      description: |
+        You are about to wire fiat to the desk. Paycrest records your commitment on-chain; once it confirms, the desk can no longer take its stablecoins back and the state view carries the account to pay.
+        
+        **Never wire before this confirms.** No body.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /sender/orders/{id}/otc/paid:
+    post:
+      tags:
+        - Sender
+      summary: "OTC buy: record the transfer"
+      description: |
+        You have wired the fiat. Record the bank's reference so the desk can match it, and so a reviewer can find it later.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/V2OTCPaidPayload'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /sender/orders/{id}/otc/validate:
+    post:
+      tags:
+        - Sender
+      summary: "OTC sell: confirm receipt"
+      description: |
+        The fiat has landed in your recipient's account with the right narration. Paycrest releases the stablecoins to the desk and the order moves to `validated`, then `settled`. No body.
+        
+        The retail `POST /sender/orders/{id}/validate` returns `409` for an OTC order and points here.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /sender/orders/{id}/otc/waive:
+    post:
+      tags:
+        - Sender
+      summary: "OTC buy: return the stablecoins"
+      description: |
+        You want out. The desk's stablecoins go back to the desk and the order ends `refunded`. Always safe for you to call, as long as you have not sent money. No body.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /sender/orders/{id}/otc/cancel:
+    post:
+      tags:
+        - Sender
+      summary: "OTC sell: cancel and take the deposit back"
+      description: |
+        Take your deposit back to `source.refundAddress`. Possible until the desk commits to paying; after that, `409`. Before the stablecoins were locked, a declined or lapsed order returns the deposit by itself and this call is not needed. No body.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /provider/orders/{id}/otc:
+    get:
+      tags:
+        - Provider
+      summary: Get the OTC state of an order
+      description: |
+        Where the order is in the escrow flow, what you do next, and the `typedData` your node signs for it. On a buy order the live `lockAuth` ticket is included while your window to lock is open.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/V2OTCGatewayState'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /provider/orders/{id}/otc/accept:
+    post:
+      tags:
+        - Provider
+      summary: "OTC: accept the order"
+      description: |
+        Take the order within the accept window. On a buy order your provision node then locks the stablecoins from its wallet; the response carries the lock ticket. On a sell order Paycrest locks the sender's deposit once it has arrived. No body.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /provider/orders/{id}/otc/decline:
+    post:
+      tags:
+        - Provider
+      summary: "OTC: decline the order"
+      description: |
+        Pass on the order. Your depth is released and the order may be offered to another desk. No body.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /provider/orders/{id}/otc/lock-auth:
+    post:
+      tags:
+        - Provider
+      summary: "OTC buy: re-issue the lock ticket"
+      description: |
+        Your window to lock lapsed. Your offer is checked against the order's rate first; if it has moved beyond its slippage, the order is cancelled instead and the call returns `409`. No body.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /provider/orders/{id}/otc/paying:
+    post:
+      tags:
+        - Provider
+      summary: "OTC sell: start payout"
+      description: |
+        You are about to pay the sender. Your node signs and Paycrest records the commitment on-chain; once it confirms, the sender's bank details appear on the state view.
+        
+        **Never wire before this confirms.** Body optional: a signature from your own signer, or empty for the node to sign.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/V2OTCSignaturePayload'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /provider/orders/{id}/otc/paid:
+    post:
+      tags:
+        - Provider
+      summary: "OTC sell: record the payout"
+      description: |
+        You have paid the sender. Record the bank's reference.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/V2OTCPaidPayload'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /provider/orders/{id}/otc/validate:
+    post:
+      tags:
+        - Provider
+      summary: "OTC buy: confirm receipt"
+      description: |
+        The sender's fiat has landed in your pay-in account with the right narration. Your node signs the release, Paycrest relays settlement, and the stablecoins go to the sender's recipient. Body optional: a signature from your own signer, or empty for the node to sign.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/V2OTCSignaturePayload'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /provider/orders/{id}/otc/waive:
+    post:
+      tags:
+        - Provider
+      summary: "OTC sell: return the stablecoins"
+      description: |
+        You want out of a sell order. The sender's stablecoins go back to them. Always safe for you to call, as long as you have not paid. Body optional.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/V2OTCSignaturePayload'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
+
+  /provider/orders/{id}/otc/cancel:
+    post:
+      tags:
+        - Provider
+      summary: "OTC buy: cancel and take your stablecoins back"
+      description: |
+        Take your stablecoins back on a buy order, while the sender has not yet committed to paying. After that, `409`. Body optional.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/V2OTCSignaturePayload'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V2OTCActionResponse'
+        '400':
+          description: This action is not yours on this order (for example confirming receipt on the side that pays)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not an OTC order of yours
+        '409':
+          description: The order is not at a stage where this action applies
