@@ -1,0 +1,172 @@
+---
+title: "Bridge Rails"
+description: "Use chains Paycrest does not settle on — Solana first — while the order lives on a native Paycrest network. Same create call, one extra object to read."
+---
+
+Paycrest settles orders on the networks where its Gateway contract runs (Base, Polygon, Arbitrum, BNB Smart Chain, …). A **bridge rail** is a network Paycrest does not settle on but still accepts in `source.network` (and, later, `destination.network`): the order itself lives on a native **settlement network**, and a cross-chain intent provider (NEAR Intents 1Click today) carries funds between the rail and the settlement network. Assignment, payout and settlement are exactly the native flow.
+
+Rails are discovered from `GET /v2/tokens`, described on the order by a `bridge` object, and tracked with two extra webhook events. None of that is specific to a direction: the same fields will describe on-ramp payouts on a rail when those ship. **Today, rails are available for off-ramp only** — Solana USDC, settling on Base.
+
+## Which networks are rails
+
+`GET /v2/tokens` marks a rail with two extra fields. A token without them is a native network.
+
+```json
+{
+  "symbol": "USDC",
+  "network": "solana",
+  "contractAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "decimals": 6,
+  "bridgeProvider": "near_intents",
+  "settlementNetwork": "base"
+}
+```
+
+A rail can be switched off operationally. When it is, the token is listed without those fields and a create with that `network` is rejected exactly as before the rail existed.
+
+## Off-ramp on a rail
+
+The user deposits on the rail; the bridge delivers the settlement-network amount to the order's receive address, and the native off-ramp flow takes over from there.
+
+```mermaid
+sequenceDiagram
+    participant App as Sender App
+    participant API as Sender API
+    participant BR as Bridge (origin chain)
+    participant GW as Gateway (settlement network)
+    participant PRV as Provider
+
+    App->>API: POST /v2/sender/orders (source.network = solana)
+    API-->>App: providerAccount = bridge deposit address + amountToTransfer, bridge.forward
+    App->>BR: User sends amountToTransfer USDC on Solana
+    API-->>App: payment_order.bridge_deposit_detected
+    BR->>GW: Bridge delivers amount + fees to the receive address on Base
+    API-->>App: payment_order.deposited (native flow from here)
+    API->>PRV: Assign, pay out, settle
+    API-->>App: payment_order.validated … payment_order.settled
+```
+
+### Create the order
+
+Use the normal off-ramp payload with the **origin chain** in `source.network` and a **refund address on that chain**:
+
+```json
+{
+  "amount": "100",
+  "source": {
+    "type": "crypto",
+    "currency": "USDC",
+    "network": "solana",
+    "refundAddress": "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T"
+  },
+  "destination": {
+    "type": "fiat",
+    "currency": "NGN",
+    "recipient": {
+      "institution": "GTBINGLA",
+      "accountIdentifier": "1234567890",
+      "accountName": "John Doe",
+      "memo": "Payment"
+    }
+  }
+}
+```
+
+`amount`, `rate`, `senderFee`, provider pinning and everything else behave as on a native network. `amount` is still what settles on the settlement network; `amountIn: "fiat"` works too.
+
+#### What comes back
+
+```json
+{
+  "id": "550e8400-...",
+  "status": "initiated",
+  "amount": "100",
+  "senderFee": "5",
+  "transactionFee": "0.1",
+  "providerAccount": {
+    "network": "solana",
+    "currency": "USDC",
+    "receiveAddress": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+    "amountToTransfer": "105.36",
+    "validUntil": "2026-09-22T10:30:00Z"
+  },
+  "source": { "type": "crypto", "currency": "USDC", "network": "solana", "refundAddress": "4Nd1…DB4T" },
+  "destination": { "type": "fiat", "currency": "NGN", "recipient": { "..." : "..." } },
+  "bridge": {
+    "provider": "near_intents",
+    "originNetwork": "solana",
+    "originCurrency": "USDC",
+    "settlementNetwork": "base",
+    "settlementCurrency": "USDC",
+    "forward": {
+      "status": "pending_deposit",
+      "depositAddress": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+      "amountIn": "105.36",
+      "minAmountIn": "105.1",
+      "amountOut": "105.1",
+      "deadline": "2026-09-22T10:30:00Z",
+      "updatedAt": "2026-09-22T10:00:00Z"
+    }
+  }
+}
+```
+
+Tell the user to send **exactly `providerAccount.amountToTransfer` of `providerAccount.currency` on `providerAccount.network` to `providerAccount.receiveAddress` before `validUntil`**, and to include `providerAccount.memo` whenever it is present (some chains share deposit addresses and need it).
+
+<Warning>
+  On a bridge rail, `receiveAddress` is the **bridge's deposit address on the origin chain**, not a Paycrest address on the settlement network, and the amount to send is **`amountToTransfer`**, not `amount + senderFee + transactionFee`. `amountToTransfer` already includes the bridge fee; `amount + senderFee + transactionFee` is what arrives on the settlement network.
+</Warning>
+
+### Track the bridge
+
+The order's `status` is unchanged by the bridge: it stays `initiated` until the delivery lands on the settlement network and is credited, then follows the [normal lifecycle](/concepts/transaction-lifecycle). Bridge progress is on `bridge.forward.status`:
+
+| `bridge.forward.status` | Meaning | Order `status` |
+|---|---|---|
+| `pending_deposit` | Nothing seen at the deposit address yet | `initiated` |
+| `known_deposit_tx` | The user's deposit tx is seen, awaiting confirmation. `originTxHash` is set. | `initiated` |
+| `processing` | Deposit confirmed, transfer to the settlement network in flight | `initiated` |
+| `success` | Delivered. `destinationTxHash` is the settlement-network tx; the order is credited from it. | `deposited` → … |
+| `incomplete_deposit` | Deposit was below `minAmountIn`; the bridge refunded it to `source.refundAddress`. `refundedAmount` is set. | `expired` |
+| `refunded` | The bridge returned the deposit to `source.refundAddress` (`refundReason` says why) | `expired` |
+| `expired` | The deposit window closed and nothing was deposited | `expired` |
+| `failed` | Terminal without a known refund — Paycrest operations follow up | `expired` |
+
+Two webhook events cover the hops. Neither changes `data.status`, so branch on `event`:
+
+- **`payment_order.bridge_deposit_detected`** — the origin deposit was seen (`bridge.forward` moved to `known_deposit_tx`/`processing`). A good moment to tell the user "we've got it, bridging now".
+- **`payment_order.bridge_refunded`** — a refund reached `source.refundAddress` on the origin chain (`bridge.reverse.status = success`).
+
+Delivery itself is announced by the ordinary **`payment_order.deposited`** event, exactly like a direct deposit.
+
+### Refunds
+
+Refunds always go back to **`source.refundAddress` on the origin chain**. There are two paths:
+
+- **Before delivery** (deposit too small, sent after the deadline, or the bridge could not route it): the bridge refunds the origin deposit directly. The order becomes `expired` and `bridge.forward` records `refundedAmount` / `refundReason`. No `bridge.reverse` is created.
+- **After delivery** (the provider queue was exhausted or the order was refunded on the settlement network): the order becomes `refunded` as usual, and Paycrest then carries the settlement-network balance back with a **reverse hop**. `bridge.reverse` appears with the same fields as `forward`; when it reaches `success` you receive `payment_order.bridge_refunded` and `bridge.reverse.destinationTxHash` is the origin-chain tx.
+
+Bridge fees are deducted from a refund; Paycrest never tops a refund up. `payment_order.refunded` therefore means "refund on the settlement network"; the user has the funds only after `payment_order.bridge_refunded`. Balances too small to bridge economically stay in Paycrest custody as `bridge.reverse.status = dust` and are handled by operations.
+
+### Timing
+
+- `providerAccount.validUntil` (= `bridge.forward.deadline`) is the bridge's deposit window. Deposits after it are refunded by the bridge.
+- The order stays creditable for a delivery grace period beyond the deadline, and Paycrest extends it further once a deposit is seen, so an on-time deposit is never expired mid-delivery. The usual "expired after `validUntil`" copy does not apply to bridge rails.
+- Typical Solana → Base delivery is under a minute after the deposit confirms.
+
+### Errors
+
+| Response | Cause | What to do |
+|---|---|---|
+| `400` `Network` — "Solana is only supported for onramp orders…" | The rail is switched off (or the network is not a rail) | Offer a native network |
+| `400` `Source` — "Provided token or payment rail is not supported" | The symbol is not available on the rail or its settlement network | Check `GET /v2/tokens` |
+| `400` `Source` — "Invalid Solana refund address" | `refundAddress` is not a valid address on the origin chain | Collect an origin-chain address |
+| `503` "Bridge route unavailable" | No bridge quote could be obtained, or the quote could not deliver the exact amount | Retry shortly or offer a native network. Nothing was created. |
+
+### Explorer links
+
+`source.network` is the origin chain; the order's `txHash` and `bridge.forward.destinationTxHash` are on **`bridge.settlementNetwork`**. Link `bridge.forward.originTxHash` and `bridge.reverse.destinationTxHash` to the origin-chain explorer and everything else to the settlement-network explorer.
+
+## On-ramp on a rail
+
+Not available yet. When it is, a rail will be accepted in `destination.network` and the same `bridge` object will describe the hop from the settlement network to the user's rail address, using the same statuses and events as above. Until then, on-ramp orders use native networks only and a rail in `destination.network` is rejected as it is today.

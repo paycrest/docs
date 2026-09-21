@@ -402,6 +402,8 @@ Set up webhooks to receive real-time updates:
 - **`payment_order.refunded`** - Deposit refunded to sender (fulfillment failed)
 - **`payment_order.expired`** - Order expired with no deposit received
 - **`payment_order.compliance_hold`** - On-ramp fiat received, but settlement is held pending compliance review. Unlike the events above, this one is not named after a status: the order stays `pending`, so `data.status` reports `pending`
+- **`payment_order.bridge_deposit_detected`** - Bridge rails only: the origin-chain deposit was seen and is being carried to the settlement network. Not a status change — `data.status` stays `initiated`; read `data.bridge.forward`
+- **`payment_order.bridge_refunded`** - Bridge rails only: a refund reached `source.refundAddress` on the origin chain. Not a status change; read `data.bridge.reverse`
 
 ### Webhook Payload
 

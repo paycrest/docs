@@ -34,9 +34,21 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
       <li><strong>Invalid network</strong>: Ensure the network supports your chosen token</li>
       <li><strong>Invalid Starknet address</strong>: For `network: "starknet"`, use felt hex (`0x` + 63–64 hex digits), not an EVM checksum address</li>
       <li><strong>Invalid Tron address</strong>: For `network: "tron"`, use a Base58 address starting with `T`, not an EVM `0x` address</li>
+      <li><strong>Invalid Solana refund address</strong>: For the `solana` bridge rail, <code>refundAddress</code> must be a Solana Base58 public key — every refund lands there</li>
+      <li><strong>"Solana is only supported for onramp orders…"</strong>: the Solana off-ramp bridge rail is switched off; offer a native network. See <a href="/implementation-guides/bridge-rails">Bridge rails</a></li>
       <li><strong>Missing recipient details</strong>: All recipient fields are required</li>
       <li><strong>Invalid institution</strong>: Check supported institutions for the currency</li>
       <li><strong>Provider routing rejected</strong>: <code>providerIds</code> and <code>providerId</code> are mutually exclusive; off-ramp queues cap at 3 entries and on-ramp at 1; entries must name providers you can route to. See <a href="/implementation-guides/sender-api-integration#pin-a-provider-queue">Pin a provider queue</a></li>
+    </ul>
+
+    <h4>503 "Bridge route unavailable"</h4>
+    <p>Bridge rails only. No bridge quote could be obtained for the requested amount, or the quote could not deliver the exact settlement amount. Nothing was created — retry shortly or offer a native network.</p>
+
+    <h4>Bridge deposit was refunded (order <code>expired</code>, <code>bridge.forward.status = refunded</code>)</h4>
+    <ul>
+      <li><strong>Deposit below <code>bridge.forward.minAmountIn</code></strong>: the bridge refunds it to <code>source.refundAddress</code> net of its fee (<code>refundReason: PARTIAL_DEPOSIT</code>). Create a new order and send exactly <code>providerAccount.amountToTransfer</code></li>
+      <li><strong>Sent after <code>validUntil</code></strong>: the deposit address had gone cold; the bridge refunds it. Create a new order</li>
+      <li><strong>Memo omitted</strong> on a chain that requires one: the deposit cannot be attributed. Contact support with the origin tx hash</li>
     </ul>
 
     <h4>"Recipient data too large for encryption"</h4>

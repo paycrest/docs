@@ -10,8 +10,8 @@ Paycrest supports two payment directions: **off-ramp** (stablecoin → fiat) and
 ```mermaid
 stateDiagram-v2
     [*] --> initiated
-    initiated --> deposited: deposit received
-    initiated --> expired: no deposit (5 min timeout)
+    initiated --> deposited: deposit received (direct, or delivered by a bridge rail)
+    initiated --> expired: no deposit before validUntil
     deposited --> pending: provider matched
     pending --> fulfilling: fiat payout started
     fulfilling --> validated: payout confirmed
@@ -134,8 +134,10 @@ Paycrest sends webhooks to your configured endpoint as an order progresses. Most
 | `payment_order.settled` | Settlement complete |
 | `payment_order.refunding` | Refund initiated |
 | `payment_order.refunded` | Refund complete |
-| `payment_order.expired` | Order expired after 5 minutes |
+| `payment_order.expired` | Order expired without a deposit (after `validUntil`; bridge rails add a delivery grace) |
 | `payment_order.compliance_hold` | On-ramp fiat received, settlement held pending compliance review (**not a status change** — see below) |
+| `payment_order.bridge_deposit_detected` | Bridge rails: origin-chain deposit seen, delivery to the settlement network in flight (**not a status change** — see below) |
+| `payment_order.bridge_refunded` | Bridge rails: refund reached the sender's origin-chain refund address (**not a status change** — see below) |
 
 <Note>
   Not all statuses emit webhooks. Intermediate states like `initiated`, `fulfilling`, and `cancelled` do not trigger webhook events.
@@ -155,6 +157,17 @@ Treat it as a signal to stop expecting settlement and to contact Paycrest suppor
 <Note>
   Not every held order produces this event. Where a hold concerns your account rather than the counterparty, no webhook is sent and you will observe only `payment_order.expired`.
 </Note>
+
+### Bridge legs
+
+An off-ramp order created on a **bridge rail** (`source.network = "solana"`) settles on a native network; a cross-chain bridge carries the user's origin-chain deposit to the order's receive address. The order's `status` follows the off-ramp lifecycle above unchanged — it stays `initiated` until the bridged delivery is credited — and bridge progress is reported beside it in a `bridge` object with a `forward` leg (deposit hop) and, once a refund is being carried back, a `reverse` leg.
+
+Two events describe the hops and, like `compliance_hold`, are **not status changes**:
+
+- `payment_order.bridge_deposit_detected` — the origin deposit was seen; `data.status` is still `initiated` and `data.bridge.forward.status` is `known_deposit_tx` or `processing`.
+- `payment_order.bridge_refunded` — a refund landed at `source.refundAddress` on the origin chain; `data.bridge.reverse.status` is `success`. It follows `payment_order.refunded` (or `expired`), which on a bridge rail only means the refund reached the settlement network.
+
+Two timing differences from a native off-ramp: `validUntil` is the bridge's deposit window rather than a Paycrest receive-address timeout, and the order stays creditable for a delivery grace period beyond it, so an on-time deposit is never expired while the bridge is still delivering. Refunds are net of bridge fees and always go to the origin-chain `refundAddress`. Field-by-field detail: [Bridge rails](/implementation-guides/bridge-rails).
 
 ### Webhook Payload (v1)
 

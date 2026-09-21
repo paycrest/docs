@@ -604,8 +604,15 @@ components:
           type: string
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
           description: Network identifier for the blockchain
+        bridgeProvider:
+          type: string
+          enum: [near_intents]
+          description: Present only when `network` is a bridge rail — funds in this token are carried by this provider to the same symbol on `settlementNetwork`, where the order settles (off-ramp deposits today). See [Bridge rails](/implementation-guides/bridge-rails).
+        settlementNetwork:
+          type: string
+          description: Present only with `bridgeProvider` — the native network a bridged deposit settles on.
 
     # Order Status Schemas
     ProviderOrderStatusResponse:
@@ -810,10 +817,11 @@ components:
           description: Stablecoin symbol (e.g. USDT, USDC, cNGN)
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
+          description: Network the deposit is made on. `solana` is a bridge rail — see [Bridge rails](/implementation-guides/bridge-rails).
         refundAddress:
           type: string
-          description: Wallet address for refunds if the order can't be fulfilled
+          description: Wallet address on `network` for refunds if the order can't be fulfilled. On a bridge rail this is an origin-chain address (e.g. a Solana address) and every refund lands there.
 
     V2FiatSource:
       type: object
@@ -966,17 +974,92 @@ components:
 
     V2CryptoProviderAccount:
       type: object
-      description: Returned for offramp orders — the address to send stablecoins to
+      description: Returned for offramp orders — where to send the stablecoins. On a bridge rail, `receiveAddress` is the bridge deposit address on the origin chain and `amountToTransfer` is the exact origin amount to send.
       properties:
         network:
           type: string
+          description: Network to send on (the origin chain for bridge rails)
         receiveAddress:
           type: string
-          description: EVM address to send stablecoins to
+          description: Address on `network` to send stablecoins to
         validUntil:
           type: string
           format: date-time
           description: Deadline for the stablecoin deposit
+        memo:
+          type: string
+          description: Bridge rails only — a memo that MUST accompany the deposit on chains that share deposit addresses. Absent when not required.
+        amountToTransfer:
+          type: string
+          description: Bridge rails only — the exact amount of `currency` to send on `network`. It already includes the bridge fee; `amount + senderFee + transactionFee` is what arrives on the settlement network.
+        currency:
+          type: string
+          description: Bridge rails only — the origin-chain asset symbol to send.
+
+    V2BridgeLeg:
+      type: object
+      description: One cross-chain hop of a bridge-backed order
+      properties:
+        status:
+          type: string
+          enum: [pending_deposit, known_deposit_tx, processing, success, incomplete_deposit, refunded, failed, expired, dust]
+          description: |
+            `pending_deposit` nothing seen at the deposit address · `known_deposit_tx` the deposit tx is seen but
+            unconfirmed · `processing` deposit confirmed, transfer in flight · `success` delivered · `incomplete_deposit`
+            deposit below the quoted minimum, refunded by the bridge · `refunded` the bridge returned the deposit ·
+            `failed` terminal without a known refund (operations follow up) · `expired` the deposit window closed with
+            nothing deposited · `dust` (reverse only) balance too small to bridge, left in custody
+        depositAddress:
+          type: string
+        depositMemo:
+          type: string
+        amountIn:
+          type: string
+          description: Amount to send (forward) or amount sent (reverse), in the hop's origin asset
+        minAmountIn:
+          type: string
+          description: Smallest deposit the bridge will accept for this hop
+        amountOut:
+          type: string
+          description: Amount delivered by the hop, in its destination asset
+        deadline:
+          type: string
+          format: date-time
+          description: When the deposit address stops accepting funds
+        originTxHash:
+          type: string
+        destinationTxHash:
+          type: string
+        refundedAmount:
+          type: string
+          description: Amount the bridge returned to the hop's refund address, when it refunded
+        refundReason:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    V2Bridge:
+      type: object
+      description: Present only on orders that use a bridge rail. `forward` is the hop that funds the order (origin chain → settlement network); `reverse` appears once a refund is being carried back to the origin chain.
+      properties:
+        provider:
+          type: string
+          enum: [near_intents]
+        originNetwork:
+          type: string
+          description: Chain the sender deposits on (same as `source.network`)
+        originCurrency:
+          type: string
+        settlementNetwork:
+          type: string
+          description: Native network the order settles on; `txHash` values on the order are on this chain
+        settlementCurrency:
+          type: string
+        forward:
+          $ref: '#/components/schemas/V2BridgeLeg'
+        reverse:
+          $ref: '#/components/schemas/V2BridgeLeg'
 
     V2FiatProviderAccount:
       type: object
@@ -1042,6 +1125,8 @@ components:
           oneOf:
             - $ref: '#/components/schemas/V2FiatDestination'
             - $ref: '#/components/schemas/V2CryptoDestination'
+        bridge:
+          $ref: '#/components/schemas/V2Bridge'
 
     V2PaymentOrderGetResponse:
       type: object
@@ -1099,6 +1184,8 @@ components:
           oneOf:
             - $ref: '#/components/schemas/V2FiatDestination'
             - $ref: '#/components/schemas/V2CryptoDestination'
+        bridge:
+          $ref: '#/components/schemas/V2Bridge'
 
     V2PaymentOrderListResponse:
       type: object
@@ -1120,7 +1207,7 @@ components:
       properties:
         event:
           type: string
-          enum: [payment_order.deposited, payment_order.pending, payment_order.validated, payment_order.settling, payment_order.settled, payment_order.refunding, payment_order.refunded, payment_order.expired, payment_order.compliance_hold]
+          enum: [payment_order.deposited, payment_order.pending, payment_order.validated, payment_order.settling, payment_order.settled, payment_order.refunding, payment_order.refunded, payment_order.expired, payment_order.compliance_hold, payment_order.bridge_deposit_detected, payment_order.bridge_refunded]
         webhookVersion:
           type: string
           enum: ["2"]
@@ -1168,6 +1255,8 @@ components:
               oneOf:
                 - $ref: '#/components/schemas/V2FiatDestination'
                 - $ref: '#/components/schemas/V2CryptoDestination'
+            bridge:
+              $ref: '#/components/schemas/V2Bridge'
             fromAddress:
               type: string
             reference:
@@ -1191,7 +1280,7 @@ components:
           description: Unique ID of this delivery record.
         event:
           type: string
-          enum: [payment_order.deposited, payment_order.pending, payment_order.validated, payment_order.settling, payment_order.settled, payment_order.refunding, payment_order.refunded, payment_order.expired, payment_order.compliance_hold]
+          enum: [payment_order.deposited, payment_order.pending, payment_order.validated, payment_order.settling, payment_order.settled, payment_order.refunding, payment_order.refunded, payment_order.expired, payment_order.compliance_hold, payment_order.bridge_deposit_detected, payment_order.bridge_refunded]
           description: The webhook event that was delivered.
         eventId:
           type: string
@@ -2045,6 +2134,9 @@ paths:
 
         - **Offramp** (stablecoin → fiat): set `source.type = "crypto"` and `destination.type = "fiat"`.
           The response `providerAccount` contains a `receiveAddress` to send tokens to.
+        - **Offramp via a bridge rail** (e.g. `source.network = "solana"`): the order settles on a native network
+          and the response `providerAccount` is the bridge deposit address on the origin chain with the exact
+          `amountToTransfer`; a `bridge` object tracks the hop. See [Bridge rails](/implementation-guides/bridge-rails).
         - **Onramp** (fiat → stablecoin): set `source.type = "fiat"` and `destination.type = "crypto"`.
           The response `providerAccount` contains a virtual bank account for the user to deposit fiat into.
 
@@ -2106,6 +2198,23 @@ paths:
                       accountIdentifier: "1234567890"
                       accountName: John Doe
                       memo: Payment
+              offrampBridge:
+                summary: Offramp via bridge — USDC on Solana → NGN bank account
+                value:
+                  amount: "100"
+                  source:
+                    type: crypto
+                    currency: USDC
+                    network: solana
+                    refundAddress: "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T"
+                  destination:
+                    type: fiat
+                    currency: NGN
+                    recipient:
+                      institution: GTBINGLA
+                      accountIdentifier: "1234567890"
+                      accountName: John Doe
+                      memo: Payment
               onramp:
                 summary: Onramp — NGN → USDT on Base
                 value:
@@ -2153,7 +2262,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: No provider available for this corridor
+          description: No provider available for this corridor, or (bridge rails) "Bridge route unavailable" — no bridge quote could be obtained; retry shortly or use a native network
           content:
             application/json:
               schema:
