@@ -609,7 +609,7 @@ components:
         bridgeProvider:
           type: string
           enum: [near_intents]
-          description: Present only when `network` is a bridge rail — funds in this token are carried by this provider to the same symbol on `settlementNetwork`, where the order settles (off-ramp deposits today). See [Bridge rails](/implementation-guides/bridge-rails).
+          description: Present only when `network` is a bridge rail — funds in this token are carried by this provider to `settlementNetwork`, where the order settles (off-ramp deposits today). Set per token: a rail can carry one symbol to one network and another symbol elsewhere. See [Bridge rails](/implementation-guides/bridge-rails).
         settlementNetwork:
           type: string
           description: Present only with `bridgeProvider` — the native network a bridged deposit settles on.

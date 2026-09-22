@@ -9,7 +9,7 @@ Rails are discovered from `GET /v2/tokens`, described on the order by a `bridge`
 
 ## Which networks are rails
 
-`GET /v2/tokens` marks a rail with two extra fields. A token without them is a native network. The examples on this page use the Solana USDC rail settling on Base.
+`GET /v2/tokens` marks a rail with two extra fields. A token without them is a native network. Rails are per **token**, not per network: the same origin network can carry one symbol to one settlement network and another symbol to a different one, because a bridge does not route every symbol to every chain. Always read `settlementNetwork` from the token row you are about to use. The examples on this page use the Solana USDC rail settling on Base.
 
 ```json
 {
@@ -22,7 +22,7 @@ Rails are discovered from `GET /v2/tokens`, described on the order by a `bridge`
 }
 ```
 
-A rail can be switched off operationally. When it is, the token is listed without those fields and a create with that `network` is rejected exactly as before the rail existed.
+A rail can be switched off operationally. When it is, the token is listed without those fields and a create with that `network` is rejected exactly as before the rail existed. A symbol that is not configured on an otherwise live rail is refused with `400` `Source` — "Provided token or payment rail is not supported".
 
 ## Off-ramp on a rail
 
