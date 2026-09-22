@@ -11,7 +11,7 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ### Bridge rails — Solana off-ramp (September 2026)
 
-**New:** a **bridge rail** lets an order use a chain Paycrest does not settle on. The first rail is off-ramp on **Solana**: orders can be funded on Solana (USDC) while settling on Base. A cross-chain bridge carries the deposit to the order's receive address; assignment, payout and settlement are unchanged. Create the order exactly as before with `source.network: "solana"` and a Solana `refundAddress`.
+**New:** a **bridge rail** lets an order use a chain Paycrest does not settle on. **Solana** (USDC) is enabled as an off-ramp rail: orders can be funded on Solana while settling on Base. A cross-chain bridge carries the deposit to the order's receive address; assignment, payout and settlement are unchanged. Create the order exactly as before with `source.network: "solana"` and a Solana `refundAddress`.
 
 | Surface | Change |
 |---------|--------|

@@ -513,7 +513,7 @@ Send **exactly** `amount + senderFee + transactionFee` (all returned in the resp
 
 ### Off-ramp via a bridge rail — send `amountToTransfer` on the origin chain
 
-When `source.network` is a bridge rail (Solana today), the order settles on a native network and `providerAccount` is the bridge deposit address on the origin chain with the exact origin amount to send. Send **`providerAccount.amountToTransfer`** of `providerAccount.currency` on `providerAccount.network`, include `providerAccount.memo` when present, and watch `bridge.forward.status`. Refunds land at `source.refundAddress` on the origin chain. Full details, the `bridge` object and failure modes: [Bridge rails](/implementation-guides/bridge-rails).
+When `source.network` is a bridge rail, the order settles on a native network and `providerAccount` is the bridge deposit address on the origin chain with the exact origin amount to send. Send **`providerAccount.amountToTransfer`** of `providerAccount.currency` on `providerAccount.network`, include `providerAccount.memo` when present, and watch `bridge.forward.status`. Refunds land at `source.refundAddress` on the origin chain. Full details, the `bridge` object and failure modes: [Bridge rails](/implementation-guides/bridge-rails).
 
 ### On-ramp — present virtual account to user
 

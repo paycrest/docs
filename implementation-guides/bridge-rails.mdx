@@ -1,15 +1,15 @@
 ---
 title: "Bridge Rails"
-description: "Use chains Paycrest does not settle on — Solana first — while the order lives on a native Paycrest network. Same create call, one extra object to read."
+description: "Use chains Paycrest does not settle on while the order lives on a native Paycrest network. Same create call, one extra object to read."
 ---
 
-Paycrest settles orders on the networks where its Gateway contract runs (Base, Polygon, Arbitrum, BNB Smart Chain, …). A **bridge rail** is a network Paycrest does not settle on but still accepts in `source.network` (and, later, `destination.network`): the order itself lives on a native **settlement network**, and a cross-chain intent provider (NEAR Intents 1Click today) carries funds between the rail and the settlement network. Assignment, payout and settlement are exactly the native flow.
+Paycrest settles orders on the networks where its Gateway contract runs (Base, Polygon, Arbitrum, BNB Smart Chain, …). A **bridge rail** is a network Paycrest does not settle on but still accepts in `source.network` (and, later, `destination.network`): the order itself lives on a native **settlement network**, and a cross-chain intent provider carries funds between the rail and the settlement network. Assignment, payout and settlement are exactly the native flow.
 
-Rails are discovered from `GET /v2/tokens`, described on the order by a `bridge` object, and tracked with two extra webhook events. None of that is specific to a direction: the same fields will describe on-ramp payouts on a rail when those ship. **Today, rails are available for off-ramp only** — Solana USDC, settling on Base.
+Rails are discovered from `GET /v2/tokens`, described on the order by a `bridge` object, and tracked with two extra webhook events. None of that is specific to a direction: the same fields describe an off-ramp deposit on a rail and, when available, an on-ramp payout to one. Which networks are rails, and for which tokens, is whatever `GET /v2/tokens` reports.
 
 ## Which networks are rails
 
-`GET /v2/tokens` marks a rail with two extra fields. A token without them is a native network.
+`GET /v2/tokens` marks a rail with two extra fields. A token without them is a native network. The examples on this page use the Solana USDC rail settling on Base.
 
 ```json
 {
@@ -38,7 +38,7 @@ sequenceDiagram
 
     App->>API: POST /v2/sender/orders (source.network = solana)
     API-->>App: providerAccount = bridge deposit address + amountToTransfer, bridge.forward
-    App->>BR: User sends amountToTransfer USDC on Solana
+    App->>BR: User sends amountToTransfer on the rail
     API-->>App: payment_order.bridge_deposit_detected
     BR->>GW: Bridge delivers amount + fees to the receive address on Base
     API-->>App: payment_order.deposited (native flow from here)
@@ -152,15 +152,15 @@ Bridge fees are deducted from a refund; Paycrest never tops a refund up. `paymen
 
 - `providerAccount.validUntil` (= `bridge.forward.deadline`) is the bridge's deposit window. Deposits after it are refunded by the bridge.
 - The order stays creditable for a delivery grace period beyond the deadline, and Paycrest extends it further once a deposit is seen, so an on-time deposit is never expired mid-delivery. The usual "expired after `validUntil`" copy does not apply to bridge rails.
-- Typical Solana → Base delivery is under a minute after the deposit confirms.
+- Delivery typically completes within a few minutes of the deposit confirming.
 
 ### Errors
 
 | Response | Cause | What to do |
 |---|---|---|
-| `400` `Network` — "Solana is only supported for onramp orders…" | The rail is switched off (or the network is not a rail) | Offer a native network |
+| `400` `Network` — "… is only supported for onramp orders" / "Unsupported network" | The rail is switched off (or the network is not a rail) | Offer a native network |
 | `400` `Source` — "Provided token or payment rail is not supported" | The symbol is not available on the rail or its settlement network | Check `GET /v2/tokens` |
-| `400` `Source` — "Invalid Solana refund address" | `refundAddress` is not a valid address on the origin chain | Collect an origin-chain address |
+| `400` `Source` — "Invalid … refund address" | `refundAddress` is not a valid address on the origin chain | Collect an origin-chain address |
 | `503` "Bridge route unavailable" | No bridge quote could be obtained, or the quote could not deliver the exact amount | Retry shortly or offer a native network. Nothing was created. |
 
 ### Explorer links
