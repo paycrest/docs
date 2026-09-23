@@ -5,7 +5,7 @@ description: "Complete list of supported stablecoins and their network availabil
 
 Paycrest supports three stablecoins across nine blockchain networks (seven EVM chains plus Starknet and Tron). Use the [GET /tokens](/api-reference/general/list-supported-tokens) endpoint for the live list including contract addresses, decimals, and network availability.
 
-Off-ramp deposits are also accepted on **Solana** (USDC) through a **bridge rail** that settles on Base; `GET /tokens` marks such rows with `bridgeProvider` and `settlementNetwork`. See [Bridge rails](/implementation-guides/bridge-rails).
+Off-ramp deposits are also accepted on **Solana** (USDC) through a **bridge rail** that settles on Base; `GET /tokens` marks such rows with `settlementNetwork`. See [Bridge rails](/implementation-guides/bridge-rails).
 
 ## Stablecoin Overview
 

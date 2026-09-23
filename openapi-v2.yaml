@@ -606,13 +606,9 @@ components:
           type: string
           enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
           description: Network identifier for the blockchain
-        bridgeProvider:
-          type: string
-          enum: [near_intents]
-          description: Present only when `network` is a bridge rail — funds in this token are carried by this provider to `settlementNetwork`, where the order settles (off-ramp deposits today). Set per token: a rail can carry one symbol to one network and another symbol elsewhere. See [Bridge rails](/implementation-guides/bridge-rails).
         settlementNetwork:
           type: string
-          description: Present only with `bridgeProvider` — the native network a bridged deposit settles on.
+          description: Present only when `network` is a bridge rail, and its presence is what marks one — funds in this token are carried to the network named here, where the order settles and is priced (off-ramp deposits today). Set per token — a rail can carry one symbol to one network and another symbol elsewhere. Which provider carries them is not published per token; a bridged order names its own on `bridge.provider`. See [Bridge rails](/implementation-guides/bridge-rails).
 
     # Order Status Schemas
     ProviderOrderStatusResponse:

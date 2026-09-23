@@ -15,7 +15,7 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 | Surface | Change |
 |---------|--------|
-| `GET /v2/tokens` | Rail rows carry **`bridgeProvider`** and **`settlementNetwork`** |
+| `GET /v2/tokens` | Rail rows carry **`settlementNetwork`** — the network an order funded on that rail settles on, and the flag that marks a rail |
 | `POST /v2/sender/orders` | `source.network` accepts `solana`. On a rail, **`providerAccount`** is the bridge deposit address on the origin chain and gains **`amountToTransfer`**, **`currency`** and (when required) **`memo`**. New **503** "Bridge route unavailable" |
 | Order responses & v2 webhooks | New **`bridge`** object (`provider`, `originNetwork`, `settlementNetwork`, `forward` / `reverse` legs with status, deposit address, amounts, deadline, tx hashes, refunded amount) |
 | Webhook events | **`payment_order.bridge_deposit_detected`** and **`payment_order.bridge_refunded`** — neither changes `data.status`; branch on `event` |
