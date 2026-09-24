@@ -37,11 +37,11 @@ sequenceDiagram
     participant GW as Gateway (settlement network)
     participant PRV as Provider
 
-    App->>API: POST /v2/sender/orders (source.network = solana)
+    App->>API: POST /v2/sender/orders (source.network = the rail)
     API-->>App: providerAccount = bridge deposit address + amountToTransfer, bridge.forward
     App->>BR: User sends amountToTransfer on the rail
     API-->>App: payment_order.bridge_deposit_detected
-    BR->>GW: Bridge delivers amount + fees to the receive address on Base
+    BR->>GW: Bridge delivers amount + fees to the receive address on the settlement network
     API-->>App: payment_order.deposited (native flow from here)
     API->>PRV: Assign, pay out, settle
     API-->>App: payment_order.validated … payment_order.settled
