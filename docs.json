@@ -48,6 +48,7 @@
                 "group": "Implementation Guides",
                 "pages": [
                   "implementation-guides/sender-api-integration",
+                  "implementation-guides/bridge-rails",
                   "implementation-guides/sender-mcp",
                   "implementation-guides/smart-contract-interaction",
                   "implementation-guides/provider-setup-guide"

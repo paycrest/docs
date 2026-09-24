@@ -9,6 +9,23 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q3 2026
 
+### Bridge rails — Solana off-ramp (September 2026)
+
+**New:** a **bridge rail** lets an order use a chain Paycrest does not settle on. **Solana** (USDC) is enabled as an off-ramp rail: orders can be funded on Solana while settling on the native network the token row names in `settlementNetwork` (Base at launch). A cross-chain bridge carries the deposit to the order's receive address; assignment, payout and settlement are unchanged. Create the order exactly as before with `source.network: "solana"` and a Solana `refundAddress`.
+
+| Surface | Change |
+|---------|--------|
+| `GET /v2/tokens` | Rail rows carry **`settlementNetwork`** — the network an order funded on that rail settles on, and the flag that marks a rail |
+| `POST /v2/sender/orders` | `source.network` accepts `solana`. On a rail, **`providerAccount`** is the bridge deposit address on the origin chain and gains **`amountToTransfer`**, **`currency`** and (when required) **`memo`**. New **503** "Bridge route unavailable" |
+| Order responses & v2 webhooks | New **`bridge`** object (`provider`, `originNetwork`, `settlementNetwork`, `forward` / `reverse` legs with status, deposit address, amounts, deadline, tx hashes, refunded amount) |
+| Webhook events | **`payment_order.bridge_deposit_detected`** and **`payment_order.bridge_refunded`** — neither changes `data.status`; branch on `event` |
+
+**Behavior change (bridge rails only):** `source.network` is the origin chain while `txHash` values are on `bridge.settlementNetwork`; `validUntil` is the bridge's deposit deadline and the order stays creditable for a delivery grace beyond it; `payment_order.refunded` means the refund reached the settlement network — the sender has the funds only after `payment_order.bridge_refunded`. Native networks are unaffected.
+
+See [Bridge rails](/implementation-guides/bridge-rails).
+
+---
+
 ### Onchain sender attribution via ERC-8021 (August 2026)
 
 **New:** The aggregator now stamps the EVM transactions it submits with an [ERC-8021](https://eip.tools/eip/8021) schema-0 data suffix carrying the sender's **trading name** from their KYB profile. It is applied to the transactions the aggregator submits for an order: creation, settlement, and refunds. Orders placed through the Sender API carry public onchain attribution with no integration work.
