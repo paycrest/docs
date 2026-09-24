@@ -119,7 +119,7 @@ Tell the user to send **exactly `providerAccount.amountToTransfer` of `providerA
 </Warning>
 
 <Note>
-  The user also needs the rail's **native gas token** — `amountToTransfer` covers the transfer itself, nothing else. Deposit addresses are fresh, so on chains where a token account is created per holder the sender pays that rent as well as the fee: on Solana that is roughly **0.0015 SOL** for the deposit address's token account plus the signature fee, against a wallet-quoted "transaction fee" of 0.000005 SOL. A wallet with the token but no gas reports `insufficient funds for gas` or `insufficient funds for rent` and the deposit never leaves.
+  A rail deposit is an ordinary transfer on the origin chain, so the sender pays its gas: `amountToTransfer` covers the transfer itself and nothing else. Deposit addresses are per quote, so on Solana the sender also pays the one-off cost of creating the deposit address's token account — currently about **0.0015 SOL**, roughly 300× the signature fee a wallet quotes, and not refunded. A wallet holding the token but no native balance refuses before broadcast, with an error that does not mention Paycrest.
 </Note>
 
 ### Track the bridge

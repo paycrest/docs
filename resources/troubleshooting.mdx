@@ -44,12 +44,11 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
     <h4>503 "Bridge route unavailable"</h4>
     <p>Bridge rails only. No bridge quote could be obtained for the requested amount, or the quote could not deliver the exact settlement amount. Nothing was created — retry shortly or offer a native network.</p>
 
-    <h4>The user's wallet will not send the deposit ("insufficient funds for gas" / "for rent")</h4>
-    <p>Bridge rails only, and not a Paycrest error — the wallet is refusing before broadcast. <code>amountToTransfer</code> covers the transfer, never the rail's native gas token.</p>
+    <h4>The user's wallet will not send the deposit ("insufficient funds for gas")</h4>
+    <p>Bridge rails only, and not a Paycrest error — the wallet is refusing before broadcast. <code>amountToTransfer</code> covers the transfer, never the origin chain's gas.</p>
     <ul>
-      <li><strong>No gas in the sending account</strong>: holding the token is not enough. Wallets show a combined portfolio balance across accounts, so gas often sits in a different account than the one sending</li>
-      <li><strong>Deposit addresses are fresh</strong>: on Solana the sender also pays the rent for the deposit address's token account — about <strong>0.0015 SOL</strong>, far more than the ~0.000005 SOL "transaction fee" the wallet quotes. Budget roughly <strong>0.005 SOL</strong></li>
-      <li><strong>"insufficient funds for rent" when topping the account up</strong>: the <em>funding</em> account would be left below its own rent-exempt minimum (~0.00065 SOL). Send less, or use the wallet's max-send</li>
+      <li><strong>No native balance in the sending account</strong>: holding the token is not enough. Wallets show a combined balance across accounts, so the gas often sits in a different account than the one sending</li>
+      <li><strong>Solana — the deposit address's token account</strong>: deposit addresses are per quote, so a deposit also pays to create one, currently about <strong>0.0015 SOL</strong> on top of the fee, and not refunded</li>
     </ul>
 
     <h4>Bridge deposit was refunded (order <code>expired</code>, <code>bridge.forward.status = refunded</code>)</h4>
