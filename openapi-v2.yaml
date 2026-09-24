@@ -1011,13 +1011,22 @@ components:
           type: string
         amountIn:
           type: string
-          description: Amount to send (forward) or amount sent (reverse), in the hop's origin asset
+          description: >-
+            The quote for this hop, in its origin asset — for a forward hop, the amount the sender
+            was told to send. Fixed when the order is created and never rewritten, so comparing it
+            with `depositedAmount` tells you whether the deposit matched the quote.
         minAmountIn:
           type: string
           description: Smallest deposit the bridge will accept for this hop
         amountOut:
           type: string
           description: Amount delivered by the hop, in its destination asset
+        depositedAmount:
+          type: string
+          description: >-
+            What actually arrived at the deposit address, as the bridge counted it. Absent until the
+            bridge reports a deposit. It can differ slightly from `amountIn` in either direction — the
+            sender may round up, and the bridge deducts its own intake fee before the swap.
         deadline:
           type: string
           format: date-time

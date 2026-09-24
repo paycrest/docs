@@ -118,6 +118,10 @@ Tell the user to send **exactly `providerAccount.amountToTransfer` of `providerA
   On a bridge rail, `receiveAddress` is the **bridge's deposit address on the origin chain**, not a Paycrest address on the settlement network, and the amount to send is **`amountToTransfer`**, not `amount + senderFee + transactionFee`. `amountToTransfer` already includes the bridge fee; `amount + senderFee + transactionFee` is what arrives on the settlement network.
 </Warning>
 
+<Note>
+  The user also needs the rail's **native gas token** — `amountToTransfer` covers the transfer itself, nothing else. Deposit addresses are fresh, so on chains where a token account is created per holder the sender pays that rent as well as the fee: on Solana that is roughly **0.0015 SOL** for the deposit address's token account plus the signature fee, against a wallet-quoted "transaction fee" of 0.000005 SOL. A wallet with the token but no gas reports `insufficient funds for gas` or `insufficient funds for rent` and the deposit never leaves.
+</Note>
+
 ### Track the bridge
 
 The order's `status` is unchanged by the bridge: it stays `initiated` until the delivery lands on the settlement network and is credited, then follows the [normal lifecycle](/concepts/transaction-lifecycle). Bridge progress is on `bridge.forward.status`:
@@ -132,6 +136,8 @@ The order's `status` is unchanged by the bridge: it stays `initiated` until the 
 | `refunded` | The bridge returned the deposit to `source.refundAddress` (`refundReason` says why) | `expired` |
 | `expired` | The deposit window closed and nothing was deposited | `expired` |
 | `failed` | Terminal without a known refund — Paycrest operations follow up | `expired` |
+
+`bridge.forward.amountIn` is the **quote** — what the sender was told to send — and is never rewritten, so it still reads the same after the order settles. Once the bridge reports a deposit, `bridge.forward.depositedAmount` carries what actually arrived. Compare the two to see whether the user over- or underpaid; they differ slightly in normal operation, since the bridge deducts its intake fee before the swap.
 
 Two webhook events cover the hops. Neither changes `data.status`, so branch on `event`:
 
