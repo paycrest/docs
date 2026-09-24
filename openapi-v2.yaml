@@ -1007,13 +1007,7 @@ components:
             nothing deposited · `dust` (reverse only) balance too small to bridge, left in custody
         depositAddress:
           type: string
-          description: Deposit address for this hop. On the forward leg this is also returned as `providerAccount.receiveAddress`.
-        minAmountIn:
-          type: string
-          description: Smallest deposit the bridge will accept for this hop
-        amountOut:
-          type: string
-          description: Amount delivered by the hop, in its destination asset
+          description: Reverse hop only — omitted on `forward`. Sender deposit instructions remain on `providerAccount`.
         depositedAmount:
           type: string
           description: >-
@@ -2281,9 +2275,6 @@ paths:
                         settlementCurrency: USDC
                         forward:
                           status: pending_deposit
-                          depositAddress: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
-                          minAmountIn: "105.1"
-                          amountOut: "105.1"
                           updatedAt: "2026-09-24T05:15:00Z"
         '400':
           description: Validation error

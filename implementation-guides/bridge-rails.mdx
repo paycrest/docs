@@ -98,9 +98,6 @@ Use the normal off-ramp payload with the **origin chain** in `source.network` an
     "settlementCurrency": "USDC",
     "forward": {
       "status": "pending_deposit",
-      "depositAddress": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
-      "minAmountIn": "105.1",
-      "amountOut": "105.1",
       "updatedAt": "2026-09-22T10:00:00Z"
     }
   }
@@ -129,7 +126,7 @@ Tell the user to send **exactly `providerAccount.amountToTransfer` of `providerA
 | `known_deposit_tx` | The user's deposit tx is seen, awaiting confirmation. `originTxHash` is set. | `initiated` |
 | `processing` | Deposit confirmed, transfer to the settlement network in flight | `initiated` |
 | `success` | Delivered. `destinationTxHash` is the settlement-network tx; the order is credited from it. | `deposited` → … |
-| `incomplete_deposit` | Deposit was below `minAmountIn`; the bridge refunded it to `source.refundAddress`. `refundedAmount` is set. | `expired` |
+| `incomplete_deposit` | Deposit was below the quoted minimum; the bridge refunded it to `source.refundAddress`. `refundedAmount` is set. | `expired` |
 | `refunded` | The bridge returned the deposit to `source.refundAddress` (`refundReason` says why) | `expired` |
 | `expired` | The deposit window closed and nothing was deposited | `expired` |
 | `failed` | Terminal without a known refund — Paycrest operations follow up | `expired` |
@@ -148,7 +145,7 @@ Delivery itself is announced by the ordinary **`payment_order.deposited`** event
 Refunds always go back to **`source.refundAddress` on the origin chain**. There are two paths:
 
 - **Before delivery** (deposit too small, sent after the deadline, or the bridge could not route it): the bridge refunds the origin deposit directly. The order becomes `expired` and `bridge.forward` records `refundedAmount` / `refundReason`. No `bridge.reverse` is created.
-- **After delivery** (the provider queue was exhausted or the order was refunded on the settlement network): the order becomes `refunded` as usual, and Paycrest then carries the settlement-network balance back with a **reverse hop**. `bridge.reverse` appears with the same fields as `forward`; when it reaches `success` you receive `payment_order.bridge_refunded` and `bridge.reverse.destinationTxHash` is the origin-chain tx.
+- **After delivery** (the provider queue was exhausted or the order was refunded on the settlement network): the order becomes `refunded` as usual, and Paycrest then carries the settlement-network balance back with a **reverse hop**. `bridge.reverse` may include `depositAddress` while `bridge.forward` does not; otherwise the legs share the same tracking fields. When reverse reaches `success` you receive `payment_order.bridge_refunded` and `bridge.reverse.destinationTxHash` is the origin-chain tx.
 
 <Info>
   `payment_order.refunded` means the refund reached the settlement network. `payment_order.bridge_refunded` means the reverse hop completed and the funds are back at `source.refundAddress` on the origin rail.

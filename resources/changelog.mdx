@@ -22,7 +22,7 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 **Behavior change (bridge rails only):** `source.network` is the origin chain while `txHash` values are on `bridge.settlementNetwork`; `validUntil` is the bridge's deposit deadline and the order stays creditable for a delivery grace beyond it; `payment_order.refunded` means the refund reached the settlement network — the sender has the funds only after `payment_order.bridge_refunded`. Native networks are unaffected.
 
-**Documentation update (September 24, 2026):** the documented create-order `bridge` response is slimmer. The top-level `provider`, `originNetwork` and `originCurrency` fields were removed, along with forward-leg amount, memo and deadline echoes already available through `providerAccount`. The bridge deposit address remains available in both `providerAccount.receiveAddress` and `bridge.forward.depositAddress`.
+**Documentation update (September 24, 2026):** the documented create-order `bridge` response is slimmer. The top-level `provider`, `originNetwork` and `originCurrency` fields were removed, along with forward-leg amount, memo and deadline echoes already available through `providerAccount`. `bridge.forward` omits `depositAddress`; the sender deposit target is `providerAccount.receiveAddress` only. `bridge.reverse` may expose `depositAddress`.
 
 See [Bridge rails](/implementation-guides/bridge-rails).
 

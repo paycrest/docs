@@ -53,7 +53,7 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
 
     <h4>Bridge deposit was refunded (order <code>expired</code>, <code>bridge.forward.status = refunded</code>)</h4>
     <ul>
-      <li><strong>Deposit below <code>bridge.forward.minAmountIn</code></strong>: the bridge refunds it to <code>source.refundAddress</code> net of its fee (<code>refundReason: PARTIAL_DEPOSIT</code>). Create a new order and send exactly <code>providerAccount.amountToTransfer</code></li>
+      <li><strong>Deposit below the quoted minimum</strong>: the bridge refunds it to <code>source.refundAddress</code> net of its fee (<code>refundReason: PARTIAL_DEPOSIT</code>). Create a new order and send exactly <code>providerAccount.amountToTransfer</code></li>
       <li><strong>Sent after <code>validUntil</code></strong>: the deposit address had gone cold; the bridge refunds it. Create a new order</li>
       <li><strong>Memo omitted</strong> on a chain that requires one: the deposit cannot be attributed. Contact support with the origin tx hash</li>
     </ul>
