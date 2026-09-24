@@ -17,10 +17,12 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 |---------|--------|
 | `GET /v2/tokens` | Rail rows carry **`settlementNetwork`** — the network an order funded on that rail settles on, and the flag that marks a rail |
 | `POST /v2/sender/orders` | `source.network` accepts `solana`. On a rail, **`providerAccount`** is the bridge deposit address on the origin chain and gains **`amountToTransfer`**, **`currency`** and (when required) **`memo`**. New **503** "Bridge route unavailable" |
-| Order responses & v2 webhooks | New **`bridge`** object (`provider`, `originNetwork`, `settlementNetwork`, `forward` / `reverse` legs with status, deposit address, amounts, deadline, tx hashes, refunded amount) |
+| Order responses & v2 webhooks | New **`bridge`** object (`settlementNetwork`, `settlementCurrency`, and `forward` / `reverse` legs with status, deposit address, tracking amounts, tx hashes and refund details) |
 | Webhook events | **`payment_order.bridge_deposit_detected`** and **`payment_order.bridge_refunded`** — neither changes `data.status`; branch on `event` |
 
 **Behavior change (bridge rails only):** `source.network` is the origin chain while `txHash` values are on `bridge.settlementNetwork`; `validUntil` is the bridge's deposit deadline and the order stays creditable for a delivery grace beyond it; `payment_order.refunded` means the refund reached the settlement network — the sender has the funds only after `payment_order.bridge_refunded`. Native networks are unaffected.
+
+**Documentation update (September 24, 2026):** the documented create-order `bridge` response is slimmer. The top-level `provider`, `originNetwork` and `originCurrency` fields were removed, along with forward-leg amount, memo and deadline echoes already available through `providerAccount`. The bridge deposit address remains available in both `providerAccount.receiveAddress` and `bridge.forward.depositAddress`.
 
 See [Bridge rails](/implementation-guides/bridge-rails).
 

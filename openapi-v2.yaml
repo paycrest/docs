@@ -608,7 +608,7 @@ components:
           description: Network identifier for the blockchain
         settlementNetwork:
           type: string
-          description: Present only when `network` is a bridge rail, and its presence is what marks one — funds in this token are carried to the network named here, where the order settles and is priced (off-ramp deposits today). Set per token — a rail can carry one symbol to one network and another symbol elsewhere. Which provider carries them is not published per token; a bridged order names its own on `bridge.provider`. See [Bridge rails](/implementation-guides/bridge-rails).
+          description: Present only when `network` is a bridge rail, and its presence is what marks one — funds in this token are carried to the network named here, where the order settles and is priced (off-ramp deposits today). Set per token — a rail can carry one symbol to one network and another symbol elsewhere. See [Bridge rails](/implementation-guides/bridge-rails).
 
     # Order Status Schemas
     ProviderOrderStatusResponse:
@@ -775,7 +775,7 @@ components:
             Optional fee recipient address for this order. Required when the effective sender fee is greater than zero
             (from `senderFee`, `senderFeePercent`, or a profile-configured fee) and no fee address is configured on the
             sender profile for the token. Not required when the effective fee is zero. Must be a valid address for the
-            order's crypto network (EVM, Tron, or Starknet).
+            order's crypto source or destination network, including bridge rails such as Solana.
           example: "0xYourFeeRecipientAddress"
         reference:
           type: string
@@ -1007,14 +1007,7 @@ components:
             nothing deposited · `dust` (reverse only) balance too small to bridge, left in custody
         depositAddress:
           type: string
-        depositMemo:
-          type: string
-        amountIn:
-          type: string
-          description: >-
-            The quote for this hop, in its origin asset — for a forward hop, the amount the sender
-            was told to send. Fixed when the order is created and never rewritten, so comparing it
-            with `depositedAmount` tells you whether the deposit matched the quote.
+          description: Deposit address for this hop. On the forward leg this is also returned as `providerAccount.receiveAddress`.
         minAmountIn:
           type: string
           description: Smallest deposit the bridge will accept for this hop
@@ -1025,12 +1018,8 @@ components:
           type: string
           description: >-
             What actually arrived at the deposit address, as the bridge counted it. Absent until the
-            bridge reports a deposit. It can differ slightly from `amountIn` in either direction — the
-            sender may round up, and the bridge deducts its own intake fee before the swap.
-        deadline:
-          type: string
-          format: date-time
-          description: When the deposit address stops accepting funds
+            bridge reports a deposit. Compare the forward leg with `providerAccount.amountToTransfer`;
+            the sender may round up, and the bridge can deduct its own intake fee before the swap.
         originTxHash:
           type: string
         destinationTxHash:
@@ -1048,19 +1037,12 @@ components:
       type: object
       description: Present only on orders that use a bridge rail. `forward` is the hop that funds the order (origin chain → settlement network); `reverse` appears once a refund is being carried back to the origin chain.
       properties:
-        provider:
-          type: string
-          enum: [near_intents]
-        originNetwork:
-          type: string
-          description: Chain the sender deposits on (same as `source.network`)
-        originCurrency:
-          type: string
         settlementNetwork:
           type: string
           description: Native network the order settles on; `txHash` values on the order are on this chain
         settlementCurrency:
           type: string
+          description: Asset delivered to the settlement network
         forward:
           $ref: '#/components/schemas/V2BridgeLeg'
         reverse:
@@ -2145,6 +2127,10 @@ paths:
         - **Onramp** (fiat → stablecoin): set `source.type = "fiat"` and `destination.type = "crypto"`.
           The response `providerAccount` contains a virtual bank account for the user to deposit fiat into.
 
+        **Bridge status and refunds.** While a bridge runs, the order `status` remains `initiated`; track
+        `bridge.forward.status` for progress. `payment_order.refunded` means a refund reached the settlement
+        network, while `payment_order.bridge_refunded` means the reverse hop returned funds to the origin rail.
+
         **Provider routing.** On **offramp**, leave `destination.providerIds` unset and the API resolves a ranked
         queue of up to 3 providers at creation; assignment walks it in order. Set `destination.providerIds` to
         supply your own queue — typically the ids from a [rate quote](/api-reference/general/get-token-rate) — or a
@@ -2254,6 +2240,51 @@ paths:
                     example: Payment order created successfully
                   data:
                     $ref: '#/components/schemas/V2PaymentOrderResponse'
+              examples:
+                bridgeRail:
+                  summary: Bridge rail order created — USDC on Solana settling on Base
+                  value:
+                    status: success
+                    message: Payment order created successfully
+                    data:
+                      id: "550e8400-e29b-41d4-a716-446655440000"
+                      status: initiated
+                      orderType: regular
+                      timestamp: "2026-09-24T05:15:00Z"
+                      amount: "100"
+                      rate: "1650"
+                      senderFee: "5"
+                      senderFeePercent: "0"
+                      transactionFee: "0.1"
+                      reference: "invoice-123"
+                      providerAccount:
+                        network: solana
+                        receiveAddress: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
+                        validUntil: "2026-09-24T05:45:00Z"
+                        amountToTransfer: "105.36"
+                        currency: USDC
+                      source:
+                        type: crypto
+                        currency: USDC
+                        network: solana
+                        refundAddress: "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T"
+                      destination:
+                        type: fiat
+                        currency: NGN
+                        recipient:
+                          institution: GTBINGLA
+                          accountIdentifier: "1234567890"
+                          accountName: John Doe
+                          memo: Payment
+                      bridge:
+                        settlementNetwork: base
+                        settlementCurrency: USDC
+                        forward:
+                          status: pending_deposit
+                          depositAddress: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
+                          minAmountIn: "105.1"
+                          amountOut: "105.1"
+                          updatedAt: "2026-09-24T05:15:00Z"
         '400':
           description: Validation error
           content:

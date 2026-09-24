@@ -21,7 +21,7 @@ Rails are discovered from `GET /v2/tokens`, described on the order by a `bridge`
 }
 ```
 
-Which bridge carries the funds is deliberately not published on a token row: you cannot choose it or route around it, and it can change. A bridged **order** names its carrier on `bridge.provider`, which is where to read it — for a support conversation, or to tell your own users who moves their funds.
+The bridge route is selected by Paycrest. Integrators do not choose a carrier or depend on its identity; use the token row's `settlementNetwork` to identify the destination network and the order's deposit and tracking fields to run the transfer.
 
 A rail can be switched off operationally. When it is, the token is listed without `settlementNetwork` and a create with that `network` is rejected exactly as before the rail existed. A symbol that is not configured on an otherwise live rail is refused with `400` `Source` — "Provided token or payment rail is not supported".
 
@@ -94,18 +94,13 @@ Use the normal off-ramp payload with the **origin chain** in `source.network` an
   "source": { "type": "crypto", "currency": "USDC", "network": "solana", "refundAddress": "4Nd1…DB4T" },
   "destination": { "type": "fiat", "currency": "NGN", "recipient": { "..." : "..." } },
   "bridge": {
-    "provider": "near_intents",
-    "originNetwork": "solana",
-    "originCurrency": "USDC",
     "settlementNetwork": "base",
     "settlementCurrency": "USDC",
     "forward": {
       "status": "pending_deposit",
       "depositAddress": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
-      "amountIn": "105.36",
       "minAmountIn": "105.1",
       "amountOut": "105.1",
-      "deadline": "2026-09-22T10:30:00Z",
       "updatedAt": "2026-09-22T10:00:00Z"
     }
   }
@@ -124,7 +119,9 @@ Tell the user to send **exactly `providerAccount.amountToTransfer` of `providerA
 
 ### Track the bridge
 
-The order's `status` is unchanged by the bridge: it stays `initiated` until the delivery lands on the settlement network and is credited, then follows the [normal lifecycle](/concepts/transaction-lifecycle). Bridge progress is on `bridge.forward.status`:
+<Warning>
+  The order's `status` stays `initiated` while the bridge runs. Track `bridge.forward.status` for bridge progress; the order follows the [normal lifecycle](/concepts/transaction-lifecycle) only after delivery is credited on the settlement network.
+</Warning>
 
 | `bridge.forward.status` | Meaning | Order `status` |
 |---|---|---|
@@ -137,7 +134,7 @@ The order's `status` is unchanged by the bridge: it stays `initiated` until the 
 | `expired` | The deposit window closed and nothing was deposited | `expired` |
 | `failed` | Terminal without a known refund — Paycrest operations follow up | `expired` |
 
-`bridge.forward.amountIn` is the **quote** — what the sender was told to send — and is never rewritten, so it still reads the same after the order settles. Once the bridge reports a deposit, `bridge.forward.depositedAmount` carries what actually arrived. Compare the two to see whether the user over- or underpaid; they differ slightly in normal operation, since the bridge deducts its intake fee before the swap.
+`providerAccount.amountToTransfer` is the **quote** — what the sender was told to send — and is never rewritten, so it still reads the same after the order settles. Once the bridge reports a deposit, `bridge.forward.depositedAmount` carries what actually arrived. Compare the two to see whether the user over- or underpaid; they can differ slightly in normal operation, since the bridge deducts its intake fee before the swap.
 
 Two webhook events cover the hops. Neither changes `data.status`, so branch on `event`:
 
@@ -153,11 +150,15 @@ Refunds always go back to **`source.refundAddress` on the origin chain**. There 
 - **Before delivery** (deposit too small, sent after the deadline, or the bridge could not route it): the bridge refunds the origin deposit directly. The order becomes `expired` and `bridge.forward` records `refundedAmount` / `refundReason`. No `bridge.reverse` is created.
 - **After delivery** (the provider queue was exhausted or the order was refunded on the settlement network): the order becomes `refunded` as usual, and Paycrest then carries the settlement-network balance back with a **reverse hop**. `bridge.reverse` appears with the same fields as `forward`; when it reaches `success` you receive `payment_order.bridge_refunded` and `bridge.reverse.destinationTxHash` is the origin-chain tx.
 
-Bridge fees are deducted from a refund; Paycrest never tops a refund up. `payment_order.refunded` therefore means "refund on the settlement network"; the user has the funds only after `payment_order.bridge_refunded`. Balances too small to bridge economically stay in Paycrest custody as `bridge.reverse.status = dust` and are handled by operations.
+<Info>
+  `payment_order.refunded` means the refund reached the settlement network. `payment_order.bridge_refunded` means the reverse hop completed and the funds are back at `source.refundAddress` on the origin rail.
+</Info>
+
+Bridge fees are deducted from a refund; Paycrest never tops a refund up. Balances too small to bridge economically stay in Paycrest custody as `bridge.reverse.status = dust` and are handled by operations.
 
 ### Timing
 
-- `providerAccount.validUntil` (= `bridge.forward.deadline`) is the bridge's deposit window. Deposits after it are refunded by the bridge.
+- `providerAccount.validUntil` is the bridge's deposit window. Deposits after it are refunded by the bridge.
 - The order stays creditable for a delivery grace period beyond the deadline, and Paycrest extends it further once a deposit is seen, so an on-time deposit is never expired mid-delivery. The usual "expired after `validUntil`" copy does not apply to bridge rails.
 - Delivery typically completes within a few minutes of the deposit confirming.
 
