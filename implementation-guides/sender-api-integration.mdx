@@ -61,6 +61,8 @@ sequenceDiagram
     GW->>WLT: Transfer stablecoins
     API-->>App: Webhook: payment_order.settled
 ```
+
+When `destination.recipient.network` is a [bridged network](/implementation-guides/bridged-networks) (e.g. `solana`), the Gateway step settles on the settlement network of the token's on-ramp route and Paycrest then bridges the stablecoins to the recipient wallet; `payment_order.settled` is sent only after that delivery succeeds.
   </Tab>
 </Tabs>
 
@@ -511,9 +513,9 @@ The create response includes a `providerAccount` whose shape depends on directio
 
 Send **exactly** `amount + senderFee + transactionFee` (all returned in the response) in the specified token to `providerAccount.receiveAddress` before `validUntil`.
 
-### Off-ramp via a bridge rail — send `amountToTransfer` on the origin chain
+### Off-ramp via a bridged network — send `amountToTransfer` on the origin chain
 
-When `source.network` is a bridge rail, the order settles on a native network and `providerAccount` is the bridge deposit address on the origin chain with the exact origin amount to send. Send **`providerAccount.amountToTransfer`** of `providerAccount.currency` on `providerAccount.network`, include `providerAccount.memo` when present, and watch `bridge.forward.status`. Refunds land at `source.refundAddress` on the origin chain. Full details, the `bridge` object and failure modes: [Bridge rails](/implementation-guides/bridge-rails).
+When `source.network` is a bridged network, the order settles on a native network and `providerAccount` is the bridge deposit address on the origin chain with the exact origin amount to send. Send **`providerAccount.amountToTransfer`** of `providerAccount.currency` on `providerAccount.network`, include `providerAccount.memo` when present, and watch `bridge.forward.status`. Refunds land at `source.refundAddress` on the origin chain. Full details, the `bridge` object and failure modes: [Bridged networks](/implementation-guides/bridged-networks).
 
 ### On-ramp — present virtual account to user
 
@@ -535,6 +537,10 @@ When `source.network` is a bridge rail, the order settles on a native network an
 ```
 
 Display the `providerAccount` details to your user. They must transfer exactly `amountToTransfer` in `currency` to `accountIdentifier` before `validUntil`. (There is no onchain token `transfer` from your app for this path—the user moves **fiat** through their bank or mobile wallet.)
+
+### On-ramp to a bridged network — show `bridge.recipientAmount`
+
+When `destination.recipient.network` is a bridged network (e.g. `solana`, only for tokens with a live on-ramp route — check with `GET /v2/rates/solana/USDC/100/NGN?side=buy`; a token without one returns `400` "Provided token or payment rail is not supported"), the order settles on the on-ramp route's settlement network (`bridge.settlementNetwork`) and Paycrest then bridges the stablecoins to `destination.recipient.address`. The response carries a `bridge` object: `amount` is the settlement-side amount the sender pays for, and **`bridge.recipientAmount`** is what the user receives — show that one. With `amountIn: "crypto"` the requested amount is what arrives (within a small slippage) and `amount` is slightly higher; with `amountIn: "fiat"`, `recipientAmount` is slightly lower than `amount`. `status: "settled"` means settlement on the settlement network; `payment_order.settled` fires only once `bridge.delivery.status` is `success`, so poll `bridge.delivery` if you do not use webhooks. On Solana the recipient must already have a token account for the stablecoin's mint. Full details: [Bridged networks](/implementation-guides/bridged-networks).
 
 ---
 
@@ -567,20 +573,20 @@ Configure your webhook URL in the [Sender Dashboard](https://app.paycrest.io). M
 | `payment_order.pending` | Assigned to provider / fiat deposit confirmed (on-ramp) |
 | `payment_order.validated` | Fiat payout confirmed by provider |
 | `payment_order.settling` | Onchain release in progress |
-| `payment_order.settled` | Order complete |
+| `payment_order.settled` | Order complete. On-ramp to a bridged network: sent once the stablecoins reach the recipient on that network |
 | `payment_order.refunding` | Refund in progress |
 | `payment_order.refunded` | Funds returned to sender |
 | `payment_order.expired` | No deposit received before `validUntil` |
 | `payment_order.compliance_hold` | On-ramp fiat received, settlement held pending compliance review. **Not a status change** — `data.status` stays `pending` |
-| `payment_order.bridge_deposit_detected` | Bridge rails: the origin-chain deposit was seen and is being carried to the settlement network. **Not a status change** — `data.status` stays `initiated`; read `data.bridge.forward` |
-| `payment_order.bridge_refunded` | Bridge rails: a refund reached `source.refundAddress` on the origin chain. **Not a status change** — fires after `payment_order.refunded` (or `expired`); read `data.bridge.reverse` |
+| `payment_order.bridge_deposit_detected` | Off-ramp on a bridged network: the origin-chain deposit was seen and is being carried to the settlement network. **Not a status change** — `data.status` stays `initiated`; read `data.bridge.forward` |
+| `payment_order.bridge_refunded` | Off-ramp on a bridged network: a refund reached `source.refundAddress` on the origin chain. **Not a status change** — fires after `payment_order.refunded` (or `expired`); read `data.bridge.reverse` |
 
 <Note>
-  You can notify the user of a successful off-ramp at `payment_order.validated` — that's when the provider has confirmed fiat delivery. For on-ramp, use `payment_order.settled` — that's when stablecoins are confirmed onchain.
+  You can notify the user of a successful off-ramp at `payment_order.validated` — that's when the provider has confirmed fiat delivery. For on-ramp, use `payment_order.settled` — that's when stablecoins are confirmed onchain at the recipient's address, including after the bridge delivery on a bridged network.
 </Note>
 
 <Note>
-  **Bridge rails:** `validUntil` on the create response is the bridge's deposit deadline, and the order stays creditable for a delivery grace period beyond it. `payment_order.refunded` means the refund reached the settlement network; the sender only has the funds back once `payment_order.bridge_refunded` fires. See [Bridge rails](/implementation-guides/bridge-rails).
+  **Bridged networks:** on off-ramp, `validUntil` on the create response is the bridge's deposit deadline, and the order stays creditable for a delivery grace period beyond it. `payment_order.refunded` means the refund reached the settlement network; the sender only has the funds back once `payment_order.bridge_refunded` fires. On on-ramp, `status: "settled"` means settlement on the settlement network, and `payment_order.settled` waits for `bridge.delivery.status` to be `success`. See [Bridged networks](/implementation-guides/bridged-networks).
 </Note>
 
 <Warning>
@@ -733,6 +739,7 @@ async function getOrderStatus(orderId) {
   switch (data.status) {
     case 'validated': // offramp: fiat delivered — safe to notify user
     case 'settled':   // onramp: stablecoins delivered — or offramp fully onchain
+                      // onramp to a bridged network: also wait for data.bridge?.delivery?.status === 'success'
     case 'refunded':  // funds returned
     case 'expired':   // no deposit received
   }

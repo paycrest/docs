@@ -605,10 +605,10 @@ components:
         network:
           type: string
           enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
-          description: Network identifier for the blockchain
-        settlementNetwork:
-          type: string
-          description: Present only when `network` is a bridge rail, and its presence is what marks one — funds in this token are carried to the network named here, where the order settles and is priced (off-ramp deposits today). Set per token — a rail can carry one symbol to one network and another symbol elsewhere. See [Bridge rails](/implementation-guides/bridge-rails).
+          description: |
+            Network identifier for the blockchain. `solana` is a bridged network: its tokens are listed only while at
+            least one bridge direction (off-ramp or on-ramp) is live for them, and the row does not say which. Check a
+            direction with the rates endpoint (`?side=sell` for off-ramp, `?side=buy` for on-ramp). See [Bridged networks](/implementation-guides/bridged-networks).
 
     # Order Status Schemas
     ProviderOrderStatusResponse:
@@ -775,7 +775,7 @@ components:
             Optional fee recipient address for this order. Required when the effective sender fee is greater than zero
             (from `senderFee`, `senderFeePercent`, or a profile-configured fee) and no fee address is configured on the
             sender profile for the token. Not required when the effective fee is zero. Must be a valid address for the
-            order's crypto source or destination network, including bridge rails such as Solana.
+            order's crypto source or destination network, including bridged networks such as Solana.
           example: "0xYourFeeRecipientAddress"
         reference:
           type: string
@@ -814,10 +814,10 @@ components:
         network:
           type: string
           enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
-          description: Network the deposit is made on. `solana` is a bridge rail — see [Bridge rails](/implementation-guides/bridge-rails).
+          description: Network the deposit is made on. `solana` is a bridged network — see [Bridged networks](/implementation-guides/bridged-networks).
         refundAddress:
           type: string
-          description: Wallet address on `network` for refunds if the order can't be fulfilled. On a bridge rail this is an origin-chain address (e.g. a Solana address) and every refund lands there.
+          description: Wallet address on `network` for refunds if the order can't be fulfilled. On a bridged network this is an origin-chain address (e.g. a Solana address) and every refund lands there.
 
     V2FiatSource:
       type: object
@@ -963,18 +963,19 @@ components:
       properties:
         address:
           type: string
-          description: Wallet address to receive stablecoins
+          description: Wallet address on `network` to receive stablecoins. On a bridged network this is the user's address there (e.g. a Solana address); on Solana it must already have a token account for the stablecoin's mint.
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
+          description: Network the stablecoins are delivered on. `solana` is a bridged network and is accepted only for tokens with a live on-ramp route (check with `GET /v2/rates/solana/{token}/{amount}/{fiat}?side=buy`) — see [Bridged networks](/implementation-guides/bridged-networks).
 
     V2CryptoProviderAccount:
       type: object
-      description: Returned for offramp orders — where to send the stablecoins. On a bridge rail, `receiveAddress` is the bridge deposit address on the origin chain and `amountToTransfer` is the exact origin amount to send.
+      description: Returned for offramp orders — where to send the stablecoins. On a bridged network, `receiveAddress` is the bridge deposit address on the origin chain and `amountToTransfer` is the exact origin amount to send.
       properties:
         network:
           type: string
-          description: Network to send on (the origin chain for bridge rails)
+          description: Network to send on (the origin chain for bridged networks)
         receiveAddress:
           type: string
           description: Address on `network` to send stablecoins to
@@ -984,13 +985,13 @@ components:
           description: Deadline for the stablecoin deposit
         memo:
           type: string
-          description: Bridge rails only — a memo that MUST accompany the deposit on chains that share deposit addresses. Absent when not required.
+          description: Bridged networks only — a memo that MUST accompany the deposit on chains that share deposit addresses. Absent when not required.
         amountToTransfer:
           type: string
-          description: Bridge rails only — the exact amount of `currency` to send on `network`. It already includes the bridge fee; `amount + senderFee + transactionFee` is what arrives on the settlement network.
+          description: Bridged networks only — the exact amount of `currency` to send on `network`. It already includes the bridge fee; `amount + senderFee + transactionFee` is what arrives on the settlement network.
         currency:
           type: string
-          description: Bridge rails only — the origin-chain asset symbol to send.
+          description: Bridged networks only — the origin-chain asset symbol to send.
 
     V2BridgeLeg:
       type: object
@@ -1004,20 +1005,30 @@ components:
             unconfirmed · `processing` deposit confirmed, transfer in flight · `success` delivered · `incomplete_deposit`
             deposit below the quoted minimum, refunded by the bridge · `refunded` the bridge returned the deposit ·
             `failed` terminal without a known refund (operations follow up) · `expired` the deposit window closed with
-            nothing deposited · `dust` (reverse only) balance too small to bridge, left in custody
+            nothing deposited · `dust` (reverse and delivery only) balance too small to bridge, left in custody.
+            On a `delivery` leg the "deposit" is Paycrest's own transfer to the bridge, and `refunded` /
+            `incomplete_deposit` mean the funds came back to Paycrest on the settlement network, where the delivery is
+            retried automatically.
         depositAddress:
           type: string
-          description: Reverse hop only — omitted on `forward`. Sender deposit instructions remain on `providerAccount`.
+          description: Reverse hop only — omitted on `forward` and `delivery`. Sender deposit instructions remain on `providerAccount`.
         depositedAmount:
           type: string
           description: >-
             What actually arrived at the deposit address, as the bridge counted it. Absent until the
             bridge reports a deposit. Compare the forward leg with `providerAccount.amountToTransfer`;
             the sender may round up, and the bridge can deduct its own intake fee before the swap.
+        amountOut:
+          type: string
+          description: >-
+            Delivery hop only — what the bridge delivered to the user's address on the bridged network. Absent until
+            the delivery succeeds; compare with `bridge.recipientAmount`.
         originTxHash:
           type: string
+          description: Transaction on the hop's origin — the bridged network for `forward`, the settlement network for `reverse` and `delivery`
         destinationTxHash:
           type: string
+          description: Transaction on the hop's destination — the settlement network for `forward`, the bridged network for `reverse` and `delivery`
         refundedAmount:
           type: string
           description: Amount the bridge returned to the hop's refund address, when it refunded
@@ -1029,17 +1040,32 @@ components:
 
     V2Bridge:
       type: object
-      description: Present only on orders that use a bridge rail. `forward` is the hop that funds the order (origin chain → settlement network); `reverse` appears once a refund is being carried back to the origin chain.
+      description: |
+        Present only on orders that use a bridged network.
+        Off-ramp: `forward` is the hop that funds the order (origin chain → settlement network); `reverse` appears
+        once a refund is being carried back to the origin chain.
+        On-ramp: `delivery` is the hop that carries the settled stablecoins to the user's address on the bridged
+        network (settlement network → `destination.recipient.network`). `forward` and `reverse` are never set on
+        on-ramp orders. An on-ramp order is `settled` once settlement lands on the settlement network, but the
+        `payment_order.settled` webhook is sent only after `delivery.status` is `success`.
       properties:
         settlementNetwork:
           type: string
-          description: Native network the order settles on; `txHash` values on the order are on this chain
+          description: Native network the order settles on — the settlement network of the token's route for this order's direction, fixed at create. `txHash` values on the order are on this chain
         settlementCurrency:
           type: string
-          description: Asset delivered to the settlement network
+          description: Asset settled on the settlement network
+        recipientAmount:
+          type: string
+          description: >-
+            On-ramp only — the amount the user receives on the bridged network, as quoted at create. `amount` is the
+            settlement-side figure the sender pays for: with `amountIn: "crypto"` this is the requested amount and
+            `amount` is slightly higher to cover the bridge; with `amountIn: "fiat"` it is slightly lower than `amount`.
         forward:
           $ref: '#/components/schemas/V2BridgeLeg'
         reverse:
+          $ref: '#/components/schemas/V2BridgeLeg'
+        delivery:
           $ref: '#/components/schemas/V2BridgeLeg'
 
     V2FiatProviderAccount:
@@ -1798,7 +1824,7 @@ paths:
           name: network
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+            enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
       responses:
         '200':
           description: List of tokens
@@ -1835,6 +1861,11 @@ paths:
 
         **Provider queue:** each side carries **`providerIds`** — up to 3 provider ids ranked best first, in the order assignment would try them. Pass them to **`destination.providerIds`** on `POST /sender/orders` to lock routing to the providers you quoted. Use **`limit`** to request fewer.
 
+        **Bridged networks** (e.g. `solana`): each side is quoted on its own bridge route — **`sell`** is the off-ramp
+        route and **`buy`** the on-ramp route — priced on that route's settlement network, which can differ between
+        sides. With `side`, a direction that has no route returns `404`; without `side`, that side is absent from the response. Use this
+        to check a direction before creating an order. See [Bridged networks](/implementation-guides/bridged-networks).
+
         For the legacy single-number response, use **`GET /v1/rates/{token}/{amount}/{fiat}`** with optional `network` query.
       servers:
         - url: https://api.paycrest.io/v2
@@ -1844,8 +1875,8 @@ paths:
           required: true
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
-          description: Blockchain network identifier (lowercase in URL).
+            enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
+          description: Blockchain network identifier (lowercase in URL). For a bridged network (`solana`), the quote is priced on the settlement network of that side's route.
         - in: path
           name: from
           required: true
@@ -2115,15 +2146,30 @@ paths:
 
         - **Offramp** (stablecoin → fiat): set `source.type = "crypto"` and `destination.type = "fiat"`.
           The response `providerAccount` contains a `receiveAddress` to send tokens to.
-        - **Offramp via a bridge rail** (e.g. `source.network = "solana"`): the order settles on a native network
+        - **Offramp via a bridged network** (e.g. `source.network = "solana"`): the order settles on a native network
           and the response `providerAccount` is the bridge deposit address on the origin chain with the exact
-          `amountToTransfer`; a `bridge` object tracks the hop. See [Bridge rails](/implementation-guides/bridge-rails).
+          `amountToTransfer`; a `bridge` object tracks the hop. See [Bridged networks](/implementation-guides/bridged-networks).
         - **Onramp** (fiat → stablecoin): set `source.type = "fiat"` and `destination.type = "crypto"`.
           The response `providerAccount` contains a virtual bank account for the user to deposit fiat into.
+        - **Onramp to a bridged network** (e.g. `destination.recipient.network = "solana"`): the order settles on the
+          token's on-ramp route settlement network (returned as `bridge.settlementNetwork`) and Paycrest then bridges
+          the stablecoins to `destination.recipient.address`. `amount` is the settlement-side amount the sender pays
+          for; `bridge.recipientAmount` is what the user receives.
 
-        **Bridge status and refunds.** While a bridge runs, the order `status` remains `initiated`; track
+        **Bridged routes are per direction.** A bridged token has separate off-ramp and on-ramp routes, each opt-in
+        with no fallback, and they can settle on different networks. Check a direction first with
+        `GET /v2/rates/{network}/{token}/{amount}/{fiat}` (`side=sell` for off-ramp, `side=buy` for on-ramp); a
+        direction with no route returns **400** "Provided token or payment rail is not supported" (field `Source` on
+        off-ramp, `Destination` on on-ramp). A Solana token that is not bridged at all, or any Solana token while
+        bridging is switched off, returns **400** "Solana is available only via POST /v2/sender/orders for tokens
+        configured on a bridged network".
+
+        **Bridge status and refunds.** Off-ramp: while a bridge runs, the order `status` remains `initiated`; track
         `bridge.forward.status` for progress. `payment_order.refunded` means a refund reached the settlement
-        network, while `payment_order.bridge_refunded` means the reverse hop returned funds to the origin rail.
+        network, while `payment_order.bridge_refunded` means the reverse hop returned funds to the origin chain.
+        On-ramp: `status = settled` means settlement on the settlement network; `payment_order.settled` is sent only
+        once `bridge.delivery.status` is `success`, so pollers should check `bridge.delivery.status`. A settled order
+        is never refunded in fiat; a delivery the bridge returns is retried automatically.
 
         **Provider routing.** On **offramp**, leave `destination.providerIds` unset and the API resolves a ranked
         queue of up to 3 providers at creation; assignment walks it in order. Set `destination.providerIds` to
@@ -2218,6 +2264,24 @@ paths:
                     recipient:
                       address: "0xRecipientWalletAddress"
                       network: base
+              onrampBridge:
+                summary: Onramp via bridge — NGN → USDC on Solana (settles on Base)
+                value:
+                  amount: "100"
+                  amountIn: crypto
+                  source:
+                    type: fiat
+                    currency: NGN
+                    refundAccount:
+                      institution: GTBINGLA
+                      accountIdentifier: "1234567890"
+                      accountName: John Doe
+                  destination:
+                    type: crypto
+                    currency: USDC
+                    recipient:
+                      address: "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T"
+                      network: solana
       responses:
         '201':
           description: Order created
@@ -2235,8 +2299,8 @@ paths:
                   data:
                     $ref: '#/components/schemas/V2PaymentOrderResponse'
               examples:
-                bridgeRail:
-                  summary: Bridge rail order created — USDC on Solana settling on Base
+                offrampBridge:
+                  summary: Offramp via bridge created — USDC on Solana settling on Base
                   value:
                     status: success
                     message: Payment order created successfully
@@ -2276,6 +2340,46 @@ paths:
                         forward:
                           status: pending_deposit
                           updatedAt: "2026-09-24T05:15:00Z"
+                onrampBridge:
+                  summary: Onramp via bridge created — NGN → USDC on Solana, settling on Base
+                  value:
+                    status: success
+                    message: Payment order created successfully
+                    data:
+                      id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                      status: initiated
+                      orderType: regular
+                      timestamp: "2026-09-26T10:00:00Z"
+                      amount: "100.05"
+                      rate: "1650"
+                      senderFee: "0"
+                      senderFeePercent: "0"
+                      transactionFee: "0"
+                      reference: "invoice-124"
+                      providerAccount:
+                        institution: Guaranty Trust Bank
+                        accountIdentifier: "0123456789"
+                        accountName: Provider A / John Doe
+                        amountToTransfer: "165082.5"
+                        currency: NGN
+                        validUntil: "2026-09-26T10:30:00Z"
+                      source:
+                        type: fiat
+                        currency: NGN
+                        refundAccount:
+                          institution: GTBINGLA
+                          accountIdentifier: "1234567890"
+                          accountName: John Doe
+                      destination:
+                        type: crypto
+                        currency: USDC
+                        recipient:
+                          address: "4Nd1mBQtrMJVYVfKf2PJy9NZUZdTAsp7D4xWLs4gDB4T"
+                          network: solana
+                      bridge:
+                        settlementNetwork: base
+                        settlementCurrency: USDC
+                        recipientAmount: "100"
         '400':
           description: Validation error
           content:
@@ -2289,7 +2393,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: No provider available for this corridor, or (bridge rails) "Bridge route unavailable" — no bridge quote could be obtained; retry shortly or use a native network
+          description: No provider available for this corridor, or (bridged networks, off-ramp and on-ramp) "Bridge route unavailable" — no bridge route or quote could be obtained for the amount; nothing was created. Retry shortly or use a native network
           content:
             application/json:
               schema:

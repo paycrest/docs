@@ -155,7 +155,7 @@ A KYB-verified entity that coordinates the entire order routing process:
   <Step title="Settlement">
     <ul>
       <li><b>Off-ramp:</b> Smart contract releases escrowed stablecoins to the provider after successful validation.</li>
-      <li><b>On-ramp:</b> Fulfillment, validation, and settlement occur in one step: after the provision node confirms fiat receipt, the stablecoins are released onchain to the recipient.</li>
+      <li><b>On-ramp:</b> Fulfillment, validation, and settlement occur in one step: after the provision node confirms fiat receipt, the stablecoins are released onchain to the recipient. When the recipient is on a bridged network, they are released on the settlement network and Paycrest then bridges them to the recipient's address.</li>
     </ul>
   </Step>
   <Step title="Refund">
@@ -183,7 +183,7 @@ Paycrest is live on **7 EVM-compatible networks** plus **Starknet** and **Tron**
 - **Starknet** (USDT, USDC — network identifier `starknet`)
 - **Tron** (USDT — network identifier `tron`)
 
-Off-ramp deposits are additionally accepted on **Solana** (USDC — network identifier `solana`) through a **bridge rail**: the user deposits on Solana and the order settles on a native network. `GET /tokens` names which one, per token, in `settlementNetwork`. See [Bridge rails](/implementation-guides/bridge-rails).
+**Solana** (network identifier `solana`) is a **bridged network**: off-ramp deposits and on-ramp deliveries are accepted there, while the order settles on a native network and a bridge carries the funds between the two. Routes are per token and per direction, and the off-ramp and on-ramp routes for one token can settle on different networks; the rates endpoint (`side=sell` / `side=buy`) shows which directions are live, and the order's `bridge.settlementNetwork` says where it settled. See [Bridged networks](/implementation-guides/bridged-networks).
 
 Additional networks (Optimism) have Gateway contracts deployed but aggregator support is pending. See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the full deployment table.
 

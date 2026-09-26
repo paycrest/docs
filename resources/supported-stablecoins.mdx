@@ -5,7 +5,7 @@ description: "Complete list of supported stablecoins and their network availabil
 
 Paycrest supports three stablecoins across nine blockchain networks (seven EVM chains plus Starknet and Tron). Use the [GET /tokens](/api-reference/general/list-supported-tokens) endpoint for the live list including contract addresses, decimals, and network availability.
 
-Off-ramp deposits are also accepted on **Solana** (USDC) through a **bridge rail**; `GET /tokens` marks such rows with `settlementNetwork`, which names the native network that row settles on. See [Bridge rails](/implementation-guides/bridge-rails).
+**Solana** is a **bridged network**: off-ramp deposits and on-ramp deliveries are accepted there, while the order settles on a native network. `GET /tokens` lists a Solana token only while at least one bridge direction is live for it, and does not say which; check a direction with the [rates endpoint](/api-reference/general/get-token-rate) (`side=sell` for off-ramp, `side=buy` for on-ramp). See [Bridged networks](/implementation-guides/bridged-networks).
 
 ## Stablecoin Overview
 
@@ -169,7 +169,7 @@ const order = {
 
   **Tron addresses** are Base58Check and start with `T`. Do not pass EVM `0x` addresses when `network` is `tron`.
 
-  **Solana addresses** (bridge rail) are Base58 public keys, 32–44 characters. `refundAddress` must be a Solana address when `network` is `solana`.
+  **Solana addresses** (bridged network) are Base58 public keys, 32–44 characters. On off-ramp, `refundAddress` must be a Solana address when `network` is `solana`. On on-ramp, `destination.recipient.address` must be a Solana address when `destination.recipient.network` is `solana`, and that wallet must already have a token account for the stablecoin's mint.
 </Note>
 
 ## API Endpoints
