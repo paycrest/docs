@@ -62,7 +62,7 @@ sequenceDiagram
     API-->>App: Webhook: payment_order.settled
 ```
 
-When `destination.recipient.network` is a [bridged network](/implementation-guides/bridged-networks) (e.g. `solana`), the Gateway step settles on the settlement network of the token's on-ramp route and Paycrest then bridges the stablecoins to the recipient wallet; `payment_order.settled` is sent only after that delivery succeeds.
+When `destination.recipient.network` is a [bridged network](/implementation-guides/bridged-networks) (e.g. `solana`), the Gateway step settles on the token's settlement network and Paycrest then bridges the stablecoins to the recipient wallet; `payment_order.settled` is sent only after that delivery succeeds.
   </Tab>
 </Tabs>
 
@@ -540,7 +540,7 @@ Display the `providerAccount` details to your user. They must transfer exactly `
 
 ### On-ramp to a bridged network — show `bridge.recipientAmount`
 
-When `destination.recipient.network` is a bridged network (e.g. `solana`, only for tokens with a live on-ramp route — check with `GET /v2/rates/solana/USDC/100/NGN?side=buy`; a token without one returns `400` "Provided token or payment rail is not supported"), the order settles on the on-ramp route's settlement network (`bridge.settlementNetwork`) and Paycrest then bridges the stablecoins to `destination.recipient.address`. The response carries a `bridge` object: `amount` is the settlement-side amount the sender pays for, and **`bridge.recipientAmount`** is what the user receives — show that one. With `amountIn: "crypto"` the requested amount is what arrives (within a small slippage) and `amount` is slightly higher; with `amountIn: "fiat"`, `recipientAmount` is slightly lower than `amount`. `status: "settled"` means settlement on the settlement network; `payment_order.settled` fires only once `bridge.delivery.status` is `success`, so poll `bridge.delivery` if you do not use webhooks. On Solana the recipient must already have a token account for the stablecoin's mint. Full details: [Bridged networks](/implementation-guides/bridged-networks).
+When `destination.recipient.network` is a bridged network (e.g. `solana`, only for tokens `GET /v2/tokens` lists there; a symbol that is not bridged returns `400` "Provided token or payment rail is not supported"), the order settles on the token's settlement network (`bridge.settlementNetwork`, the same one its off-ramp orders use) and Paycrest then bridges the stablecoins to `destination.recipient.address`. The response carries a `bridge` object: `amount` is the settlement-side amount the sender pays for, and **`bridge.recipientAmount`** is what the user receives — show that one. With `amountIn: "crypto"` the requested amount is what arrives (within a small slippage) and `amount` is slightly higher; with `amountIn: "fiat"`, `recipientAmount` is slightly lower than `amount`. `status: "settled"` means settlement on the settlement network; `payment_order.settled` fires only once `bridge.delivery.status` is `success`, so poll `bridge.delivery` if you do not use webhooks. On Solana the recipient must already have a token account for the stablecoin's mint. Full details: [Bridged networks](/implementation-guides/bridged-networks).
 
 ---
 

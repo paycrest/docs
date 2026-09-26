@@ -5,11 +5,13 @@ description: "Use chains Paycrest does not settle on while the order lives on a 
 
 Paycrest settles orders on the networks where its Gateway contract runs (Base, Polygon, Arbitrum, BNB Smart Chain, …). A **bridged network** is a network Paycrest does not settle on but still accepts in `source.network` (off-ramp) and `destination.recipient.network` (on-ramp): the order itself lives on a native **settlement network**, and a cross-chain intent provider carries funds between the bridged network and the settlement network. Assignment, payout and settlement are exactly the native flow.
 
-Tokens on bridged networks are listed by `GET /v2/tokens`, each direction is checked with the rates endpoint, and an order that uses one is described by a `bridge` object; off-ramp adds two webhook events, on-ramp adds none. The same leg fields describe an off-ramp deposit on a bridged network and an on-ramp delivery to one.
+Tokens on bridged networks are listed by `GET /v2/tokens` and quoted by the rates endpoint, and an order that uses one is described by a `bridge` object; off-ramp adds two webhook events, on-ramp adds none. The same leg fields describe an off-ramp deposit on a bridged network and an on-ramp delivery to one.
 
 ## Which networks are bridged
 
-Paycrest never settles natively on a bridged network, so `GET /v2/tokens` lists a token there only while at least one bridge direction is live for it. A token with no live route, or every token on the network while bridging is switched off, is not listed. A listed row looks like any other token row; it does not say which directions work or where they settle:
+Each bridged token has **one settlement token** on a native network, and it serves off-ramp and on-ramp alike: Solana USDC, for example, settles as Base USDC in both directions. There is no separate route per direction. Bridging is per **token**, not per network: the same bridged network can carry one symbol to one settlement network and another symbol to a different one, because a bridge does not route every symbol to every chain. The examples on this page use Solana USDC settling on Base.
+
+Paycrest never settles natively on a bridged network, so `GET /v2/tokens` lists a token there only while it is bridged. A token with no settlement token configured, or every token on the network while bridging is switched off, is not listed. A listed row looks like any other token row and does not name the settlement network:
 
 ```json
 {
@@ -20,18 +22,11 @@ Paycrest never settles natively on a bridged network, so `GET /v2/tokens` lists 
 }
 ```
 
-Routes are per **token and direction**. A bridged token has a separate off-ramp route and on-ramp route, each enabled on its own with no fallback to the other, because a bridge can support a swap one way and not the reverse. The two routes can settle on different networks: Solana USDC off-ramp could settle on Base while its on-ramp settles on Polygon. The examples on this page use Solana USDC settling on Base in both directions.
+Rate quotes work as on a native network: `GET /v2/rates/solana/USDC/100/NGN` returns `buy` and `sell`, both priced on the token's settlement network. A token that is not bridged gets no quote. Once an order exists, **`bridge.settlementNetwork`** on the order says where it settles, and it is the chain the order's `txHash` values are on.
 
-To check a direction before creating an order, ask for a quote on the bridged network:
+The bridge route is selected by Paycrest. Integrators do not choose a carrier or depend on its identity; use the order's `bridge` object to see where it settles and to track the hop.
 
-- **Off-ramp:** `GET /v2/rates/solana/USDC/100/NGN?side=sell`
-- **On-ramp:** `GET /v2/rates/solana/USDC/100/NGN?side=buy`
-
-With `side`, a direction that has no route returns `404`; without `side`, that side is simply absent from the response. A quote that does come back is priced on that route's settlement network. Once an order exists, **`bridge.settlementNetwork`** on the order says where it settles, and it is the chain the order's `txHash` values are on.
-
-The bridge route is selected by Paycrest. Integrators do not choose a carrier or depend on its identity; use the rate quote to check a direction and the order's `bridge` object to see where it settles and to track the hop.
-
-Routes can be switched off per direction operationally; orders already created finish on the route they were created with. A create in a direction the token has no route for is refused with `400` "Provided token or payment rail is not supported" (field `Source` on off-ramp, `Destination` on on-ramp). A Solana token that is not bridged at all, or any Solana token while bridging is switched off, is refused with `400` "Solana is available only via POST /v2/sender/orders for tokens configured on a bridged network". Paycrest does not settle natively on Solana in either direction.
+Paycrest can take a token off its bridged network (both directions at once) or switch bridging off entirely; orders already created finish on the route they were created with. A symbol that is not bridged on an otherwise live bridged network is refused with `400` "Provided token or payment rail is not supported" (field `Source` on off-ramp, `Destination` on on-ramp). A Solana token that is not bridged at all, or any Solana token while bridging is switched off, is refused with `400` "Solana is available only via POST /v2/sender/orders for tokens configured on a bridged network". Paycrest does not settle natively on Solana in either direction.
 
 ## Off-ramp on a bridged network
 
@@ -172,7 +167,7 @@ Bridge fees are deducted from a refund; Paycrest never tops a refund up. Balance
 | Response | Cause | What to do |
 |---|---|---|
 | `400` `Network` — "Solana is available only via POST /v2/sender/orders for tokens configured on a bridged network" / "Unsupported network" | The Solana token is not bridged, or bridging is switched off (or the network is not bridged) | Offer a native network |
-| `400` `Source` — "Provided token or payment rail is not supported" | The token has no off-ramp route (none configured, or switched off) | Check `GET /v2/rates/{network}/{token}/{amount}/{fiat}?side=sell` before creating; offer a native network |
+| `400` `Source` — "Provided token or payment rail is not supported" | The symbol is not bridged on this network (no settlement token configured) | Check `GET /v2/tokens`; offer a native network |
 | `400` `Source` — "Invalid … refund address" | `refundAddress` is not a valid address on the origin chain | Collect an origin-chain address |
 | `503` "Bridge route unavailable" | No bridge quote could be obtained, or the quote could not deliver the exact amount | Retry shortly or offer a native network. Nothing was created. |
 
@@ -233,9 +228,9 @@ Use the normal on-ramp payload with the **bridged network** in `destination.reci
 }
 ```
 
-A destination on a bridged network is accepted only for tokens with a live **on-ramp** route; check with `GET /v2/rates/solana/USDC/100/NGN?side=buy` first. The on-ramp route can settle on a different network from the same token's off-ramp route, so read `bridge.settlementNetwork` from the order rather than assuming. On Solana, the user's wallet must already have a token account for the stablecoin's mint; Paycrest checks this at create and refuses the order otherwise.
+A destination on a bridged network is accepted only for tokens that are bridged (listed by `GET /v2/tokens` on that network); the order settles on the token's settlement network, the same one its off-ramp orders use, and the response names it in `bridge.settlementNetwork`. On Solana, the user's wallet must already have a token account for the stablecoin's mint; Paycrest checks this at create and refuses the order otherwise.
 
-`rate`, `senderFee`, provider pinning and everything else behave as on a native network, priced on the on-ramp route's settlement network.
+`rate`, `senderFee`, provider pinning and everything else behave as on a native network, priced on the settlement network.
 
 #### Two amounts
 
@@ -318,7 +313,7 @@ Fiat refunds work as on a native on-ramp: they happen only before the order sett
 | Response | Cause | What to do |
 |---|---|---|
 | `400` `Destination` — "Solana is available only via POST /v2/sender/orders for tokens configured on a bridged network" | The Solana token is not bridged at all, or bridging is switched off | Offer a native network |
-| `400` `Destination` — "Provided token or payment rail is not supported" | The token has no on-ramp route (none configured, or switched off), even if it has an off-ramp route | Check `GET /v2/rates/{network}/{token}/{amount}/{fiat}?side=buy` before creating; offer a native network |
+| `400` `Destination` — "Provided token or payment rail is not supported" | The symbol is not bridged on this network (no settlement token configured) | Check `GET /v2/tokens`; offer a native network |
 | `400` `Destination` — "Invalid Solana recipient address" | `destination.recipient.address` is not a Solana public key | Collect a Solana address |
 | `400` `Destination` — "recipient … token account does not exist …" | The user's wallet has no token account for the stablecoin's mint | Ask the user to create the token account for that mint, then retry |
 | `400` `Amount` — "Amount is below the minimum of 1 for delivery to a bridged network" | The requested or settlement amount is under the bridge minimum (1 unit of the stablecoin) | Raise the amount |

@@ -5,7 +5,7 @@ description: "Complete list of supported stablecoins and their network availabil
 
 Paycrest supports three stablecoins across nine blockchain networks (seven EVM chains plus Starknet and Tron). Use the [GET /tokens](/api-reference/general/list-supported-tokens) endpoint for the live list including contract addresses, decimals, and network availability.
 
-**Solana** is a **bridged network**: off-ramp deposits and on-ramp deliveries are accepted there, while the order settles on a native network. `GET /tokens` lists a Solana token only while at least one bridge direction is live for it, and does not say which; check a direction with the [rates endpoint](/api-reference/general/get-token-rate) (`side=sell` for off-ramp, `side=buy` for on-ramp). See [Bridged networks](/implementation-guides/bridged-networks).
+**Solana** is a **bridged network**: off-ramp deposits and on-ramp deliveries are accepted there, while the order settles on a native network. Each bridged token has one settlement token that serves both directions. `GET /tokens` lists a Solana token only while it is bridged, and does not name the settlement network; the order does, in `bridge.settlementNetwork`. See [Bridged networks](/implementation-guides/bridged-networks).
 
 ## Stablecoin Overview
 

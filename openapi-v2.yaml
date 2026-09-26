@@ -606,9 +606,9 @@ components:
           type: string
           enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
           description: |
-            Network identifier for the blockchain. `solana` is a bridged network: its tokens are listed only while at
-            least one bridge direction (off-ramp or on-ramp) is live for them, and the row does not say which. Check a
-            direction with the rates endpoint (`?side=sell` for off-ramp, `?side=buy` for on-ramp). See [Bridged networks](/implementation-guides/bridged-networks).
+            Network identifier for the blockchain. `solana` is a bridged network: its tokens are listed only while they
+            are bridged (each to one settlement token that serves off-ramp and on-ramp), and the row does not name the
+            settlement network. See [Bridged networks](/implementation-guides/bridged-networks).
 
     # Order Status Schemas
     ProviderOrderStatusResponse:
@@ -967,7 +967,7 @@ components:
         network:
           type: string
           enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
-          description: Network the stablecoins are delivered on. `solana` is a bridged network and is accepted only for tokens with a live on-ramp route (check with `GET /v2/rates/solana/{token}/{amount}/{fiat}?side=buy`) — see [Bridged networks](/implementation-guides/bridged-networks).
+          description: Network the stablecoins are delivered on. `solana` is a bridged network and is accepted only for tokens that are bridged there (listed by `GET /v2/tokens` on `solana`) — see [Bridged networks](/implementation-guides/bridged-networks).
 
     V2CryptoProviderAccount:
       type: object
@@ -1051,7 +1051,7 @@ components:
       properties:
         settlementNetwork:
           type: string
-          description: Native network the order settles on — the settlement network of the token's route for this order's direction, fixed at create. `txHash` values on the order are on this chain
+          description: Native network the order settles on — the network of the token's settlement token, the same for off-ramp and on-ramp. `txHash` values on the order are on this chain
         settlementCurrency:
           type: string
           description: Asset settled on the settlement network
@@ -1861,10 +1861,9 @@ paths:
 
         **Provider queue:** each side carries **`providerIds`** — up to 3 provider ids ranked best first, in the order assignment would try them. Pass them to **`destination.providerIds`** on `POST /sender/orders` to lock routing to the providers you quoted. Use **`limit`** to request fewer.
 
-        **Bridged networks** (e.g. `solana`): each side is quoted on its own bridge route — **`sell`** is the off-ramp
-        route and **`buy`** the on-ramp route — priced on that route's settlement network, which can differ between
-        sides. With `side`, a direction that has no route returns `404`; without `side`, that side is absent from the response. Use this
-        to check a direction before creating an order. See [Bridged networks](/implementation-guides/bridged-networks).
+        **Bridged networks** (e.g. `solana`): a bridged token is quoted on its settlement network on both sides
+        (`buy` and `sell`). A token that is not bridged, or any token while bridging is switched off, gets no quote.
+        See [Bridged networks](/implementation-guides/bridged-networks).
 
         For the legacy single-number response, use **`GET /v1/rates/{token}/{amount}/{fiat}`** with optional `network` query.
       servers:
@@ -1876,7 +1875,7 @@ paths:
           schema:
             type: string
             enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
-          description: Blockchain network identifier (lowercase in URL). For a bridged network (`solana`), the quote is priced on the settlement network of that side's route.
+          description: Blockchain network identifier (lowercase in URL). For a bridged network (`solana`), both sides are priced on the token's settlement network.
         - in: path
           name: from
           required: true
@@ -2152,16 +2151,14 @@ paths:
         - **Onramp** (fiat → stablecoin): set `source.type = "fiat"` and `destination.type = "crypto"`.
           The response `providerAccount` contains a virtual bank account for the user to deposit fiat into.
         - **Onramp to a bridged network** (e.g. `destination.recipient.network = "solana"`): the order settles on the
-          token's on-ramp route settlement network (returned as `bridge.settlementNetwork`) and Paycrest then bridges
+          token's settlement network (returned as `bridge.settlementNetwork`) and Paycrest then bridges
           the stablecoins to `destination.recipient.address`. `amount` is the settlement-side amount the sender pays
           for; `bridge.recipientAmount` is what the user receives.
 
-        **Bridged routes are per direction.** A bridged token has separate off-ramp and on-ramp routes, each opt-in
-        with no fallback, and they can settle on different networks. Check a direction first with
-        `GET /v2/rates/{network}/{token}/{amount}/{fiat}` (`side=sell` for off-ramp, `side=buy` for on-ramp); a
-        direction with no route returns **400** "Provided token or payment rail is not supported" (field `Source` on
-        off-ramp, `Destination` on on-ramp). A Solana token that is not bridged at all, or any Solana token while
-        bridging is switched off, returns **400** "Solana is available only via POST /v2/sender/orders for tokens
+        **Bridged tokens.** Each bridged token has one settlement token that serves both off-ramp and on-ramp. A
+        symbol with no settlement token on an otherwise live bridged network returns **400** "Provided token or
+        payment rail is not supported" (field `Source` on off-ramp, `Destination` on on-ramp). A Solana token that
+        is not bridged at all, or any Solana token while bridging is switched off, returns **400** "Solana is available only via POST /v2/sender/orders for tokens
         configured on a bridged network".
 
         **Bridge status and refunds.** Off-ramp: while a bridge runs, the order `status` remains `initiated`; track
