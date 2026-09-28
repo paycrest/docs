@@ -155,7 +155,7 @@ A KYB-verified entity that coordinates the entire order routing process:
   <Step title="Settlement">
     <ul>
       <li><b>Off-ramp:</b> Smart contract releases escrowed stablecoins to the provider after successful validation.</li>
-      <li><b>On-ramp:</b> Fulfillment, validation, and settlement occur in one step: after the provision node confirms fiat receipt, the stablecoins are released onchain to the recipient. When the recipient is on a bridged network, they are released on the settlement network and Paycrest then bridges them to the recipient's address.</li>
+      <li><b>On-ramp:</b> Fulfillment, validation, and settlement occur in one step: after the provision node confirms fiat receipt, the stablecoins are released onchain to the recipient.</li>
     </ul>
   </Step>
   <Step title="Refund">
@@ -171,7 +171,7 @@ A KYB-verified entity that coordinates the entire order routing process:
 
 ## Multi-Chain Support
 
-Paycrest is live on **7 EVM-compatible networks** plus **Starknet** and **Tron**:
+Paycrest is live on **7 EVM-compatible networks** plus **Starknet**, **Tron** and **Solana**:
 
 - **Ethereum**
 - **Base**
@@ -182,8 +182,7 @@ Paycrest is live on **7 EVM-compatible networks** plus **Starknet** and **Tron**
 - **Celo**
 - **Starknet** (USDT, USDC — network identifier `starknet`)
 - **Tron** (USDT — network identifier `tron`)
-
-**Solana** (network identifier `solana`) is a **bridged network**: off-ramp deposits and on-ramp deliveries are accepted there, while the order settles on a native network and a bridge carries the funds between the two. Each bridged token has one settlement token that serves off-ramp and on-ramp alike; `GET /tokens` lists a Solana token only while it is bridged, and the order's `bridge.settlementNetwork` says where it settles. See [Bridged networks](/implementation-guides/bridged-networks).
+- **Solana** (USDT, USDC — network identifier `solana`; v2 API only)
 
 Additional networks (Optimism) have Gateway contracts deployed but aggregator support is pending. See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the full deployment table.
 

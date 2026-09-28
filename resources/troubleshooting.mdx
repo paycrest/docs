@@ -34,40 +34,33 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
       <li><strong>Invalid network</strong>: Ensure the network supports your chosen token</li>
       <li><strong>Invalid Starknet address</strong>: For `network: "starknet"`, use felt hex (`0x` + 63–64 hex digits), not an EVM checksum address</li>
       <li><strong>Invalid Tron address</strong>: For `network: "tron"`, use a Base58 address starting with `T`, not an EVM `0x` address</li>
-      <li><strong>Invalid Solana refund address</strong>: For the `solana` bridged network, <code>refundAddress</code> must be a Solana Base58 public key — every refund lands there</li>
-      <li><strong>"Solana is available only via POST /v2/sender/orders for tokens configured on a bridged network"</strong>: the token is not bridged on Solana at all, or bridging is switched off; offer a native network. Applies to off-ramp and on-ramp. See <a href="/implementation-guides/bridged-networks">Bridged networks</a></li>
+      <li><strong>Invalid Solana address</strong>: For `network: "solana"`, <code>refundAddress</code> (off-ramp) and <code>destination.recipient.address</code> (on-ramp) must be Solana Base58 public keys, not EVM <code>0x</code> addresses</li>
+      <li><strong>"Solana is available only via POST /v2/sender/orders"</strong>: v1 endpoints do not accept Solana. Create Solana orders with <a href="/api-reference/sender/initiate-payment-order-v2"><code>POST /v2/sender/orders</code></a></li>
       <li><strong>"recipient … token account does not exist …"</strong> (on-ramp to Solana): the recipient wallet has no token account for the stablecoin's mint. Have the user create it, then retry</li>
-      <li><strong>"Amount is below the minimum of 1 for delivery to a bridged network"</strong> (on-ramp to a bridged network): the amount must be at least 1 unit of the stablecoin</li>
-      <li><strong>"Provided token or payment rail is not supported"</strong> on a bridged network: that symbol is not bridged there (no settlement token configured) — field <code>Source</code> on off-ramp, <code>Destination</code> on on-ramp. Bridged tokens are the ones <code>GET /tokens</code> lists on that network; offer a native network</li>
+      <li><strong>"Amount is below the minimum of 1 for this network"</strong>: the amount must be at least 1 unit of the stablecoin</li>
+      <li><strong>Invalid <code>senderFeeAddress</code> on a Solana order</strong>: for Solana orders, provide an EVM address for <code>senderFeeAddress</code></li>
       <li><strong>Missing recipient details</strong>: All recipient fields are required</li>
       <li><strong>Invalid institution</strong>: Check supported institutions for the currency</li>
       <li><strong>Provider routing rejected</strong>: <code>providerIds</code> and <code>providerId</code> are mutually exclusive; off-ramp queues cap at 3 entries and on-ramp at 1; entries must name providers you can route to. See <a href="/implementation-guides/sender-api-integration#pin-a-provider-queue">Pin a provider queue</a></li>
     </ul>
 
-    <h4>503 "Bridge route unavailable"</h4>
-    <p>Bridged networks only, off-ramp or on-ramp. No bridge route or quote could be obtained for the requested amount, or the quote could not deliver the exact amount. On on-ramp it can also mean the bridge's price for the route was outside the range Paycrest accepts — a broken route, not a normal fee. Nothing was created — retry shortly or offer a native network.</p>
+    <h4>503 "Network temporarily unavailable"</h4>
+    <p>The message is one of:</p>
+    <ul>
+      <li><strong>"This network is temporarily unavailable; retry shortly or use another network"</strong></li>
+      <li><strong>"A quote for this amount is not available right now; retry shortly"</strong></li>
+    </ul>
+    <p>Nothing was created. Retry shortly, or create the order on another network.</p>
 
     <h4>The user's wallet will not send the deposit ("insufficient funds for gas")</h4>
-    <p>Off-ramp on a bridged network only, and not a Paycrest error — the wallet is refusing before broadcast. <code>amountToTransfer</code> covers the transfer, never the origin chain's gas.</p>
+    <p>Not a Paycrest error — the wallet is refusing before broadcast. <code>providerAccount.amountToTransfer</code> is the token amount to send; the network fee for the user's own transfer is paid separately in the network's native token.</p>
     <ul>
-      <li><strong>No native balance in the sending account</strong>: holding the token is not enough. Wallets show a combined balance across accounts, so the gas often sits in a different account than the one sending</li>
-      <li><strong>Solana — the deposit address's token account</strong>: deposit addresses are per quote, so a deposit also pays to create one, currently about <strong>0.0015 SOL</strong> on top of the fee, and not refunded</li>
+      <li><strong>No native balance in the sending account</strong>: holding the token is not enough. Wallets show a combined balance across accounts, so the native token often sits in a different account than the one sending</li>
+      <li><strong>Solana — the receive address's token account</strong>: a transfer to a new receive address also creates its token account, currently about <strong>0.0015 SOL</strong> on top of the network fee, and not refunded</li>
     </ul>
 
-    <h4>Bridge deposit was refunded (order <code>expired</code>, <code>bridge.forward.status = refunded</code>)</h4>
-    <ul>
-      <li><strong>Deposit below the quoted minimum</strong>: the bridge refunds it to <code>source.refundAddress</code> net of its fee (<code>refundReason: PARTIAL_DEPOSIT</code>). Create a new order and send exactly <code>providerAccount.amountToTransfer</code></li>
-      <li><strong>Sent after <code>validUntil</code></strong>: the deposit address had gone cold; the bridge refunds it. Create a new order</li>
-      <li><strong>Memo omitted</strong> on a chain that requires one: the deposit cannot be attributed. Contact support with the origin tx hash</li>
-    </ul>
-
-    <h4>On-ramp order is <code>settled</code> but the recipient has not received the stablecoins</h4>
-    <p>On-ramp to a bridged network only. <code>settled</code> means the stablecoins settled on the settlement network; Paycrest then bridges them to the recipient. Read <code>bridge.delivery.status</code>:</p>
-    <ul>
-      <li><strong>Absent, <code>pending_deposit</code>, <code>known_deposit_tx</code> or <code>processing</code></strong>: delivery is in progress. <code>payment_order.settled</code> is sent when it succeeds</li>
-      <li><strong><code>refunded</code> or <code>incomplete_deposit</code></strong>: the bridge returned the funds to Paycrest; the delivery is retried automatically. The order is never refunded in fiat</li>
-      <li><strong><code>failed</code>, <code>expired</code> or <code>dust</code></strong>: Paycrest operations follow up. Contact support with the order ID if it persists</li>
-    </ul>
+    <h4>Deposit sent without the memo</h4>
+    <p>When <code>providerAccount.memo</code> is present, the deposit must include it; without it the deposit cannot be credited. Contact support with the order ID and transaction hash.</p>
 
     <h4>"Recipient data too large for encryption"</h4>
     <p>The recipient object is capped at <strong>500 bytes</strong> of JSON before encryption. The size check reserves room for a full 3-provider routing queue on <strong>every</strong> order — including orders that send no <code>providerIds</code> — because the aggregator may resolve one onto the order and it rides in the message hash at gateway submit.</p>

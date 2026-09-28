@@ -3,25 +3,25 @@ title: "Supported Stablecoins"
 description: "Complete list of supported stablecoins and their network availability"
 ---
 
-Paycrest supports three stablecoins across nine blockchain networks (seven EVM chains plus Starknet and Tron). Use the [GET /tokens](/api-reference/general/list-supported-tokens) endpoint for the live list including contract addresses, decimals, and network availability.
+Paycrest supports three stablecoins across ten blockchain networks (seven EVM chains plus Starknet, Tron and Solana). Use the [GET /tokens](/api-reference/general/list-supported-tokens) endpoint for the live list including contract addresses, decimals, and network availability.
 
-**Solana** is a **bridged network**: off-ramp deposits and on-ramp deliveries are accepted there, while the order settles on a native network. Each bridged token has one settlement token that serves both directions. `GET /tokens` lists a Solana token only while it is bridged, and does not name the settlement network; the order does, in `bridge.settlementNetwork`. See [Bridged networks](/implementation-guides/bridged-networks).
+Solana orders are created through the v2 API only ([`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2)).
 
 ## Stablecoin Overview
 
 | Stablecoin | Networks | Base Currency | Notes |
 |------------|----------|--------------|-------|
-| **USDT** | Ethereum, Base, Arbitrum One, Polygon, BNB Smart Chain, Lisk, Celo, Starknet, Tron | USD | Most widely supported |
-| **USDC** | Ethereum, Base, Arbitrum One, Polygon, BNB Smart Chain, Lisk, Celo, Starknet | USD | Regulated, high security standards |
+| **USDT** | Ethereum, Base, Arbitrum One, Polygon, BNB Smart Chain, Lisk, Celo, Starknet, Tron, Solana | USD | Most widely supported |
+| **USDC** | Ethereum, Base, Arbitrum One, Polygon, BNB Smart Chain, Lisk, Celo, Starknet, Solana | USD | Regulated, high security standards |
 | **cNGN** | Ethereum, Base, Polygon, BNB Smart Chain | NGN | Stablecoin pegged to the Nigerian Naira |
 
 ## Support Matrix
 
-| Stablecoin | Ethereum | Base | Arbitrum One | Polygon | BNB Smart Chain | Lisk | Celo | Starknet | Tron |
-|------------|----------|------|--------------|---------|-----------------|------|------|----------|------|
-| **USDT** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **USDC** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **cNGN** | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Stablecoin | Ethereum | Base | Arbitrum One | Polygon | BNB Smart Chain | Lisk | Celo | Starknet | Tron | Solana |
+|------------|----------|------|--------------|---------|-----------------|------|------|----------|------|--------|
+| **USDT** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **USDC** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| **cNGN** | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ## Contract Addresses
 
@@ -42,6 +42,7 @@ Paycrest supports three stablecoins across nine blockchain networks (seven EVM c
 | Celo | `0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e` | 6 |
 | Starknet | `0x068F5c6a61780768455de69077E07e89787839bf8166dEcfBf92B645209c0fB8` | 6 |
 | Tron | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` | 6 |
+| Solana | `Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB` | 6 |
 
 ### USDC
 
@@ -55,6 +56,7 @@ Paycrest supports three stablecoins across nine blockchain networks (seven EVM c
 | Lisk | `0xF242275d3a6527d877f2c927a82D9b057609cc71` | 6 |
 | Celo | `0xcebA9300f2b948710d2653dD7B07f33A8B32118C` | 6 |
 | Starknet | `0x033068F6539f8e6e6b131e6B2B814e6c34A5224bC66947c47DaB9dFeE93b35fb` | 6 |
+| Solana | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` | 6 |
 
 ### cNGN
 
@@ -169,7 +171,7 @@ const order = {
 
   **Tron addresses** are Base58Check and start with `T`. Do not pass EVM `0x` addresses when `network` is `tron`.
 
-  **Solana addresses** (bridged network) are Base58 public keys, 32–44 characters. On off-ramp, `refundAddress` must be a Solana address when `network` is `solana`. On on-ramp, `destination.recipient.address` must be a Solana address when `destination.recipient.network` is `solana`, and that wallet must already have a token account for the stablecoin's mint.
+  **Solana addresses** are Base58 public keys, 32–44 characters. On off-ramp, `refundAddress` must be a Solana address when `network` is `solana`. On on-ramp, `destination.recipient.address` must be a Solana address when `destination.recipient.network` is `solana`, and that wallet must already have a token account for the stablecoin's mint.
 </Note>
 
 ## API Endpoints
