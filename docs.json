@@ -48,7 +48,6 @@
                 "group": "Implementation Guides",
                 "pages": [
                   "implementation-guides/sender-api-integration",
-                  "implementation-guides/bridged-networks",
                   "implementation-guides/sender-mcp",
                   "implementation-guides/smart-contract-interaction",
                   "implementation-guides/provider-setup-guide"
@@ -188,8 +187,12 @@
   },
   "redirects": [
     {
+      "source": "/implementation-guides/bridged-networks",
+      "destination": "/resources/supported-stablecoins"
+    },
+    {
       "source": "/implementation-guides/bridge-rails",
-      "destination": "/implementation-guides/bridged-networks"
+      "destination": "/resources/supported-stablecoins"
     }
   ],
   "footer": {
