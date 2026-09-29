@@ -9,6 +9,16 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q3 2026
 
+### Solana sender fees paid on Solana (September 2026)
+
+**Updated:** Sender fees on Solana orders are now paid to a Solana address. Set a fee address, fee percent and max fee cap on your **Solana** token in the dashboard (**Settings › Trading**), or pass a Solana `senderFeeAddress` on [`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2).
+
+- Fees from Solana orders are collected and paid out to your Solana fee address in batches, once they add up to at least 1 USDC or USDT. The payout's network cost comes out of the batch.
+- **Behavior change:** Solana orders use your Solana token settings, not your Base ones. If you had set an EVM `senderFeeAddress` for Solana orders, replace it with a Solana address.
+- On Solana, your fee address needs a token account for the stablecoin (it has one once it has ever held the token).
+
+---
+
 ### Transaction fee payer (September 2026)
 
 **New:** Senders choose who pays each order's transaction fee (`transactionFee`, the order's network cost). Set it per token in the dashboard under **Settings › Trading › Transaction fee paid by**, or per order with the new `transactionFeePayer` field on [`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2):
@@ -37,7 +47,7 @@ See [Who pays the transaction fee](/implementation-guides/sender-api-integration
 - Orders: create with [`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2) — `source.network: "solana"` for off-ramp, `destination.recipient.network: "solana"` for on-ramp. v1 endpoints return **400** "Solana is available only via POST /v2/sender/orders"
 - Off-ramp: send exactly `providerAccount.amountToTransfer` of `providerAccount.currency` to `providerAccount.receiveAddress`, and include `providerAccount.memo` when it is present
 - On-ramp: the recipient wallet must already have a token account for the stablecoin's mint
-- For Solana orders, provide an EVM address for `senderFeeAddress`
+- For Solana orders, provide an EVM address for `senderFeeAddress` (no longer the case: see "Solana sender fees paid on Solana" above)
 
 **API:** `providerAccount.amountToTransfer` (`amount + senderFee + transactionFee`) and `providerAccount.currency` are now returned on every off-ramp order, on every network; `providerAccount.memo` is returned only when the deposit must include it. **503** "Network temporarily unavailable" means the network or a quote for the amount is briefly unavailable — nothing was created; retry shortly. See [Supported Stablecoins](/resources/supported-stablecoins) and [Troubleshooting](/resources/troubleshooting).
 

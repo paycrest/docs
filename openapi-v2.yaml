@@ -774,7 +774,8 @@ components:
             Optional fee recipient address for this order. Required when the effective sender fee is greater than zero
             (from `senderFee`, `senderFeePercent`, or a profile-configured fee) and no fee address is configured on the
             sender profile for the token. Not required when the effective fee is zero. Must be a valid address for the
-            order's crypto source or destination network. For Solana orders, provide an EVM address for `senderFeeAddress`.
+            order's crypto source or destination network (a Solana address for Solana orders). Fees on some networks are
+            collected and paid out to it in batches rather than per order.
           example: "0xYourFeeRecipientAddress"
         transactionFeePayer:
           type: string
