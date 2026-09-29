@@ -82,7 +82,7 @@ const headers = {
 
 ### 2. Configure Tokens (Optional)
 
-In the dashboard settings, you can set defaults per token/network. **Off-ramp:** default `refundAddress` (crypto) and `feeAddress`; you can also pass `source.refundAddress` on the request. **On-ramp:** you supply **`source.refundAccount`** (fiat bank or mobile details for refunds) in the order payload—configure related defaults in the dashboard where available.
+In the dashboard settings, you can set defaults per token/network: fee percent, max fee cap, [who pays the transaction fee](#who-pays-the-transaction-fee), and addresses. **Off-ramp:** default `refundAddress` (crypto) and `feeAddress`; you can also pass `source.refundAddress` on the request. **On-ramp:** you supply **`source.refundAccount`** (fiat bank or mobile details for refunds) in the order payload—configure related defaults in the dashboard where available.
 
 ---
 
@@ -358,6 +358,7 @@ order = requests.post(
 | `senderFee` | string | — | Optional fixed fee in crypto units. Mutually exclusive with `senderFeePercent`. |
 | `senderFeePercent` | string | — | Optional fee percentage you collect, settled atomically onchain. Mutually exclusive with `senderFee`. |
 | `senderFeeAddress` | string | Conditionally | Fee recipient address. **Required when the effective sender fee is greater than zero** and no fee address is configured on the sender profile. Not required when fee is zero. |
+| `transactionFeePayer` | string | — | `"sender"` or `"customer"`: who pays the transaction fee on this order. Overrides the token's dashboard setting (default `"sender"`). See [Who pays the transaction fee](#who-pays-the-transaction-fee). |
 | `reference` | string | — | Your internal order ID. |
 | `source` | object | ✅ | `{ type: "crypto", ... }` for off-ramp; `{ type: "fiat", ... }` for onramp. |
 | `destination` | object | ✅ | `{ type: "fiat", ... }` for off-ramp; `{ type: "crypto", ... }` for onramp. |
@@ -897,6 +898,25 @@ Fixed fee alternative:
 ```
 
 **Off-ramp:** the total stablecoin amount the user sends to `providerAccount.receiveAddress` is `providerAccount.amountToTransfer` — `amount + senderFee + transactionFee`, all returned in the create response; `transactionFee` covers all network costs. **On-ramp:** the user pays **fiat** using `providerAccount.amountToTransfer` (and currency); fee line items in the response still describe what applies on settlement—follow the fields returned for your order.
+
+### Who pays the transaction fee
+
+Every order carries a **transaction fee** (`transactionFee`) that covers its network costs. You choose who pays it, per token in the dashboard (**Settings › Trading › Transaction fee paid by**) or per order with `transactionFeePayer`:
+
+| `transactionFeePayer` | You earn (`senderFee`) | Your customer sends (`amountToTransfer`) |
+|---|---|---|
+| `sender` (default) | `max(0, fee − transactionFee)` | `amount + max(fee, transactionFee)` |
+| `customer` | `fee` | `amount + fee + transactionFee` |
+
+Here `fee` is the sender fee you configured or passed (`senderFee` / `senderFeePercent`, capped by your max fee cap). The response's `senderFee` is always what you earn, so `amountToTransfer = amount + senderFee + transactionFee` in both modes.
+
+For example, with a 100 USDC order, a 1% fee and a 0.1 USDC transaction fee:
+
+- `sender`: you earn 0.9 and your customer sends 101.
+- `customer`: you earn 1 and your customer sends 101.1.
+- `sender` with a 0.05 fee: you earn 0 and your customer sends 100.1. The fee is used up by the transaction fee and your customer pays the remaining 0.05.
+
+With no sender fee, both modes are the same. On-ramp works the same way: the fiat your customer pays covers `amount + senderFee + transactionFee` at the order's rate.
 
 ---
 

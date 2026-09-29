@@ -9,6 +9,24 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q3 2026
 
+### Transaction fee payer (September 2026)
+
+**New:** Senders choose who pays each order's transaction fee (`transactionFee`, the order's network cost). Set it per token in the dashboard under **Settings › Trading › Transaction fee paid by**, or per order with the new `transactionFeePayer` field on [`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2):
+
+- `sender` (default): the transaction fee comes out of your sender fee first. You earn `max(0, fee − transactionFee)` and your customer sends `amount + max(fee, transactionFee)`. With a fee smaller than the transaction fee, your customer tops up only the difference.
+- `customer`: your customer pays the transaction fee on top of your full sender fee, as before.
+
+**Behavior change:** existing tokens default to `sender`. If you charge a sender fee, it now covers the transaction fee unless you choose `customer`. With no sender fee, nothing changes.
+
+**API:**
+- `senderFee` in responses and webhooks is the fee you earn on the order. `amountToTransfer = amount + senderFee + transactionFee` still holds.
+- `PATCH /settings/sender` accepts `tokens[].transactionFeePayer`, and `GET /settings/sender` returns it.
+- The transaction fee now goes to the protocol treasury. A refund after an order is created onchain returns `amount + senderFee`.
+
+See [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee).
+
+---
+
 ### Solana now supported (September 2026)
 
 **Solana** is supported for off-ramp and on-ramp through the v2 Sender API.
