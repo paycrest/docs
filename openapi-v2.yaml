@@ -776,6 +776,20 @@ components:
             sender profile for the token. Not required when the effective fee is zero. Must be a valid address for the
             order's crypto source or destination network. For Solana orders, provide an EVM address for `senderFeeAddress`.
           example: "0xYourFeeRecipientAddress"
+        transactionFeePayer:
+          type: string
+          enum: [sender, customer]
+          description: |
+            Who pays the order's transaction fee (its network cost). Overrides the token's setting in your dashboard,
+            which defaults to `sender`.
+
+            - `sender`: the transaction fee comes out of your sender fee first; your customer only pays the difference
+              when your fee is smaller. You earn `max(0, fee − transactionFee)`, and the customer sends
+              `amount + max(fee, transactionFee)`.
+            - `customer`: your customer pays the transaction fee on top of your full sender fee.
+
+            With no sender fee, both modes are the same.
+          example: sender
         reference:
           type: string
           description: Your internal reference ID for this order.
@@ -984,7 +998,7 @@ components:
           description: Deadline for the stablecoin deposit
         amountToTransfer:
           type: string
-          description: The exact amount of `currency` to send — `amount + senderFee + transactionFee`.
+          description: The exact amount of `currency` to send — `amount + senderFee + transactionFee`. When the sender pays the transaction fee, this is `amount + max(configured fee, transactionFee)`.
         currency:
           type: string
           description: Token symbol to send (e.g. USDC).
@@ -1006,7 +1020,7 @@ components:
           type: string
         amountToTransfer:
           type: string
-          description: Exact fiat amount the user must deposit
+          description: Exact fiat amount the user must deposit. It covers the crypto amount, the sender fee and the transaction fee at the order's rate.
         currency:
           type: string
           description: Fiat currency code
@@ -1037,11 +1051,12 @@ components:
           type: string
         senderFee:
           type: string
+          description: The fee you earn on this order, paid to your fee address at settlement. When you pay the transaction fee (`transactionFeePayer` `sender`), it is your configured fee less the transaction fee, and never below zero.
         senderFeePercent:
           type: string
         transactionFee:
           type: string
-          description: Network fee for the order. Covers all network costs.
+          description: Transaction fee for the order. Covers all network costs. When the sender pays it, it is taken out of the configured sender fee first.
         reference:
           type: string
         providerAccount:
@@ -2067,6 +2082,11 @@ paths:
         `amount + senderFee + transactionFee`. When `providerAccount.memo` is present, include it with the deposit
         or the deposit cannot be credited.
 
+        **Transaction fee.** By default the sender pays the transaction fee out of their sender fee, so the returned
+        `senderFee` is what the sender earns and the customer only tops up a shortfall. Set `transactionFeePayer:
+        "customer"` (or change the token's setting in the dashboard) to add the transaction fee on top of the full
+        sender fee instead.
+
         **Solana** (`solana`) is available through this endpoint only; v1 order endpoints reject it. On onramp to
         Solana, the recipient wallet must already have a token account for the stablecoin's mint.
 
@@ -2097,6 +2117,26 @@ paths:
                 summary: Offramp — USDT on Base → NGN bank account
                 value:
                   amount: "100"
+                  source:
+                    type: crypto
+                    currency: USDT
+                    network: base
+                    refundAddress: "0xYourAddress"
+                  destination:
+                    type: fiat
+                    currency: NGN
+                    recipient:
+                      institution: GTBINGLA
+                      accountIdentifier: "1234567890"
+                      accountName: John Doe
+                      memo: Payment
+              offrampCustomerPaysFee:
+                summary: Offramp — your customer pays the transaction fee on top of a 1% sender fee
+                value:
+                  amount: "100"
+                  senderFeePercent: "1"
+                  senderFeeAddress: "0xYourFeeRecipientAddress"
+                  transactionFeePayer: customer
                   source:
                     type: crypto
                     currency: USDT
@@ -2210,7 +2250,7 @@ paths:
                       timestamp: "2026-09-24T05:15:00Z"
                       amount: "100"
                       rate: "1650"
-                      senderFee: "5"
+                      senderFee: "4.9"
                       senderFeePercent: "0"
                       transactionFee: "0.1"
                       reference: "invoice-123"
@@ -2218,7 +2258,7 @@ paths:
                         network: solana
                         receiveAddress: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
                         validUntil: "2026-09-24T05:45:00Z"
-                        amountToTransfer: "105.1"
+                        amountToTransfer: "105"
                         currency: USDC
                       source:
                         type: crypto

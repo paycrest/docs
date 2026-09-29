@@ -214,7 +214,7 @@ The Paycrest protocol implements a **zero-fee experience for senders**:
 - **Sender fees**: Optional fees that sender businesses can charge to their users
 - **Provider fees**: Competitive rates based on market conditions
 - **Protocol fees**: Fees paid to aggregators for order routing and coordination
-- **Network fees**: Gas costs for blockchain transactions
+- **Network fees**: Each order's transaction fee covers its gas costs and is paid to the protocol treasury. By default it comes out of the sender fee; senders can pass it to their customers instead (see [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee))
 
 Providers earn fees by:
 - **Bid-ask spreads** on currency pairs

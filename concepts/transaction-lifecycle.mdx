@@ -318,7 +318,7 @@ There are two distinct failure paths:
 - User abandoned the payment flow
 - Deposit was sent to the wrong address or after the address expired
 
-**`refunded`** — A deposit was received but fulfillment failed. The deposited funds are automatically returned to the sender. Common causes:
+**`refunded`** — A deposit was received but fulfillment failed. The deposited funds are automatically returned to the sender. For an off-ramp order already created onchain, the refund is `amount + senderFee`: the transaction fee has already paid for the network. Common causes:
 - No provider available at the requested rate
 - PSP unavailability in the corridor
 - Deposited amount doesn't match the quoted rate within tolerance
