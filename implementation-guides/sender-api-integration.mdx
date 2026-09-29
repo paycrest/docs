@@ -93,7 +93,7 @@ In the dashboard settings, you can set defaults per token/network: fee percent, 
 Pass a `source` and a `destination` object. The `type` field on each determines the direction. **Off-ramp** and **on-ramp** use the same endpoint; examples below include **`curl`** for both directions. The extra **JavaScript** and **Python** snippets are **off-ramp**-shaped—mirror the **on-ramp** `curl` payload (`source.type: "fiat"`, `destination.type: "crypto"`, `refundAccount`, etc.) in your language.
 
 <Note>
-  **Starknet / Tron / Solana:** set `network` to **`starknet`**, **`tron`** or **`solana`**. Crypto addresses (`source.refundAddress` on off-ramp, `destination.recipient.address` on on-ramp) must match the network: Starknet felt hex (`0x` + 63–64 hex digits), Tron Base58 (`T…`) or a Solana Base58 public key (32–44 characters). Do not pass EVM checksum addresses on these networks. Solana is available through the v2 API only; for Solana orders, provide an EVM address for `senderFeeAddress`. See [Supported Stablecoins](/resources/supported-stablecoins).
+  **Starknet / Tron / Solana:** set `network` to **`starknet`**, **`tron`** or **`solana`**. Crypto addresses (`source.refundAddress` on off-ramp, `destination.recipient.address` on on-ramp) must match the network: Starknet felt hex (`0x` + 63–64 hex digits), Tron Base58 (`T…`) or a Solana Base58 public key (32–44 characters). Do not pass EVM checksum addresses on these networks. Solana is available through the v2 API only; `senderFeeAddress` on a Solana order is a Solana address too. See [Supported Stablecoins](/resources/supported-stablecoins).
 </Note>
 
 <Tabs>

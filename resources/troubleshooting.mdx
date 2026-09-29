@@ -38,7 +38,7 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
       <li><strong>"Solana is available only via POST /v2/sender/orders"</strong>: v1 endpoints do not accept Solana. Create Solana orders with <a href="/api-reference/sender/initiate-payment-order-v2"><code>POST /v2/sender/orders</code></a></li>
       <li><strong>"recipient … token account does not exist …"</strong> (on-ramp to Solana): the recipient wallet has no token account for the stablecoin's mint. Have the user create it, then retry</li>
       <li><strong>"Amount is below the minimum of 1 for this network"</strong>: the amount must be at least 1 unit of the stablecoin</li>
-      <li><strong>Invalid <code>senderFeeAddress</code> on a Solana order</strong>: for Solana orders, provide an EVM address for <code>senderFeeAddress</code></li>
+      <li><strong>Invalid <code>senderFeeAddress</code> on a Solana order</strong>: for Solana orders, <code>senderFeeAddress</code> must be a Solana Base58 public key, like the order's other addresses</li>
       <li><strong>Missing recipient details</strong>: All recipient fields are required</li>
       <li><strong>Invalid institution</strong>: Check supported institutions for the currency</li>
       <li><strong>Provider routing rejected</strong>: <code>providerIds</code> and <code>providerId</code> are mutually exclusive; off-ramp queues cap at 3 entries and on-ramp at 1; entries must name providers you can route to. See <a href="/implementation-guides/sender-api-integration#pin-a-provider-queue">Pin a provider queue</a></li>
