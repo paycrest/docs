@@ -139,7 +139,7 @@ The **aggregator node** is the coordination layer: it monitors onchain events, m
 
 ## Multi-Chain Support
 
-The protocol is live on 7 EVM-compatible networks plus Starknet and Tron:
+The protocol is live on 7 EVM-compatible networks plus Starknet:
 
 | Network | Chain ID | Primary Use |
 |---------|----------|-------------|
@@ -151,9 +151,8 @@ The protocol is live on 7 EVM-compatible networks plus Starknet and Tron:
 | Lisk | 1135 | USDT, USDC |
 | Celo | 42220 | USDT, USDC |
 | Starknet | 23448594291968334 | USDT, USDC |
-| Tron | 728126428 | USDT |
 
-Use API network identifiers **`starknet`** and **`tron`** when creating orders. Starknet addresses are felt-sized hex (`0x` + up to 64 hex digits). Tron addresses are Base58Check and start with `T`.
+Use the API network identifier **`starknet`** when creating Starknet orders; Starknet addresses are felt-sized hex (`0x` + up to 64 hex digits). Tron (`tron`) and Solana (`solana`) are supported through the v2 Sender API; see [Supported Stablecoins](/resources/supported-stablecoins).
 
 See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the full deployment table, and [Supported Stablecoins](/resources/supported-stablecoins) for per-network token details.
 

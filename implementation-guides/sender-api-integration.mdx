@@ -93,7 +93,7 @@ In the dashboard settings, you can set defaults per token/network: fee percent, 
 Pass a `source` and a `destination` object. The `type` field on each determines the direction. **Off-ramp** and **on-ramp** use the same endpoint; examples below include **`curl`** for both directions. The extra **JavaScript** and **Python** snippets are **off-ramp**-shaped—mirror the **on-ramp** `curl` payload (`source.type: "fiat"`, `destination.type: "crypto"`, `refundAccount`, etc.) in your language.
 
 <Note>
-  **Starknet / Tron / Solana:** set `network` to **`starknet`**, **`tron`** or **`solana`**. Crypto addresses (`source.refundAddress` on off-ramp, `destination.recipient.address` on on-ramp) must match the network: Starknet felt hex (`0x` + 63–64 hex digits), Tron Base58 (`T…`) or a Solana Base58 public key (32–44 characters). Do not pass EVM checksum addresses on these networks. Solana is available through the v2 API only; `senderFeeAddress` on a Solana order is a Solana address too. See [Supported Stablecoins](/resources/supported-stablecoins).
+  **Starknet / Tron / Solana:** set `network` to **`starknet`**, **`tron`** or **`solana`**. Crypto addresses (`source.refundAddress` on off-ramp, `destination.recipient.address` on on-ramp) must match the network: Starknet felt hex (`0x` + 63–64 hex digits), Tron Base58 (`T…`) or a Solana Base58 public key (32–44 characters). Do not pass EVM checksum addresses on these networks. Tron and Solana are available through the v2 API only; `senderFeeAddress` on a Tron or Solana order is an address on that network too. See [Supported Stablecoins](/resources/supported-stablecoins).
 </Note>
 
 <Tabs>
@@ -161,7 +161,7 @@ After create, transfer Starknet USDT/USDC to `providerAccount.receiveAddress` (a
   </Tab>
   <Tab title="Off-ramp (Tron)">
 
-Same shape as EVM off-ramp; use `network: "tron"` and a Tron Base58 refund address (starts with `T`).
+Same shape as EVM off-ramp; use `network: "tron"` and a Tron Base58 refund address (starts with `T`). Tron supports USDT, through the v2 API only.
 
 ```bash
 curl -X POST "https://api.paycrest.io/v2/sender/orders" \
@@ -189,7 +189,7 @@ curl -X POST "https://api.paycrest.io/v2/sender/orders" \
   }'
 ```
 
-After create, transfer Tron USDT to `providerAccount.receiveAddress` (also a Tron address) before `validUntil`. Confirm settlement via webhooks or [GET order by ID](/api-reference/sender/get-payment-order-by-id-v2).
+After create, transfer **exactly** `providerAccount.amountToTransfer` of Tron USDT to `providerAccount.receiveAddress` (also a Tron address) before `validUntil`. A smaller deposit is not credited: it is returned to your `refundAddress`, less the Tron network's transfer cost. Confirm settlement via webhooks or [GET order by ID](/api-reference/sender/get-payment-order-by-id-v2).
   </Tab>
   <Tab title="On-ramp (fiat → stablecoin)">
 

@@ -35,7 +35,7 @@ This guide helps you resolve common issues when integrating with the Paycrest AP
       <li><strong>Invalid Starknet address</strong>: For `network: "starknet"`, use felt hex (`0x` + 63–64 hex digits), not an EVM checksum address</li>
       <li><strong>Invalid Tron address</strong>: For `network: "tron"`, use a Base58 address starting with `T`, not an EVM `0x` address</li>
       <li><strong>Invalid Solana address</strong>: For `network: "solana"`, <code>refundAddress</code> (off-ramp) and <code>destination.recipient.address</code> (on-ramp) must be Solana Base58 public keys, not EVM <code>0x</code> addresses</li>
-      <li><strong>"Solana is available only via POST /v2/sender/orders"</strong>: v1 endpoints do not accept Solana. Create Solana orders with <a href="/api-reference/sender/initiate-payment-order-v2"><code>POST /v2/sender/orders</code></a></li>
+      <li><strong>"This network is available only via POST /v2/sender/orders"</strong>: v1 endpoints do not accept Tron or Solana. Create Tron and Solana orders with <a href="/api-reference/sender/initiate-payment-order-v2"><code>POST /v2/sender/orders</code></a></li>
       <li><strong>"recipient … token account does not exist …"</strong> (on-ramp to Solana): the recipient wallet has no token account for the stablecoin's mint. Have the user create it, then retry</li>
       <li><strong>"Amount is below the minimum of 1 for this network"</strong>: the amount must be at least 1 unit of the stablecoin</li>
       <li><strong>Invalid <code>senderFeeAddress</code> on a Solana order</strong>: for Solana orders, <code>senderFeeAddress</code> must be a Solana Base58 public key, like the order's other addresses</li>

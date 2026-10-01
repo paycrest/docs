@@ -114,7 +114,7 @@ PAYAZA_TRANSACTION_PIN=
 - **What they are**:
   - `STARKNET_SNIP9_USER_ADDRESS` — Starknet account address used to sign SNIP-9 OutsideExecution payin messages
   - `STARKNET_SNIP9_PRIVATE_KEY` — private key for that Starknet account
-- **When you need them**: Required when fulfilling **Starknet on-ramp (payin)** orders. If you only handle EVM/Tron or offramp-only flows, you can leave them unset.
+- **When you need them**: Required when fulfilling **Starknet on-ramp (payin)** orders. If you only handle EVM or offramp-only flows, you can leave them unset.
 - **Address format**: Use a Starknet felt hex address (`0x` + 63–64 hex characters), not an EVM checksum address.
 - **Security**: Treat both as production secrets. Never commit them to git, store them in a secure secret manager or protected `.env`, and rotate them immediately if exposed.
 
@@ -184,7 +184,6 @@ Expected response:
 - Add settlement addresses for all supported networks and tokens
 - You can add a settlement address on multiple networks for flexibility
 - For **Starknet**, use a Starknet wallet address (`0x` + 63–64 hex characters), not an EVM address — network identifier is `starknet`
-- For **Tron**, use a Tron Base58 address (starts with `T`), not an EVM address — network identifier is `tron`
 
 ### Step 6: Node Testing & Launch
 
