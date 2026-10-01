@@ -3,7 +3,7 @@ title: "Gateway Contract Addresses"
 description: "Deployment addresses for Paycrest Gateway contracts across all supported networks"
 ---
 
-Paycrest Gateway contracts are deployed across multiple networks (EVM-compatible chains, Starknet, and Tron). The table below shows all current deployments, including networks that may not yet be fully supported by the aggregator.
+Paycrest Gateway contracts are deployed across multiple networks (EVM-compatible chains and Starknet). The table below shows all current deployments, including networks that may not yet be fully supported by the aggregator.
 
 <Note>
   Networks marked as "Coming Soon" have contracts deployed but aggregator support is pending.
@@ -21,7 +21,6 @@ Paycrest Gateway contracts are deployed across multiple networks (EVM-compatible
 | **Lisk** | 1135 | `0xff0E00E0110C1FBb5315D276243497b66D3a4d8a` | ✅ Live |
 | **Celo** | 42220 | `0xF418217E3f81092eF44b81C5C8336e6A6fDB0E4b` | ✅ Live |
 | **Starknet** | 23448594291968334 | `0x06ff3a3b1532da65594fc98f9ca7200af6c3dbaf37e7339b0ebd3b3f2390c583` | ✅ Live |
-| **Tron** | 728126428 | `THyFP5ST9YyLZn6EzjKjFhZti6aKPgEXNU` | Sender API (v2) only |
 | **Optimism** | 10 | `0xD293fCd3dBc025603911853d893A4724CF9f70a0` | 🚧 Coming Soon |
 
 ## Network Status Legend
@@ -41,7 +40,6 @@ All Gateway contracts are verified on their respective network block explorers:
 - **Lisk**: [Lisk Explorer](https://explorer.lisk.com/address/0xff0E00E0110C1FBb5315D276243497b66D3a4d8a)
 - **Celo**: [Celo Explorer](https://explorer.celo.org/address/0xF418217E3f81092eF44b81C5C8336e6A6fDB0E4b)
 - **Starknet**: [Voyager](https://voyager.online/contract/0x06ff3a3b1532da65594fc98f9ca7200af6c3dbaf37e7339b0ebd3b3f2390c583)
-- **Tron**: [Tronscan](https://tronscan.org/#/address/THyFP5ST9YyLZn6EzjKjFhZti6aKPgEXNU)
 - **Optimism**: [Optimistic Etherscan](https://optimistic.etherscan.io/address/0xD293fCd3dBc025603911853d893A4724CF9f70a0)
 
 ## Integration
@@ -64,17 +62,16 @@ const gateway = getContract({
 });
 ```
 
-### Starknet and Tron
+### Starknet
 
-Starknet and Tron are supported via the Sender API (`network: "starknet"` or `network: "tron"`). Tron orders are created through the v2 API only; orders created directly on the Tron Gateway contract are not processed.
+Starknet is supported via the Sender API (`network: "starknet"`).
 
 - **Starknet addresses:** felt hex (`0x` + 63–64 hex characters; not the zero address)
-- **Tron addresses:** Base58Check starting with `T` (not EVM `0x` addresses)
 
-Prefer the [Sender API Integration](/implementation-guides/sender-api-integration) path for order creation on these networks; the [Smart Contract Interaction](/implementation-guides/smart-contract-interaction) guide covers EVM Gateway calls.
+Prefer the [Sender API Integration](/implementation-guides/sender-api-integration) path for order creation on Starknet; the [Smart Contract Interaction](/implementation-guides/smart-contract-interaction) guide covers EVM Gateway calls.
 
 For detailed integration guides, see:
-- **[Sender API Integration](/implementation-guides/sender-api-integration)** — API-based integration (recommended for Starknet and Tron)
+- **[Sender API Integration](/implementation-guides/sender-api-integration)** — API-based integration (recommended for Starknet)
 - **[Smart Contract Interaction](/implementation-guides/smart-contract-interaction)** — Direct EVM contract integration
 
 <Note>
