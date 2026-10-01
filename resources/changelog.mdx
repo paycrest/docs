@@ -7,6 +7,20 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ---
 
+## Q4 2026
+
+### Tron orders through the v2 API only (October 2026)
+
+**Updated:** Tron (USDT) orders are now created through [`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2) only, the same as Solana. Off-ramp and on-ramp both work as before on v2.
+
+- **Behavior change:** v1 order creation on `tron` returns **400** "This network is available only via POST /v2/sender/orders". The v1 error for Solana now reads the same.
+- **Behavior change:** orders created directly on the Tron Gateway contract are no longer processed. Use the Sender API.
+- Off-ramp: send **exactly** `providerAccount.amountToTransfer`. A smaller deposit is not credited; it is returned to your `refundAddress`, less the Tron network's transfer cost.
+- On-ramp to Tron has a higher minimum order than other networks because of Tron's transfer cost. An order below it is refused, and the error states the minimum.
+- Tron rates are unchanged: [`GET /v2/rates`](/api-reference/general/get-token-rate) and v1 rates with `network=tron`.
+
+---
+
 ## Q3 2026
 
 ### Sender fees on Solana (September 2026)

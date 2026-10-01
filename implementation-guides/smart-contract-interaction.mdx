@@ -10,7 +10,7 @@ Interact directly with the Paycrest Gateway smart contract for onchain <strong>s
 </Note>
 
 <Note>
-  **Starknet and Tron:** Gateways are live on both networks, but this page documents **EVM** contract calls only. For those orders, use the [Sender API Integration](/implementation-guides/sender-api-integration) with `network: "starknet"` or `network: "tron"`. Addresses and token contracts are listed under [Gateway Contract Addresses](/resources/gateway-contract-addresses) and [Supported Stablecoins](/resources/supported-stablecoins).
+  **Starknet, Tron and Solana:** this page documents **EVM** contract calls only. For those networks, use the [Sender API Integration](/implementation-guides/sender-api-integration) with `network: "starknet"`, `"tron"` or `"solana"`. Tron and Solana orders are created through the v2 Sender API only: orders created directly on a Tron Gateway contract are not processed. Addresses and token contracts are listed under [Gateway Contract Addresses](/resources/gateway-contract-addresses) and [Supported Stablecoins](/resources/supported-stablecoins).
 </Note>
 
 ## Overview
@@ -909,7 +909,7 @@ Adding a suffix can never break order indexing. A malformed suffix, an unrecogni
 
 ### Network support
 
-Onchain attribution applies to **EVM networks only**. On **Starknet** and **Tron** no suffix is appended or read, and attribution works from `metadata.apiKey` exclusively.
+Onchain attribution applies to **EVM networks only**. On **Starknet** no suffix is appended or read, and attribution works from `metadata.apiKey` exclusively.
 
 **References:** [ERC-8021 specification](https://eip.tools/eip/8021)
 
@@ -1670,7 +1670,8 @@ func main() {
 - **Lisk**: USDT, USDC
 - **Celo**: USDT, USDC
 - **Starknet**: USDT, USDC
-- **Tron**: USDT
+
+Tron and Solana are supported through the [Sender API](/implementation-guides/sender-api-integration) (v2) only, not through direct contract calls.
 
 See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for deployment addresses per network.
 

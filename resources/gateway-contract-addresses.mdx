@@ -21,7 +21,7 @@ Paycrest Gateway contracts are deployed across multiple networks (EVM-compatible
 | **Lisk** | 1135 | `0xff0E00E0110C1FBb5315D276243497b66D3a4d8a` | ✅ Live |
 | **Celo** | 42220 | `0xF418217E3f81092eF44b81C5C8336e6A6fDB0E4b` | ✅ Live |
 | **Starknet** | 23448594291968334 | `0x06ff3a3b1532da65594fc98f9ca7200af6c3dbaf37e7339b0ebd3b3f2390c583` | ✅ Live |
-| **Tron** | 728126428 | `THyFP5ST9YyLZn6EzjKjFhZti6aKPgEXNU` | ✅ Live |
+| **Tron** | 728126428 | `THyFP5ST9YyLZn6EzjKjFhZti6aKPgEXNU` | Sender API (v2) only |
 | **Optimism** | 10 | `0xD293fCd3dBc025603911853d893A4724CF9f70a0` | 🚧 Coming Soon |
 
 ## Network Status Legend
@@ -66,7 +66,7 @@ const gateway = getContract({
 
 ### Starknet and Tron
 
-Starknet and Tron are fully supported via the Sender API (`network: "starknet"` or `network: "tron"`).
+Starknet and Tron are supported via the Sender API (`network: "starknet"` or `network: "tron"`). Tron orders are created through the v2 API only; orders created directly on the Tron Gateway contract are not processed.
 
 - **Starknet addresses:** felt hex (`0x` + 63–64 hex characters; not the zero address)
 - **Tron addresses:** Base58Check starting with `T` (not EVM `0x` addresses)

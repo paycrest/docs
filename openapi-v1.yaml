@@ -38,7 +38,7 @@ components:
           type: number
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet]
           description: Network identifier for the blockchain
         recipient:
           $ref: '#/components/schemas/PaymentOrderRecipient'
@@ -107,7 +107,7 @@ components:
           description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet]
           description: Network identifier for the blockchain
         receiveAddress:
           type: string
