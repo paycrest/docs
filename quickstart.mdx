@@ -66,6 +66,15 @@ curl -X POST "https://api.paycrest.io/v2/sender/orders" \
         "institution": "GTBINGLA",
         "accountIdentifier": "1234567890",
         "accountName": "John Doe"
+      },
+      "kyc": {
+        "entityType": "person",
+        "personDetails": {
+          "fullName": "John Doe",
+          "birthDate": "1990-04-12",
+          "idDocument": { "type": "nationalID", "number": "12345678901", "issuerCountry": "NG" },
+          "taxId": { "type": "BVN", "value": "22212345678" }
+        }
       }
     },
     "destination": {
