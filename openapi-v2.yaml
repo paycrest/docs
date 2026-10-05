@@ -859,8 +859,8 @@ components:
             The customer paying in. **Required on on-ramp.** On top of the shared `KYCDetail` shape, an on-ramp requires:
 
             - **person:** `personDetails.fullName`, `birthDate` (18 or over) and `idDocument` (`type`, `number`,
-              `issuerCountry`). NGN: `idDocument` must be the NIN (`nationalID`, 11 digits, issuer `NG`) and
-              `taxId` the BVN (`type: "BVN"`, 11 digits). KES: `contact.phoneE164` must be a Kenyan mobile number.
+              `issuerCountry`). NGN: also the BVN in `taxId` (`type: "BVN"`, 11 digits) or the NIN as `idDocument` (`nationalID`,
+              11 digits, issuer `NG`), at least one. KES: `contact.phoneE164` must be a Kenyan mobile number.
             - **organization:** `organizationDetails.legalName`, `registrationNumber`, `registrationCountry`, and at
               least one director whose `personDetails` meets the person rules. KES: the organization's
               `contact.phoneE164` must be a Kenyan mobile number.
