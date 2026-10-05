@@ -9,6 +9,15 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q4 2026
 
+### Customer KYC required on on-ramp orders (October 2026)
+
+**Updated:** every on-ramp order created with [`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2) must now identify the customer paying in, in `source.kyc`. See [On-ramp customer KYC](/implementation-guides/sender-api-integration#on-ramp-customer-kyc) for the full field list.
+
+- **Behavior change:** an on-ramp order without `source.kyc`, or with a required field missing or malformed, returns **400** with `"field": "Source"` and a message listing every problem.
+- A person needs `fullName`, `birthDate` (18 or over) and `idDocument`. For NGN, the document must be the NIN and `taxId` must be the BVN. For KES, `contact.phoneE164` must be a Kenyan mobile number.
+- An organization needs `legalName`, `registrationNumber`, `registrationCountry` and at least one director meeting the person rules.
+- Where the bank resolves the refund account holder's name (NGN), it must match the customer in `source.kyc`.
+
 ### Tron orders through the v2 API only (October 2026)
 
 **Updated:** Tron (USDT) orders are now created through [`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2) only, the same as Solana. Off-ramp and on-ramp both work as before on v2.

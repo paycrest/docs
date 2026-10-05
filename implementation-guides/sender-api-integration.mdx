@@ -209,6 +209,15 @@ curl -X POST "https://api.paycrest.io/v2/sender/orders" \
         "institution": "GTBINGLA",
         "accountIdentifier": "1234567890",
         "accountName": "John Doe"
+      },
+      "kyc": {
+        "entityType": "person",
+        "personDetails": {
+          "fullName": "John Doe",
+          "birthDate": "1990-04-12",
+          "idDocument": { "type": "nationalID", "number": "12345678901", "issuerCountry": "NG" },
+          "taxId": { "type": "BVN", "value": "22212345678" }
+        }
       }
     },
     "destination": {
@@ -299,6 +308,15 @@ const res = await fetch("https://api.paycrest.io/v2/sender/orders", {
         accountIdentifier: "1234567890",
         accountName: "John Doe",
       },
+      kyc: {
+        entityType: "person",
+        personDetails: {
+          fullName: "John Doe",
+          birthDate: "1990-04-12",
+          idDocument: { type: "nationalID", number: "12345678901", issuerCountry: "NG" },
+          taxId: { type: "BVN", value: "22212345678" },
+        },
+      },
     },
     destination: {
       type: "crypto",
@@ -332,6 +350,15 @@ order = requests.post(
                 "accountIdentifier": "1234567890",
                 "accountName": "John Doe",
             },
+            "kyc": {
+                "entityType": "person",
+                "personDetails": {
+                    "fullName": "John Doe",
+                    "birthDate": "1990-04-12",
+                    "idDocument": { "type": "nationalID", "number": "12345678901", "issuerCountry": "NG" },
+                    "taxId": { "type": "BVN", "value": "22212345678" },
+                },
+            },
         },
         "destination": {
             "type": "crypto",
@@ -362,6 +389,38 @@ order = requests.post(
 | `reference` | string | — | Your internal order ID. |
 | `source` | object | ✅ | `{ type: "crypto", ... }` for off-ramp; `{ type: "fiat", ... }` for onramp. |
 | `destination` | object | ✅ | `{ type: "fiat", ... }` for off-ramp; `{ type: "crypto", ... }` for onramp. |
+
+### On-ramp customer KYC
+
+Every on-ramp order must identify the customer paying in, in **`source.kyc`**. An order without it, or with a field missing or malformed, returns **400** with `"field": "Source"` and a message listing **every** problem by path, so you can fix the payload in one round trip.
+
+**Person** (`"entityType": "person"`):
+
+| Field | Required | Rule |
+|-------|----------|------|
+| `personDetails.fullName` | ✅ | Customer's full name |
+| `personDetails.birthDate` | ✅ | `YYYY-MM-DD`; the customer must be 18 or over |
+| `personDetails.idDocument` | ✅ | `type` (`passport`, `nationalID` or `driverLicense`), `number`, `issuerCountry` (ISO 3166-1 alpha-2). **NGN:** must be the NIN — `{"type": "nationalID", "number": "<11 digits>", "issuerCountry": "NG"}` |
+| `personDetails.taxId` | NGN only | The BVN: `{"type": "BVN", "value": "<11 digits>"}` |
+| `personDetails.contact.phoneE164` | KES only | The customer's Kenyan mobile number (`+2547…` or `+2541…`); the payment prompt is pushed here |
+
+**Organization** (`"entityType": "organization"`):
+
+| Field | Required | Rule |
+|-------|----------|------|
+| `organizationDetails.legalName` | ✅ | Registered name. `tradingName` is optional |
+| `organizationDetails.registrationNumber` | ✅ | |
+| `organizationDetails.registrationCountry` | ✅ | ISO 3166-1 alpha-2 |
+| `organizationDetails.directors` | ✅ | At least one director whose `personDetails` meets the person rules above (the KES phone is not needed for directors) |
+| `organizationDetails.contact.phoneE164` | KES only | The organization's Kenyan mobile number |
+
+**The refund account must belong to the customer.** Where the bank resolves the `source.refundAccount` holder's name (NGN), it must match `personDetails.fullName` — or, for an organization, `legalName` or `tradingName`. Word order, case, titles and legal-form words such as "Ltd" are ignored. A mismatch returns **400** `Refund account name does not match the customer in source.kyc`.
+
+**KYC on the other sides of an order** uses the same shape and is optional:
+
+- **Off-ramp `source.kyc`** — the customer sending the stablecoin.
+- **Off-ramp `destination.kyc`** — the recipient of the fiat payout.
+- **On-ramp `destination.kyc`** — the recipient of the stablecoin.
 
 ### Pin a provider queue
 
@@ -846,6 +905,15 @@ You can configure a default fee in [Sender Dashboard](https://app.paycrest.io) s
       "institution": "MOMONGPC",
       "accountIdentifier": "1234567890",
       "accountName": "John Doe"
+    },
+    "kyc": {
+      "entityType": "person",
+      "personDetails": {
+        "fullName": "John Doe",
+        "birthDate": "1990-04-12",
+        "idDocument": { "type": "nationalID", "number": "12345678901", "issuerCountry": "NG" },
+        "taxId": { "type": "BVN", "value": "22212345678" }
+      }
     }
   },
   "destination": {
@@ -884,6 +952,15 @@ Fixed fee alternative:
       "institution": "MOMONGPC",
       "accountIdentifier": "1234567890",
       "accountName": "John Doe"
+    },
+    "kyc": {
+      "entityType": "person",
+      "personDetails": {
+        "fullName": "John Doe",
+        "birthDate": "1990-04-12",
+        "idDocument": { "type": "nationalID", "number": "12345678901", "issuerCountry": "NG" },
+        "taxId": { "type": "BVN", "value": "22212345678" }
+      }
     }
   },
   "destination": {
