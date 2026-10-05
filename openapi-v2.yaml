@@ -832,6 +832,15 @@ components:
         refundAddress:
           type: string
           description: Wallet address on `network` for refunds if the order can't be fulfilled (e.g. a Solana address when `network` is `solana`).
+        kyc:
+          writeOnly: true
+          description: |
+            Optional. The customer sending the stablecoin on off-ramp. The provider paying out receives only the
+            name (person `fullName`, or organization `legalName` / `tradingName` and contact email); when omitted,
+            your approved KYB company details are used instead. Accepted on create only; never returned in order
+            responses or webhooks.
+          allOf:
+            - $ref: '#/components/schemas/KYCDetail'
 
     V2FiatSource:
       type: object
@@ -870,8 +879,16 @@ components:
     KYCDetail:
       type: object
       description: |
-        Identity of a party to an order: the customer paying in on on-ramp (`source.kyc`, required), or the
-        recipient on off-ramp (`destination.kyc`, optional). Which fields are required depends on where it is sent.
+        Identity of a party to an order, accepted on both sides of both directions:
+
+        | Field | Direction | Who | Required |
+        |-------|-----------|-----|----------|
+        | `source.kyc` | on-ramp | Customer paying in fiat | Yes (see `V2FiatSource.kyc`) |
+        | `destination.kyc` | on-ramp | Recipient of the stablecoin | No |
+        | `source.kyc` | off-ramp | Customer sending the stablecoin | No |
+        | `destination.kyc` | off-ramp | Recipient of the fiat payout | No |
+
+        Which fields are required depends on where it is sent; only on-ramp `source.kyc` has required fields.
       properties:
         entityType:
           type: string
@@ -1107,6 +1124,13 @@ components:
             The provider must be one you can route to: pinning a provider restricted to other
             senders returns **400**.
             Accepted on create only; order responses and webhooks return the singular assigned `providerId`.
+        kyc:
+          writeOnly: true
+          description: |
+            Optional. The recipient of the stablecoin on on-ramp. Recorded on the order for your compliance
+            record; not sent to providers. Accepted on create only; never returned in order responses or webhooks.
+          allOf:
+            - $ref: '#/components/schemas/KYCDetail'
         recipient:
           $ref: '#/components/schemas/V2CryptoRecipient'
 

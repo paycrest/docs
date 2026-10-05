@@ -416,6 +416,14 @@ Every on-ramp order must identify the customer paying in, in **`source.kyc`**. A
 
 **The refund account must belong to the customer.** Where the bank resolves the `source.refundAccount` holder's name (NGN), it must match `personDetails.fullName` — or, for an organization, `legalName` or `tradingName`. Word order, case, titles and legal-form words such as "Ltd" are ignored. A mismatch returns **400** `Refund account name does not match the customer in source.kyc`.
 
+**KYC on the other sides of an order** uses the same shape and is optional:
+
+- **Off-ramp `source.kyc`** — the customer sending the stablecoin. The provider paying out receives only the name (and an organization's contact email). When omitted, your approved KYB company details are used instead.
+- **Off-ramp `destination.kyc`** — the recipient of the fiat payout.
+- **On-ramp `destination.kyc`** — the recipient of the stablecoin. Recorded on the order; not sent to providers.
+
+Only off-ramp `destination.kyc` is returned in order responses and webhooks; every other `kyc` is accepted on create only.
+
 ### Pin a provider queue
 
 By default the API resolves a **ranked queue of up to 3 providers** at order creation and assignment walks it in order—if the first declines, expires, or exhausts its retries, the order moves to the next. You don't have to do anything to get this.
