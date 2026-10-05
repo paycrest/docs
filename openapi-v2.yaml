@@ -834,11 +834,7 @@ components:
           description: Wallet address on `network` for refunds if the order can't be fulfilled (e.g. a Solana address when `network` is `solana`).
         kyc:
           writeOnly: true
-          description: |
-            Optional. The customer sending the stablecoin on off-ramp. The provider paying out receives only the
-            name (person `fullName`, or organization `legalName` / `tradingName` and contact email); when omitted,
-            your approved KYB company details are used instead. Accepted on create only; never returned in order
-            responses or webhooks.
+          description: Optional. The customer sending the stablecoin on off-ramp.
           allOf:
             - $ref: '#/components/schemas/KYCDetail'
 
@@ -860,8 +856,7 @@ components:
         kyc:
           writeOnly: true
           description: |
-            The customer paying in. **Required on on-ramp.** Accepted on create only; never returned in
-            order responses or webhooks. On top of the shared `KYCDetail` shape, an on-ramp requires:
+            The customer paying in. **Required on on-ramp.** On top of the shared `KYCDetail` shape, an on-ramp requires:
 
             - **person:** `personDetails.fullName`, `birthDate` (18 or over) and `idDocument` (`type`, `number`,
               `issuerCountry`). NGN: `idDocument` must be the NIN (`nationalID`, 11 digits, issuer `NG`) and
@@ -1126,9 +1121,7 @@ components:
             Accepted on create only; order responses and webhooks return the singular assigned `providerId`.
         kyc:
           writeOnly: true
-          description: |
-            Optional. The recipient of the stablecoin on on-ramp. Recorded on the order for your compliance
-            record; not sent to providers. Accepted on create only; never returned in order responses or webhooks.
+          description: Optional. The recipient of the stablecoin on on-ramp.
           allOf:
             - $ref: '#/components/schemas/KYCDetail'
         recipient:
