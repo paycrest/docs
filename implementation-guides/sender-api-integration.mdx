@@ -416,10 +416,6 @@ Every on-ramp order must identify the customer paying in, in **`source.kyc`**. A
 
 **The refund account must belong to the customer.** Where the bank resolves the `source.refundAccount` holder's name (NGN), it must match `personDetails.fullName` — or, for an organization, `legalName` or `tradingName`. Word order, case, titles and legal-form words such as "Ltd" are ignored. A mismatch returns **400** `Refund account name does not match the customer in source.kyc`.
 
-<Note>
-**KES on-ramp is limited to KES 250,000 per order.** Every KES on-ramp is paid through an M-Pesa or Airtel prompt, and M-Pesa caps a single transaction at that amount. Larger orders return **400** with `"field": "Amount"`.
-</Note>
-
 ### Pin a provider queue
 
 By default the API resolves a **ranked queue of up to 3 providers** at order creation and assignment walks it in order—if the first declines, expires, or exhausts its retries, the order moves to the next. You don't have to do anything to get this.

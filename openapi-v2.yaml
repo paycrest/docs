@@ -842,110 +842,150 @@ components:
           enum: [fiat]
         currency:
           type: string
-          description: |
-            Fiat currency code (e.g. NGN, KES, TZS). KES on-ramp orders are limited to KES 250,000
-            per order (the M-Pesa per-transaction limit); larger orders return **400**.
+          description: Fiat currency code (e.g. NGN, KES, TZS)
         country:
           type: string
           description: ISO 3166-1 alpha-2 country code (optional)
         refundAccount:
           $ref: '#/components/schemas/V2FiatRefundAccount'
         kyc:
-          description: Accepted on create only; never returned in order responses or webhooks.
           writeOnly: true
+          description: |
+            The customer paying in. **Required on on-ramp.** Accepted on create only; never returned in
+            order responses or webhooks. On top of the shared `KYCDetail` shape, an on-ramp requires:
+
+            - **person:** `personDetails.fullName`, `birthDate` (18 or over) and `idDocument` (`type`, `number`,
+              `issuerCountry`). NGN: `idDocument` must be the NIN (`nationalID`, 11 digits, issuer `NG`) and
+              `taxId` the BVN (`type: "BVN"`, 11 digits). KES: `contact.phoneE164` must be a Kenyan mobile number.
+            - **organization:** `organizationDetails.legalName`, `registrationNumber`, `registrationCountry`, and at
+              least one director whose `personDetails` meets the person rules. KES: the organization's
+              `contact.phoneE164` must be a Kenyan mobile number.
+
+            Missing or malformed fields return **400** with `field: "Source"` and a message listing every problem by
+            path. Where the bank resolves the refund account holder's name (NGN), it must match `personDetails.fullName`
+            (or the organization's `legalName` / `tradingName`); a mismatch returns **400**.
           allOf:
-            - $ref: '#/components/schemas/OnrampKYC'
+            - $ref: '#/components/schemas/KYCDetail'
 
-    OnrampKYC:
+    KYCDetail:
       type: object
-      required: [entityType]
       description: |
-        The customer paying in. Required on every on-ramp order. Missing or malformed fields return
-        **400** with `field: "Source"` and a message listing every problem by path.
-
-        Where the bank resolves the refund account holder's name (NGN), it must match
-        `personDetails.fullName` (or the organization's `legalName` / `tradingName`); a mismatch returns **400**.
+        Identity of a party to an order: the customer paying in on on-ramp (`source.kyc`, required), or the
+        recipient on off-ramp (`destination.kyc`, optional). Which fields are required depends on where it is sent.
       properties:
         entityType:
           type: string
           enum: [person, organization]
         personDetails:
-          $ref: '#/components/schemas/OnrampKYCPerson'
+          $ref: '#/components/schemas/KYCPersonDetails'
         organizationDetails:
-          type: object
-          description: Required when `entityType` is `organization`.
-          required: [legalName, registrationNumber, registrationCountry, directors]
-          properties:
-            legalName:
-              type: string
-            tradingName:
-              type: string
-              description: Optional; also accepted when matching the refund account name.
-            registrationNumber:
-              type: string
-            registrationCountry:
-              type: string
-              description: ISO 3166-1 alpha-2
-            contact:
-              $ref: '#/components/schemas/OnrampKYCContact'
-            directors:
-              type: array
-              minItems: 1
-              description: At least one director whose `personDetails` meets the person rules (no phone needed).
-              items:
-                type: object
-                required: [personDetails]
-                properties:
-                  personDetails:
-                    $ref: '#/components/schemas/OnrampKYCPerson'
-                  role:
-                    type: string
-                    example: Director
+          $ref: '#/components/schemas/KYCOrganizationDetails'
+        principalAddress:
+          $ref: '#/components/schemas/KYCPrincipalAddress'
 
-    OnrampKYCPerson:
+    KYCPersonDetails:
       type: object
-      description: Required when `entityType` is `person`.
-      required: [fullName, birthDate, idDocument]
+      description: Set when `entityType` is `person`.
       properties:
         fullName:
           type: string
         birthDate:
           type: string
           format: date
-          description: YYYY-MM-DD. The person must be 18 or over.
-        idDocument:
-          type: object
-          required: [type, number, issuerCountry]
-          description: 'NGN: must be the NIN — `{"type": "nationalID", "number": "<11 digits>", "issuerCountry": "NG"}`.'
-          properties:
-            type:
-              type: string
-              enum: [passport, nationalID, driverLicense]
-            number:
-              type: string
-            issuerCountry:
-              type: string
-              description: ISO 3166-1 alpha-2
-        taxId:
-          type: object
-          description: 'Required for NGN: the BVN — `{"type": "BVN", "value": "<11 digits>"}`.'
-          properties:
-            type:
-              type: string
-              example: BVN
-            value:
-              type: string
+          description: YYYY-MM-DD
+        nationality:
+          type: string
+          description: ISO 3166-1 alpha-2
         contact:
-          $ref: '#/components/schemas/OnrampKYCContact'
+          $ref: '#/components/schemas/KYCContact'
+        idDocument:
+          $ref: '#/components/schemas/KYCIDDocument'
+        taxId:
+          $ref: '#/components/schemas/KYCTaxID'
 
-    OnrampKYCContact:
+    KYCOrganizationDetails:
+      type: object
+      description: Set when `entityType` is `organization`.
+      properties:
+        legalName:
+          type: string
+        tradingName:
+          type: string
+        registrationNumber:
+          type: string
+        registrationDate:
+          type: string
+          format: date
+          description: YYYY-MM-DD
+        registrationCountry:
+          type: string
+          description: ISO 3166-1 alpha-2
+        contact:
+          $ref: '#/components/schemas/KYCContact'
+        taxId:
+          $ref: '#/components/schemas/KYCTaxID'
+        directors:
+          type: array
+          description: Directors or beneficial owners.
+          items:
+            type: object
+            properties:
+              personDetails:
+                $ref: '#/components/schemas/KYCPersonDetails'
+              role:
+                type: string
+                example: Director
+              ownershipPercentage:
+                type: number
+                description: 0–100
+
+    KYCContact:
       type: object
       properties:
         email:
           type: string
         phoneE164:
           type: string
-          description: 'Required for KES (the customer, or the organization itself): a Kenyan mobile number, `+2547…` or `+2541…`. The payment prompt is pushed here.'
+          description: E.164, e.g. `+254712345678`
+
+    KYCIDDocument:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [passport, nationalID, driverLicense]
+        number:
+          type: string
+        issuerCountry:
+          type: string
+          description: ISO 3166-1 alpha-2
+
+    KYCTaxID:
+      type: object
+      properties:
+        type:
+          type: string
+          description: 'Person: `TIN`, `CPF`, `SSN`, `BVN` or `Other`. Organization: `VAT`, `CorpTIN`, `LEI` or `Other`.'
+        value:
+          type: string
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2
+
+    KYCPrincipalAddress:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2
 
     V2FiatRefundAccount:
       type: object
@@ -1002,8 +1042,9 @@ components:
             after the queue is exhausted.
             Accepted on create only; order responses and webhooks return the singular assigned `providerId`.
         kyc:
-          type: object
           description: Optional destination (recipient) KYC for offramp. Do not send sender or provider KYB on offramp create.
+          allOf:
+            - $ref: '#/components/schemas/KYCDetail'
         recipient:
           $ref: '#/components/schemas/V2FiatRecipient'
 

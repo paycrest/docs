@@ -17,7 +17,6 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 - A person needs `fullName`, `birthDate` (18 or over) and `idDocument`. For NGN, the document must be the NIN and `taxId` must be the BVN. For KES, `contact.phoneE164` must be a Kenyan mobile number.
 - An organization needs `legalName`, `registrationNumber`, `registrationCountry` and at least one director meeting the person rules.
 - Where the bank resolves the refund account holder's name (NGN), it must match the customer in `source.kyc`.
-- KES on-ramp orders are limited to KES 250,000 per order, the M-Pesa per-transaction limit.
 
 ### Tron orders through the v2 API only (October 2026)
 
