@@ -9,6 +9,13 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q4 2026
 
+### On-ramp deposits must come from the customer (October 2026)
+
+**Updated:** an on-ramp deposit must be paid from the customer's own account. Paycrest checks the payer the provider reports against `source.kyc`; see [On-ramp customer KYC](/implementation-guides/sender-api-integration#on-ramp-customer-kyc).
+
+- **Behavior change:** a deposit from anyone else is held for compliance review, and you receive `payment_order.compliance_hold`.
+- **Behavior change:** a held order no longer expires. It ends in `payment_order.settled`, or in `payment_order.refunded` with the deposit returned to the account it came from. See [Compliance holds](/concepts/transaction-lifecycle#compliance-holds).
+
 ### Customer KYC required on on-ramp orders (October 2026)
 
 **Updated:** every on-ramp order created with [`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2) must now identify the customer paying in, in `source.kyc`. See [On-ramp customer KYC](/implementation-guides/sender-api-integration#on-ramp-customer-kyc) for the full field list.

@@ -143,17 +143,17 @@ Paycrest sends webhooks to your configured endpoint as an order progresses. Most
 
 ### Compliance holds
 
-`payment_order.compliance_hold` fires when an on-ramp order's fiat has been received but Paycrest cannot settle it while a compliance review is open. It is sent at most once per order.
+`payment_order.compliance_hold` fires when an on-ramp order's fiat has been received but Paycrest cannot settle it while a compliance review is open. The most common cause is a deposit from an account that is not the customer's own: the payer must match the customer in `source.kyc`. It is sent at most once per order.
 
 Two things make this event different from the rest:
 
 - **It is not a status change.** The order deliberately remains `pending`, so `data.status` reads `pending`, not `compliance_hold`. If you route webhooks by `data.status`, this event will look like a duplicate `pending` — branch on `event` instead.
-- **It is terminal in practice.** The order will not settle. It stays `pending` until its virtual account expires, at which point you also receive `payment_order.expired`. Do not prompt the customer to retry the payment — a second deposit into the same virtual account will be held as well.
+- **It is not final.** A held order does not expire. When the review ends, the order either settles (`payment_order.settled`) or the deposit is returned to the account it came from (`payment_order.refunded`). A review can take several days.
 
-Treat it as a signal to stop expecting settlement and to contact Paycrest support about the affected order. What you tell your own customer is your decision.
+Do not prompt the customer to pay again: a second deposit into the same virtual account will be held as well. What you tell your own customer is your decision; contact Paycrest support if you need to know where a review stands.
 
 <Note>
-  Not every held order produces this event. Where a hold concerns your account rather than the counterparty, no webhook is sent and you will observe only `payment_order.expired`.
+  Not every held order produces this event. Where a hold concerns your account rather than the counterparty, no webhook is sent; you will observe only the order's final `payment_order.settled` or `payment_order.refunded`.
 </Note>
 
 ### Webhook Payload (v1)
