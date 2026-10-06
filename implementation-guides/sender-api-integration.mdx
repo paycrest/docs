@@ -400,8 +400,8 @@ Every on-ramp order must identify the customer paying in, in **`source.kyc`**. A
 |-------|----------|------|
 | `personDetails.fullName` | ✅ | Customer's full name |
 | `personDetails.birthDate` | ✅ | `YYYY-MM-DD`; the customer must be 18 or over |
-| `personDetails.idDocument` | ✅ | `type` (`passport`, `nationalID` or `driverLicense`), `number`, `issuerCountry` (ISO 3166-1 alpha-2). **NGN:** must be the NIN — `{"type": "nationalID", "number": "<11 digits>", "issuerCountry": "NG"}` |
-| `personDetails.taxId` | NGN only | The BVN: `{"type": "BVN", "value": "<11 digits>"}` |
+| `personDetails.idDocument` | ✅ | `type` (`passport`, `nationalID` or `driverLicense`), `number`, `issuerCountry` (ISO 3166-1 alpha-2) |
+| BVN or NIN | NGN only | At least one: the BVN in `personDetails.taxId` — `{"type": "BVN", "value": "<11 digits>"}` — or the NIN as `personDetails.idDocument` — `{"type": "nationalID", "number": "<11 digits>", "issuerCountry": "NG"}` |
 | `personDetails.contact.phoneE164` | KES only | The customer's Kenyan mobile number (`+2547…` or `+2541…`); the payment prompt is pushed here |
 
 **Organization** (`"entityType": "organization"`):
