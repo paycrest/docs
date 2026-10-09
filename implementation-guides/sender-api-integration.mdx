@@ -414,7 +414,7 @@ Every on-ramp order must identify the customer paying in, in **`source.kyc`**. A
 | `organizationDetails.directors` | ✅ | At least one director whose `personDetails` meets the person rules above (the KES phone is not needed for directors) |
 | `organizationDetails.contact.phoneE164` | KES only | The organization's Kenyan mobile number |
 
-**The customer must pay from their own account.** The provider reports who each deposit came from, and Paycrest checks it against `source.kyc`. An organization may pay from an account in its `legalName` or `tradingName`, or from the personal account of a director whose BVN (`personDetails.taxId`) or NIN (`personDetails.idDocument`) you sent. A deposit from anyone else is held for compliance review and you receive [`payment_order.compliance_hold`](/concepts/transaction-lifecycle#compliance-holds).
+**The customer must pay from their own account.** The provider reports who each deposit came from, and Paycrest checks it against `source.kyc`. An organization pays from an account in its `legalName` or `tradingName`. For NGN, it may also pay from the personal account of a director whose BVN (`personDetails.taxId`) or NIN (`personDetails.idDocument`) you sent. A deposit from anyone else is held for compliance review and you receive [`payment_order.compliance_hold`](/concepts/transaction-lifecycle#compliance-holds).
 
 **The refund account must belong to the customer.** Where the bank resolves the `source.refundAccount` holder's name (NGN), it must match `personDetails.fullName` — or, for an organization, `legalName` or `tradingName`. Word order, case, titles and legal-form words such as "Ltd" are ignored. A mismatch returns **400** `Refund account name does not match the customer in source.kyc`.
 
