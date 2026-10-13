@@ -143,7 +143,9 @@ Paycrest sends webhooks to your configured endpoint as an order progresses. Most
 
 ### Compliance holds
 
-`payment_order.compliance_hold` fires when an on-ramp order's fiat has been received but Paycrest cannot settle it while a compliance review is open. The most common cause is a deposit from an account that is not the customer's own: the payer must match the customer in `source.kyc`. It is sent at most once per order.
+`payment_order.compliance_hold` fires when an on-ramp order's fiat has been received but Paycrest cannot settle it while a compliance review is open. It is sent at most once per order.
+
+A deposit from an account that is not the customer's own (the payer must match the customer in `source.kyc`) is usually not reviewed: Paycrest returns it in full to the account it came from within minutes, and you receive `payment_order.refunded` without a `payment_order.compliance_hold`. Paycrest holds such a deposit for review instead when it cannot be returned automatically, or when the deposit pattern needs a closer look.
 
 Two things make this event different from the rest:
 
