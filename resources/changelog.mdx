@@ -13,6 +13,8 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 **Updated:** an on-ramp deposit from an account that is not the customer's own is now usually returned in full to the account it came from within minutes, instead of waiting for a compliance review. You receive `payment_order.refunded`, with no `payment_order.compliance_hold`. A deposit that cannot be returned automatically, or that needs a closer look, is still held for review. See [Compliance holds](/concepts/transaction-lifecycle#compliance-holds).
 
+- **New:** v2 orders and v2 webhooks carry `statusDetail: "under_review"` while a deposit is held, and `refundReason` (`payer_mismatch` or `payer_unverified`) when it was returned to the account it came from.
+
 ### On-ramp deposits must come from the customer (October 2026)
 
 **Updated:** an on-ramp deposit must be paid from the customer's own account. Paycrest checks the payer the provider reports against `source.kyc`; see [On-ramp customer KYC](/implementation-guides/sender-api-integration#on-ramp-customer-kyc).
