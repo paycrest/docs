@@ -859,8 +859,9 @@ components:
             The customer paying in. **Required on on-ramp.** On top of the shared `KYCDetail` shape, an on-ramp requires:
 
             - **person:** `personDetails.fullName`, `birthDate` (18 or over) and `idDocument` (`type`, `number`,
-              `issuerCountry`). NGN: also the BVN in `taxId` (`type: "BVN"`, 11 digits) or the NIN as `idDocument` (`nationalID`,
-              11 digits, issuer `NG`), at least one. KES: `contact.phoneE164` must be a Kenyan mobile number.
+              `issuerCountry`). NGN: the `idDocument` must be the BVN (`type: "BVN"`, 11 digits, issuer `NG`), which needs no
+              other document, or the NIN (`nationalID`, 11 digits, issuer `NG`). KES: `contact.phoneE164` must be a Kenyan
+              mobile number.
             - **organization:** `organizationDetails.legalName`, `registrationNumber`, `registrationCountry`, and at
               least one director whose `personDetails` meets the person rules. KES: the organization's
               `contact.phoneE164` must be a Kenyan mobile number.
@@ -965,7 +966,8 @@ components:
       properties:
         type:
           type: string
-          enum: [passport, nationalID, driverLicense]
+          enum: [passport, nationalID, driverLicense, BVN]
+          description: '`BVN` is accepted on NGN on-ramp only.'
         number:
           type: string
         issuerCountry:
@@ -977,7 +979,7 @@ components:
       properties:
         type:
           type: string
-          description: 'Person: `TIN`, `CPF`, `SSN`, `BVN` or `Other`. Organization: `VAT`, `CorpTIN`, `LEI` or `Other`.'
+          description: 'Person: `TIN`, `CPF`, `SSN` or `Other`. Organization: `VAT`, `CorpTIN`, `LEI` or `Other`. Send a BVN as the `idDocument`.'
         value:
           type: string
         country:
@@ -2376,12 +2378,9 @@ paths:
                         fullName: John Doe
                         birthDate: "1990-04-12"
                         idDocument:
-                          type: nationalID
-                          number: "12345678901"
-                          issuerCountry: NG
-                        taxId:
                           type: BVN
-                          value: "22212345678"
+                          number: "22212345678"
+                          issuerCountry: NG
                   destination:
                     type: crypto
                     currency: USDT
@@ -2406,12 +2405,9 @@ paths:
                         fullName: John Doe
                         birthDate: "1990-04-12"
                         idDocument:
-                          type: nationalID
-                          number: "12345678901"
-                          issuerCountry: NG
-                        taxId:
                           type: BVN
-                          value: "22212345678"
+                          number: "22212345678"
+                          issuerCountry: NG
                   destination:
                     type: crypto
                     currency: USDC

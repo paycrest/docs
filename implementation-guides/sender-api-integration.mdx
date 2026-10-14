@@ -215,8 +215,7 @@ curl -X POST "https://api.paycrest.io/v2/sender/orders" \
         "personDetails": {
           "fullName": "John Doe",
           "birthDate": "1990-04-12",
-          "idDocument": { "type": "nationalID", "number": "12345678901", "issuerCountry": "NG" },
-          "taxId": { "type": "BVN", "value": "22212345678" }
+          "idDocument": { "type": "BVN", "number": "22212345678", "issuerCountry": "NG" }
         }
       }
     },
@@ -313,8 +312,7 @@ const res = await fetch("https://api.paycrest.io/v2/sender/orders", {
         personDetails: {
           fullName: "John Doe",
           birthDate: "1990-04-12",
-          idDocument: { type: "nationalID", number: "12345678901", issuerCountry: "NG" },
-          taxId: { type: "BVN", value: "22212345678" },
+          idDocument: { type: "BVN", number: "22212345678", issuerCountry: "NG" },
         },
       },
     },
@@ -355,8 +353,7 @@ order = requests.post(
                 "personDetails": {
                     "fullName": "John Doe",
                     "birthDate": "1990-04-12",
-                    "idDocument": { "type": "nationalID", "number": "12345678901", "issuerCountry": "NG" },
-                    "taxId": { "type": "BVN", "value": "22212345678" },
+                    "idDocument": { "type": "BVN", "number": "22212345678", "issuerCountry": "NG" },
                 },
             },
         },
@@ -400,8 +397,8 @@ Every on-ramp order must identify the customer paying in, in **`source.kyc`**. A
 |-------|----------|------|
 | `personDetails.fullName` | ✅ | Customer's full name |
 | `personDetails.birthDate` | ✅ | `YYYY-MM-DD`; the customer must be 18 or over |
-| `personDetails.idDocument` | ✅ | `type` (`passport`, `nationalID` or `driverLicense`), `number`, `issuerCountry` (ISO 3166-1 alpha-2) |
-| BVN or NIN | NGN only | At least one: the BVN in `personDetails.taxId` — `{"type": "BVN", "value": "<11 digits>"}` — or the NIN as `personDetails.idDocument` — `{"type": "nationalID", "number": "<11 digits>", "issuerCountry": "NG"}` |
+| `personDetails.idDocument` | ✅ | `type` (`passport`, `nationalID` or `driverLicense`; for NGN also `BVN`), `number`, `issuerCountry` (ISO 3166-1 alpha-2) |
+| BVN or NIN | NGN only | The `idDocument` must be one of them: the BVN — `{"type": "BVN", "number": "<11 digits>", "issuerCountry": "NG"}` — or the NIN — `{"type": "nationalID", "number": "<11 digits>", "issuerCountry": "NG"}`. A BVN needs no other document |
 | `personDetails.contact.phoneE164` | KES only | The customer's Kenyan mobile number (`+2547…` or `+2541…`); the payment prompt is pushed here |
 
 **Organization** (`"entityType": "organization"`):
@@ -414,7 +411,7 @@ Every on-ramp order must identify the customer paying in, in **`source.kyc`**. A
 | `organizationDetails.directors` | ✅ | At least one director whose `personDetails` meets the person rules above (the KES phone is not needed for directors) |
 | `organizationDetails.contact.phoneE164` | KES only | The organization's Kenyan mobile number |
 
-**The customer must pay from their own account.** The provider reports who each deposit came from, and Paycrest checks it against `source.kyc`. An organization pays from an account in its `legalName` or `tradingName`, or from the personal account of a director whose national identifier you sent: the BVN (`personDetails.taxId`) or NIN for NGN, or the director's national ID (`personDetails.idDocument` with `"type": "nationalID"`) for other currencies. A deposit from anyone else is returned in full to the account it came from, and you receive `payment_order.refunded`; when it cannot be returned automatically, it is held for compliance review and you receive [`payment_order.compliance_hold`](/concepts/transaction-lifecycle#compliance-holds).
+**The customer must pay from their own account.** The provider reports who each deposit came from, and Paycrest checks it against `source.kyc`. An organization pays from an account in its `legalName` or `tradingName`, or from the personal account of a director whose national identifier you sent: the BVN or NIN for NGN, or the director's national ID (`personDetails.idDocument` with `"type": "nationalID"`) for other currencies. A deposit from anyone else is returned in full to the account it came from, and you receive `payment_order.refunded`; when it cannot be returned automatically, it is held for compliance review and you receive [`payment_order.compliance_hold`](/concepts/transaction-lifecycle#compliance-holds).
 
 **The refund account must belong to the customer.** Where the bank resolves the `source.refundAccount` holder's name (NGN), it must match `personDetails.fullName` — or, for an organization, `legalName` or `tradingName`. Word order, case, titles and legal-form words such as "Ltd" are ignored. A mismatch returns **400** `Refund account name does not match the customer in source.kyc`.
 
@@ -913,8 +910,7 @@ You can configure a default fee in [Sender Dashboard](https://app.paycrest.io) s
       "personDetails": {
         "fullName": "John Doe",
         "birthDate": "1990-04-12",
-        "idDocument": { "type": "nationalID", "number": "12345678901", "issuerCountry": "NG" },
-        "taxId": { "type": "BVN", "value": "22212345678" }
+        "idDocument": { "type": "BVN", "number": "22212345678", "issuerCountry": "NG" }
       }
     }
   },
@@ -960,8 +956,7 @@ Fixed fee alternative:
       "personDetails": {
         "fullName": "John Doe",
         "birthDate": "1990-04-12",
-        "idDocument": { "type": "nationalID", "number": "12345678901", "issuerCountry": "NG" },
-        "taxId": { "type": "BVN", "value": "22212345678" }
+        "idDocument": { "type": "BVN", "number": "22212345678", "issuerCountry": "NG" }
       }
     }
   },
