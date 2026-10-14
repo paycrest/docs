@@ -1288,6 +1288,14 @@ components:
           oneOf:
             - $ref: '#/components/schemas/V2FiatDestination'
             - $ref: '#/components/schemas/V2CryptoDestination'
+        statusDetail:
+          type: string
+          enum: [under_review]
+          description: On-ramp only. `under_review` while the order is `pending` because its deposit is held for compliance review. Absent otherwise.
+        refundReason:
+          type: string
+          enum: [payer_mismatch, payer_unverified]
+          description: On-ramp only, on `refunding` and `refunded` orders whose deposit was returned to the account it came from. `payer_mismatch`, the deposit came from an account not in the customer's name; `payer_unverified`, the payer could not be confirmed. Absent for any other refund.
 
     V2PaymentOrderListResponse:
       type: object
@@ -1366,6 +1374,14 @@ components:
             timestamp:
               type: string
               format: date-time
+            statusDetail:
+              type: string
+              enum: [under_review]
+              description: Same as on the order.
+            refundReason:
+              type: string
+              enum: [payer_mismatch, payer_unverified]
+              description: Same as on the order.
 
     WebhookDelivery:
       type: object

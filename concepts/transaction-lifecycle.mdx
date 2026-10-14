@@ -143,12 +143,16 @@ Paycrest sends webhooks to your configured endpoint as an order progresses. Most
 
 ### Compliance holds
 
-`payment_order.compliance_hold` fires when an on-ramp order's fiat has been received but Paycrest cannot settle it while a compliance review is open. The most common cause is a deposit from an account that is not the customer's own: the payer must match the customer in `source.kyc`. It is sent at most once per order.
+`payment_order.compliance_hold` fires when an on-ramp order's fiat has been received but Paycrest cannot settle it while a compliance review is open. It is sent at most once per order.
+
+A deposit from an account that is not the customer's own (the payer must match the customer in `source.kyc`) is usually not reviewed: Paycrest returns it in full to the account it came from within minutes, and you receive `payment_order.refunded` without a `payment_order.compliance_hold`. Paycrest holds such a deposit for review instead when it cannot be returned automatically, or when the deposit pattern needs a closer look.
 
 Two things make this event different from the rest:
 
 - **It is not a status change.** The order deliberately remains `pending`, so `data.status` reads `pending`, not `compliance_hold`. If you route webhooks by `data.status`, this event will look like a duplicate `pending` — branch on `event` instead.
 - **It is not final.** A held order does not expire. When the review ends, the order either settles (`payment_order.settled`) or the deposit is returned to the account it came from (`payment_order.refunded`). A review can take several days.
+
+**Polling instead of webhooks?** While a deposit is held, the order reads `"status": "pending"` with `"statusDetail": "under_review"`, so you can tell it from an order that has not been paid. A deposit returned to the account it came from ends `refunded` with a `refundReason`: `payer_mismatch` when it came from an account not in the customer's name, or `payer_unverified` when the payer could not be confirmed. Both fields are on the v2 order and in v2 webhooks.
 
 Do not prompt the customer to pay again: a second deposit into the same virtual account will be held as well. What you tell your own customer is your decision; contact Paycrest support if you need to know where a review stands.
 
