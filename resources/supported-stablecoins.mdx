@@ -3,7 +3,7 @@ title: "Supported Stablecoins"
 description: "Complete list of supported stablecoins and their network availability"
 ---
 
-Paycrest supports three stablecoins across ten blockchain networks (seven EVM chains plus Starknet, Tron and Solana). Use the [GET /tokens](/api-reference/general/list-supported-tokens) endpoint for the live list including contract addresses, decimals, and network availability.
+Paycrest supports three stablecoins across nine blockchain networks (six EVM chains plus Starknet, Tron and Solana). Use the [GET /tokens](/api-reference/general/list-supported-tokens) endpoint for the live list including contract addresses, decimals, and network availability.
 
 Solana orders are created through the v2 API only ([`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2)).
 
@@ -11,17 +11,17 @@ Solana orders are created through the v2 API only ([`POST /v2/sender/orders`](/a
 
 | Stablecoin | Networks | Base Currency | Notes |
 |------------|----------|--------------|-------|
-| **USDT** | Ethereum, Base, Arbitrum One, Polygon, BNB Smart Chain, Lisk, Celo, Starknet, Tron, Solana | USD | Most widely supported |
-| **USDC** | Ethereum, Base, Arbitrum One, Polygon, BNB Smart Chain, Lisk, Celo, Starknet, Solana | USD | Regulated, high security standards |
+| **USDT** | Ethereum, Base, Arbitrum One, Polygon, BNB Smart Chain, Celo, Starknet, Tron, Solana | USD | Most widely supported |
+| **USDC** | Ethereum, Base, Arbitrum One, Polygon, BNB Smart Chain, Celo, Starknet, Solana | USD | Regulated, high security standards |
 | **cNGN** | Ethereum, Base, Polygon, BNB Smart Chain | NGN | Stablecoin pegged to the Nigerian Naira |
 
 ## Support Matrix
 
-| Stablecoin | Ethereum | Base | Arbitrum One | Polygon | BNB Smart Chain | Lisk | Celo | Starknet | Tron | Solana |
-|------------|----------|------|--------------|---------|-----------------|------|------|----------|------|--------|
-| **USDT** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **USDC** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| **cNGN** | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Stablecoin | Ethereum | Base | Arbitrum One | Polygon | BNB Smart Chain | Celo | Starknet | Tron | Solana |
+|------------|----------|------|--------------|---------|-----------------|------|----------|------|--------|
+| **USDT** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **USDC** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
+| **cNGN** | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 ## Contract Addresses
 
@@ -38,7 +38,6 @@ Solana orders are created through the v2 API only ([`POST /v2/sender/orders`](/a
 | Arbitrum One | `0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9` | 6 |
 | Polygon | `0xc2132D05D31c914a87C6611C10748AEb04B58e8F` | 6 |
 | BNB Smart Chain | `0x55d398326f99059fF775485246999027B3197955` | **18** |
-| Lisk | `0x05D032ac25d322df992303dCa074EE7392C117b9` | 6 |
 | Celo | `0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e` | 6 |
 | Starknet | `0x068F5c6a61780768455de69077E07e89787839bf8166dEcfBf92B645209c0fB8` | 6 |
 | Tron | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` | 6 |
@@ -53,7 +52,6 @@ Solana orders are created through the v2 API only ([`POST /v2/sender/orders`](/a
 | Arbitrum One | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` | 6 |
 | Polygon | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` | 6 |
 | BNB Smart Chain | `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` | **18** |
-| Lisk | `0xF242275d3a6527d877f2c927a82D9b057609cc71` | 6 |
 | Celo | `0xcebA9300f2b948710d2653dD7B07f33A8B32118C` | 6 |
 | Starknet | `0x033068F6539f8e6e6b131e6B2B814e6c34A5224bC66947c47DaB9dFeE93b35fb` | 6 |
 | Solana | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` | 6 |

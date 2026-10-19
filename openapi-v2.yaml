@@ -52,7 +52,7 @@ components:
           type: number
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+          enum: [ethereum, base, bnb-smart-chain, celo, arbitrum-one, polygon, starknet, tron]
           description: Network identifier for the blockchain
         recipient:
           $ref: '#/components/schemas/PaymentOrderRecipient'
@@ -101,7 +101,7 @@ components:
           description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+          enum: [ethereum, base, bnb-smart-chain, celo, arbitrum-one, polygon, starknet, tron]
           description: Network identifier for the blockchain
         receiveAddress:
           type: string
@@ -140,7 +140,7 @@ components:
           type: string
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+          enum: [ethereum, base, bnb-smart-chain, celo, arbitrum-one, polygon, starknet, tron]
           description: Network identifier for the blockchain
         gatewayId:
           type: string
@@ -245,7 +245,7 @@ components:
           type: string
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+          enum: [ethereum, base, bnb-smart-chain, celo, arbitrum-one, polygon, starknet, tron]
           description: Network identifier for the blockchain
         orderType:
           type: string
@@ -604,7 +604,7 @@ components:
           type: string
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
+          enum: [ethereum, base, bnb-smart-chain, celo, arbitrum-one, polygon, starknet, tron, solana]
           description: |
             Network identifier for the blockchain. `solana` tokens are available through the v2 Sender API only
             (`POST /v2/sender/orders`).
@@ -624,7 +624,7 @@ components:
           description: Token symbol (USDT, USDC, cNGN). See [Supported Stablecoins](/resources/supported-stablecoins) for available options.
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron]
+          enum: [ethereum, base, bnb-smart-chain, celo, arbitrum-one, polygon, starknet, tron]
           description: Network identifier for the blockchain
         settlePercent:
           type: string
@@ -827,7 +827,7 @@ components:
           description: Stablecoin symbol (e.g. USDT, USDC, cNGN)
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
+          enum: [ethereum, base, bnb-smart-chain, celo, arbitrum-one, polygon, starknet, tron, solana]
           description: Network the deposit is made on.
         refundAddress:
           type: string
@@ -1138,7 +1138,7 @@ components:
           description: Wallet address on `network` to receive stablecoins. On Solana, the wallet must already have a token account for the stablecoin's mint.
         network:
           type: string
-          enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
+          enum: [ethereum, base, bnb-smart-chain, celo, arbitrum-one, polygon, starknet, tron, solana]
           description: Network the stablecoins are delivered on. `solana` accepts the tokens `GET /v2/tokens` lists on `solana`.
 
     V2CryptoProviderAccount:
@@ -1933,7 +1933,7 @@ paths:
           name: network
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
+            enum: [ethereum, base, bnb-smart-chain, celo, arbitrum-one, polygon, starknet, tron, solana]
       responses:
         '200':
           description: List of tokens
@@ -1979,7 +1979,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [ethereum, base, bnb-smart-chain, lisk, celo, arbitrum-one, polygon, starknet, tron, solana]
+            enum: [ethereum, base, bnb-smart-chain, celo, arbitrum-one, polygon, starknet, tron, solana]
           description: Blockchain network identifier (lowercase in URL).
         - in: path
           name: from
