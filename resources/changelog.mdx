@@ -9,6 +9,13 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q4 2026
 
+### Payment reference on v2 off-ramp orders (October 2026)
+
+**New:** v2 orders ([`GET /v2/sender/orders/:id`](/api-reference/sender/get-payment-order-by-id-v2) and [`GET /v2/sender/orders`](/api-reference/sender/list-payment-orders-v2)) and v2 webhooks carry `paymentReference`, the receipt from the bank or mobile-money network that paid the recipient (for example an M-Pesa receipt code). See [Monitor completion](/implementation-guides/sender-api-integration#monitor-completion).
+
+- Off-ramp only. It is `null` until the payout is confirmed, and on orders paid before this change. Coverage depends on the provider, so treat `null` as normal.
+- Not on v1 orders or v1 webhooks.
+
 ### Lisk support removed (October 2026)
 
 **Updated:** Lisk is no longer supported as of October 20, 2026, ahead of the Lisk Chain shutdown on October 31, 2026. Lisk has been removed from supported networks, stablecoins and gateway contract addresses.

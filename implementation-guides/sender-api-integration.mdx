@@ -617,6 +617,7 @@ Configure your webhook URL in the [Sender Dashboard](https://app.paycrest.io). M
     "status": "settled",
     "amount": "100",
     "txHash": "0x...",
+    "paymentReference": "TIMCW5AK69",
     ...
   }
 }
@@ -637,6 +638,8 @@ Configure your webhook URL in the [Sender Dashboard](https://app.paycrest.io). M
 <Note>
   You can notify the user of a successful off-ramp at `payment_order.validated` — that's when the provider has confirmed fiat delivery. For on-ramp, use `payment_order.settled` — that's when stablecoins are confirmed onchain at the recipient's address.
 </Note>
+
+**Payment reference.** On an off-ramp, the v2 order and v2 webhooks carry `paymentReference`: the receipt from the bank or mobile-money network that paid the recipient, such as an M-Pesa receipt code or a bank transfer session ID. Your customer can use it to trace the payout with their bank or mobile-money network. It is not your `reference`, the ID you set when creating the order. It is `null` until the payout is confirmed, and stays `null` on on-ramp orders, on orders paid before the field was added, and when the provider did not report one. Coverage depends on the provider, so treat `null` as normal. Once set, it does not change.
 
 <Warning>
   **Do not prompt a retry on `payment_order.compliance_hold`.** The order stays `pending` while it is reviewed, and does not expire. It ends in `payment_order.settled`, or in `payment_order.refunded` with the deposit returned to the account it came from. A second deposit into the same virtual account will be held too. See [Compliance holds](/concepts/transaction-lifecycle#compliance-holds).
