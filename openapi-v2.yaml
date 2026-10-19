@@ -1297,6 +1297,19 @@ components:
           enum: [payer_mismatch, payer_unverified]
           description: On-ramp only, on `refunding` and `refunded` orders whose deposit was returned to the account it came from. `payer_mismatch`, the deposit came from an account not in the customer's name; `payer_unverified`, the payer could not be confirmed. Absent for any other refund.
 
+    V2SenderPaymentOrderGetResponse:
+      description: A single order (or list item) as returned to the sender
+      allOf:
+        - $ref: '#/components/schemas/V2PaymentOrderGetResponse'
+        - type: object
+          properties:
+            paymentReference:
+              type: string
+              nullable: true
+              maxLength: 64
+              example: TIMCW5AK69
+              description: Off-ramp only. The receipt from the bank or mobile-money network that paid the recipient, such as an M-Pesa receipt code or a bank transfer session ID. Not your `reference`. `null` until the payout is confirmed, when the provider did not report one, and always on on-ramp orders. Once set, it does not change.
+
     V2PaymentOrderListResponse:
       type: object
       properties:
@@ -1310,6 +1323,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/V2PaymentOrderGetResponse'
+
+    V2SenderPaymentOrderListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/V2SenderPaymentOrderGetResponse'
 
     V2WebhookPayload:
       type: object
@@ -1382,6 +1409,12 @@ components:
               type: string
               enum: [payer_mismatch, payer_unverified]
               description: Same as on the order.
+            paymentReference:
+              type: string
+              nullable: true
+              maxLength: 64
+              example: TIMCW5AK69
+              description: Same as on the order. Always present, `null` until the off-ramp payout is confirmed with a receipt.
 
     WebhookDelivery:
       type: object
@@ -2559,7 +2592,7 @@ paths:
                   status:
                     type: string
                   data:
-                    $ref: '#/components/schemas/V2PaymentOrderListResponse'
+                    $ref: '#/components/schemas/V2SenderPaymentOrderListResponse'
         '401':
           description: Unauthorized
 
@@ -2590,7 +2623,7 @@ paths:
                   status:
                     type: string
                   data:
-                    $ref: '#/components/schemas/V2PaymentOrderGetResponse'
+                    $ref: '#/components/schemas/V2SenderPaymentOrderGetResponse'
         '401':
           description: Unauthorized
         '404':
