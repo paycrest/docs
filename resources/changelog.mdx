@@ -9,6 +9,12 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q4 2026
 
+### Lisk support removed (October 2026)
+
+**Updated:** Lisk is no longer supported as of October 20, 2026, ahead of the Lisk Chain shutdown on October 31, 2026. Lisk has been removed from supported networks, stablecoins and gateway contract addresses.
+
+- **Behavior change:** orders on `lisk` are no longer accepted. Use another supported network, such as Base or Celo.
+
 ### Third-party on-ramp deposits are returned automatically (October 2026)
 
 **Updated:** an on-ramp deposit from an account that is not the customer's own is now usually returned in full to the account it came from within minutes, instead of waiting for a compliance review. You receive `payment_order.refunded`, with no `payment_order.compliance_hold`. A deposit that cannot be returned automatically, or that needs a closer look, is still held for review. See [Compliance holds](/concepts/transaction-lifecycle#compliance-holds).
