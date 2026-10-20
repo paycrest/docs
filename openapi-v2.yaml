@@ -1290,7 +1290,7 @@ components:
         statusDetail:
           type: string
           enum: [under_review]
-          description: On-ramp only. `under_review` while the order is `pending` because its deposit is held for compliance review. Absent otherwise.
+          description: May be `under_review` while an order is held for review. Treat `status` as the source of truth; `statusDetail` is informational and may be absent.
         refundReason:
           type: string
           enum: [payer_mismatch, payer_unverified]
