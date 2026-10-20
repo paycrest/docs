@@ -207,11 +207,11 @@ func main() {
 The response includes a `providerAccount` that tells you (or your user) where to send funds.
 
 <CardGroup cols={2}>
-  <Card title="Offramp" icon="arrow-right">
+  <Card title="Off-ramp" icon="arrow-right">
     Send tokens to `providerAccount.receiveAddress` before `validUntil`.
     The total to send is `amount + senderFee + transactionFee` (all returned in the response).
   </Card>
-  <Card title="Onramp" icon="arrow-left">
+  <Card title="On-ramp" icon="arrow-left">
     Show `providerAccount` details to the user.
     They transfer exactly `amountToTransfer` in `currency` to `accountIdentifier` before `validUntil`.
   </Card>

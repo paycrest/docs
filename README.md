@@ -20,7 +20,6 @@ docs/
 │   └── light.svg
 ├── introduction.mdx         # Main introduction page
 ├── quickstart.mdx          # Getting started guide
-├── protocol-overview.mdx   # Protocol architecture overview
 ├── concepts/               # Core concept pages
 │   └── participants.mdx    # Protocol participants
 ├── api-reference/          # API documentation

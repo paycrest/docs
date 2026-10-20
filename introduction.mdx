@@ -69,7 +69,7 @@ The key properties:
 
 <CardGroup cols={2}>
   <Card title="Sender" icon="paper-plane">
-    KYC/KYB-verified entities (wallets, fintechs, DeFi protocols) that initiate payment orders via the Sender API or Gateway contract.
+    KYB-verified businesses (wallets, fintechs, DeFi protocols) that initiate payment orders via the Sender API or Gateway contract.
   </Card>
   <Card title="Recipient" icon="user-check">
     The beneficiary who receives local fiat or stablecoins without interacting with the protocol directly.
@@ -88,8 +88,8 @@ The key properties:
   <Card title="For Senders" href="/quickstart" icon="paper-plane">
     Learn how to create payment orders with the Paycrest Sender API. The Sender API v2 supports both off-ramp (stablecoin → fiat) and on-ramp (fiat → stablecoin).
   </Card>
-  <Card title="For Providers" href="/implementation-guides/provider-setup-guide" icon="building">
-    Set up a provision node to supply liquidity and serve order flow from integrated senders
+  <Card title="Become a provider" href="/implementation-guides/provider-setup-guide" icon="building">
+    Complete KYB, set up a provision node and serve on-ramp and off-ramp order flow from integrated senders.
   </Card>
 </CardGroup>
 
@@ -134,14 +134,14 @@ Paycrest is live across 4 active corridors with real provider liquidity. New cor
 ## Security & Compliance
 
 <CardGroup cols={2}>
-  <Card title="KYC/KYB Verification" icon="shield-check">
-    All senders and providers undergo identity verification before participating
+  <Card title="KYB-gated participation" icon="shield-check">
+    Every sender and provider business is verified before going live.
   </Card>
   <Card title="Smart Contract Security" icon="lock">
-    Audited Gateway contracts with onchain escrow. Funds are never held by Paycrest.
+    Non-custodial onchain escrow. Funds are never held by Paycrest.
   </Card>
   <Card title="Compliance at the Edges" icon="shield">
-    Providers own local regulatory obligations; senders own theirs. The protocol coordinates requirement exchange.
+    Providers own their local regulatory obligations; senders own theirs, including customer KYC. Paycrest verifies every business before it goes live and screens orders for sanctions risk.
   </Card>
   <Card title="Built-in Sender Monetization" icon="dollar-sign">
     Senders can add their own fee on top of the quoted rate, settled onchain in the same transaction as the order.

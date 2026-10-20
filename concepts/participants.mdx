@@ -14,7 +14,7 @@ A **KYB-verified entity** that initiates either a fiat-to-stablecoin or stableco
 - **KYB Required**: Must complete business verification
 - **API Access**: Uses the Sender API to create orders or can interact directly with the Gateway contract
 - **Fee Structure**: One all-in rate per order with no separate Paycrest fee, plus a transaction fee that covers the order's gas. Senders can add their own optional fee
-- **Flexibility**: Can be smart contracts, dApps, or traditional applications
+- **Flexibility**: Can be smart contracts, dApps, smart accounts (e.g. EIP-7702), or traditional applications
 
 ### Responsibilities
 
@@ -30,6 +30,7 @@ A **KYB-verified entity** that initiates either a fiat-to-stablecoin or stableco
 - **Business Payments**: Pay suppliers in different currencies
 - **DeFi Applications**: Bridge between crypto and traditional finance
 - **E-commerce**: Accept crypto payments and settle in fiat
+- **Wallets and apps**: Let users buy stablecoins with local currency (on-ramp)
 
 <Note>
   **Sender Fee Model:** Sender businesses can optionally charge fees to their users. Configure a default fee via the dashboard, or pass `senderFee` / `senderFeePercent` on each V2 order request. When the effective fee is greater than zero, a fee recipient is required: either configured on the profile or passed as `senderFeeAddress` on the request. The fee is settled atomically onchain upon successful order settlement, with no offchain billing required.
@@ -60,6 +61,7 @@ The **beneficiary** of the transaction who receives funds without interacting wi
 - **Freelancer Payment**: Get paid in local currency for crypto work
 - **Business Settlement**: Receive supplier payments in preferred currency
 - **Investment Returns**: Convert crypto gains to fiat
+- **Stablecoin Purchase**: Pay in local currency and receive stablecoins in a wallet
 
 ## Provider
 
@@ -74,7 +76,7 @@ A **KYB-verified participant** that supplies fiat liquidity in exchange for stab
 
 ### Responsibilities
 
-- **Order Fulfillment**: Execute payments to recipients
+- **Order Fulfillment**: Pay out fiat on off-ramp orders and collect fiat on on-ramp orders
 - **Rate Management**: Set competitive rates for currency pairs
 - **Compliance**: Maintain regulatory compliance and reporting
 - **Infrastructure**: Operate reliable payment infrastructure
@@ -108,7 +110,7 @@ The **Paycrest Aggregator** is the neutral middle between senders and independen
 
 - **Order Matching**: Matches orders with suitable providers
 - **Quality Assurance**: Ensures reliable order fulfillment
-- **Compliance Oversight**: Manages KYC and regulatory compliance
+- **Compliance Oversight**: Verifies sender and provider businesses (KYB) and screens orders for sanctions risk
 - **Infrastructure**: Operates high-availability nodes
 
 ### Responsibilities
@@ -117,7 +119,7 @@ The **Paycrest Aggregator** is the neutral middle between senders and independen
 - **Provider Management**: Maintain the provider registry
 - **Order Assignment**: Match orders with optimal providers
 - **Settlement Coordination**: Coordinate settlement with the assigned provider
-- **Compliance Verification**: Verify KYC and regulatory compliance
+- **Compliance Verification**: Verify businesses before they go live and hold flagged orders for review
 - **Refunds**: Unfulfilled orders are refunded automatically, so there is no manual dispute process
 
 ### Aggregator Functions

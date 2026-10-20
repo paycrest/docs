@@ -118,9 +118,18 @@ The **aggregator node** is the coordination layer: it monitors onchain events, m
 - Automated scaling and monitoring
 - Recommended for providers new to infrastructure management
 
+### Sender API & Webhooks
+
+The interface businesses and apps use to:
+
+- **Create payment orders** in either direction, on-ramp or off-ramp
+- **Configure** refund addresses, fee addresses and fee percentages
+- **Manage API keys** and authentication
+- **Receive webhooks** for every order status change
+
 ## Multi-Chain Support
 
-The protocol is live on 6 EVM-compatible networks plus Starknet:
+The protocol is live on 6 EVM-compatible networks, where senders can use the Sender API or call the Gateway contract directly:
 
 | Network | Chain ID | Primary Use |
 |---------|----------|-------------|
@@ -130,11 +139,10 @@ The protocol is live on 6 EVM-compatible networks plus Starknet:
 | Polygon | 137 | USDT, USDC, cNGN |
 | BNB Smart Chain | 56 | USDT, USDC, cNGN |
 | Celo | 42220 | USDT, USDC |
-| Starknet | 23448594291968334 | USDT, USDC |
 
-Use the API network identifier **`starknet`** when creating Starknet orders; Starknet addresses are felt-sized hex (`0x` + up to 64 hex digits). Tron (`tron`) and Solana (`solana`) are supported through the v2 Sender API; see [Supported Stablecoins](/resources/supported-stablecoins).
+**Starknet** (`starknet`), **Tron** (`tron`) and **Solana** (`solana`) are supported through the Sender API only; Tron and Solana orders use the v2 API. See [Supported Stablecoins](/resources/supported-stablecoins) for tokens and address formats.
 
-See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the full deployment table, and [Supported Stablecoins](/resources/supported-stablecoins) for per-network token details.
+See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the EVM deployment table, and [Supported Stablecoins](/resources/supported-stablecoins) for per-network token details.
 
 ## Security Architecture
 

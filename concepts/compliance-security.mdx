@@ -24,7 +24,7 @@ Paycrest verifies who takes part, and each participant owns the compliance close
   </Card>
 </CardGroup>
 
-## KYC/KYB Requirements
+## KYB Requirements
 
 ### For Senders
 
@@ -50,6 +50,7 @@ The Gateway contract is the only place funds are held, and only temporarily, in 
 - **Open-source contracts**: The Gateway contracts are public at [github.com/paycrest/contracts](https://github.com/paycrest/contracts).
 - **Non-custodial escrow**: Funds are locked onchain until either (a) payout is verified and stablecoins are released to the provider, or (b) the order cannot be fulfilled and is refunded to the sender automatically.
 - **Multi-signature governance**: Protocol parameter changes require multi-signature approval
+- **Emergency pause**: The Gateway contract can be paused in a security incident
 
 ### API Security
 
@@ -62,6 +63,10 @@ The Gateway contract is the only place funds are held, and only temporarily, in 
 
 - **Encrypted recipient data**: Bank account and mobile wallet details are encrypted in transit and at rest
 - **Minimal data retention**: The protocol stores only what is needed for routing, settlement and compliance
+
+## Governance
+
+Protocol changes are ratified by the Paycrest Core Multisig. As the protocol matures, governance is intended to move toward broader, community-led decision-making. See the [Decentralization Path](/introduction#decentralization-path).
 
 ## Pricing & Sender Fees
 
