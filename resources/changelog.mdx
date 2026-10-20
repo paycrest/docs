@@ -79,7 +79,7 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 **API:**
 - `senderFee` in responses and webhooks is the fee you earn on the order. `amountToTransfer = amount + senderFee + transactionFee` still holds.
 - `PATCH /settings/sender` accepts `tokens[].transactionFeePayer`, and `GET /settings/sender` returns it.
-- The transaction fee now goes to the protocol treasury. A refund after an order is created onchain returns `amount + senderFee`.
+- The transaction fee now reimburses the gas the aggregator spends creating and settling the order. A refund after an order is created onchain returns `amount + senderFee`.
 
 See [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee).
 
@@ -190,13 +190,11 @@ See [Get Markets](/api-reference/general/get-markets).
 **Starknet** (chain ID `23448594291968334`) and **Tron** (chain ID `728126428`) are fully supported by the aggregator.
 
 **Starknet**
-- Gateway: `0x06ff3a3b1532da65594fc98f9ca7200af6c3dbaf37e7339b0ebd3b3f2390c583`
 - Network identifier: `starknet`
 - Tokens: USDT and USDC (6 decimals)
 - Addresses: felt hex (`0x` + 63–64 hex characters)
 
 **Tron**
-- Gateway: `THyFP5ST9YyLZn6EzjKjFhZti6aKPgEXNU`
 - Network identifier: `tron`
 - Tokens: USDT (6 decimals; contract `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`)
 - Addresses: Base58Check starting with `T`

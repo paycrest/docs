@@ -3,7 +3,7 @@ title: "Gateway Contract Addresses"
 description: "Deployment addresses for Paycrest Gateway contracts across all supported networks"
 ---
 
-Paycrest Gateway contracts are deployed across multiple networks (EVM-compatible chains and Starknet). The table below shows the deployments the Paycrest Aggregator supports.
+Paycrest Gateway contracts are deployed across multiple EVM-compatible networks. The table below shows the deployments the Paycrest Aggregator supports.
 
 <Note>
   Lisk, Optimism and Scroll are retired. Their Gateway contracts are no longer supported and are not listed here.
@@ -19,7 +19,6 @@ Paycrest Gateway contracts are deployed across multiple networks (EVM-compatible
 | **BNB Smart Chain** | 56 | `0x1FA0EE7F9410F6fa49B7AD5Da72Cf01647090028` | ✅ Live |
 | **Arbitrum One** | 42161 | `0xE8bc3B607CfE68F47000E3d200310D49041148Fc` | ✅ Live |
 | **Celo** | 42220 | `0xF418217E3f81092eF44b81C5C8336e6A6fDB0E4b` | ✅ Live |
-| **Starknet** | 23448594291968334 | `0x06ff3a3b1532da65594fc98f9ca7200af6c3dbaf37e7339b0ebd3b3f2390c583` | ✅ Live |
 
 ## Network Status Legend
 
@@ -35,7 +34,6 @@ All Gateway contracts are verified on their respective network block explorers:
 - **BNB Smart Chain**: [Bscscan](https://bscscan.com/address/0x1FA0EE7F9410F6fa49B7AD5Da72Cf01647090028)
 - **Arbitrum One**: [Arbiscan](https://arbiscan.io/address/0xE8bc3B607CfE68F47000E3d200310D49041148Fc)
 - **Celo**: [Celo Explorer](https://explorer.celo.org/address/0xF418217E3f81092eF44b81C5C8336e6A6fDB0E4b)
-- **Starknet**: [Voyager](https://voyager.online/contract/0x06ff3a3b1532da65594fc98f9ca7200af6c3dbaf37e7339b0ebd3b3f2390c583)
 
 ## Integration
 
@@ -57,16 +55,12 @@ const gateway = getContract({
 });
 ```
 
-### Starknet
+### Starknet, Tron and Solana
 
-Starknet is supported via the Sender API (`network: "starknet"`).
-
-- **Starknet addresses:** felt hex (`0x` + 63–64 hex characters; not the zero address)
-
-Prefer the [Sender API Integration](/implementation-guides/sender-api-integration) path for order creation on Starknet; the [Smart Contract Interaction](/implementation-guides/smart-contract-interaction) guide covers EVM Gateway calls.
+Orders on these networks go through the [Sender API](/implementation-guides/sender-api-integration) (`network: "starknet"`, `"tron"` or `"solana"`), not direct Gateway calls. The [Smart Contract Interaction](/implementation-guides/smart-contract-interaction) guide covers EVM Gateway calls.
 
 For detailed integration guides, see:
-- **[Sender API Integration](/implementation-guides/sender-api-integration)**: API-based integration (recommended for Starknet)
+- **[Sender API Integration](/implementation-guides/sender-api-integration)**: API-based integration (required for Starknet, Tron and Solana)
 - **[Smart Contract Interaction](/implementation-guides/smart-contract-interaction)**: Direct EVM contract integration
 
 <Note>

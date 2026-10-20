@@ -3,11 +3,11 @@ title: "Compliance & Security"
 description: "How compliance works in the Paycrest protocol, and what security guarantees the protocol provides."
 ---
 
-Paycrest is a payment routing and settlement protocol, not a financial institution. It does not hold funds, process payments, or act as a licensed financial intermediary. This shapes how compliance works: **responsibility is distributed to the edges, not centralized in the protocol**.
+Paycrest is a payment routing and settlement protocol, not a financial institution. It never takes custody of funds: during an order they sit in the Gateway contract, which can only release them to the assigned provider or refund them to the sender. Most compliance responsibility sits with the participants.
 
 ## Compliance Model: Compliance at the Edges
 
-Unlike centralized settlement networks that vet every participant at the network level, Paycrest pushes compliance responsibility to the participants who are best positioned to own it:
+Paycrest verifies who takes part, and each participant owns the compliance closest to them:
 
 <CardGroup cols={2}>
   <Card title="Providers own local compliance" icon="building">
@@ -16,15 +16,13 @@ Unlike centralized settlement networks that vet every participant at the network
   <Card title="Senders own their compliance" icon="paper-plane">
     Senders (apps integrating Paycrest) are responsible for their own user KYC/KYB, sanctions screening, and applicable regulations in the markets they serve.
   </Card>
-  <Card title="Protocol coordinates requirements" icon="sitemap">
-    The protocol coordinates the exchange of compliance information between participants. It does not make compliance judgments itself.
+  <Card title="Screening and review" icon="sitemap">
+    Paycrest screens orders for sanctions risk and can hold an order for review. Treat `status` as the source of truth.
   </Card>
-  <Card title="KYC/KYB gated participation" icon="shield-check">
-    Every sender and provider is verified before getting API access.
+  <Card title="KYB-gated participation" icon="shield-check">
+    Every sender and provider business is verified before going live.
   </Card>
 </CardGroup>
-
-This model is how Paycrest achieves coverage in markets where a single centralized compliance framework cannot span all jurisdictions.
 
 ## KYC/KYB Requirements
 
@@ -32,16 +30,15 @@ This model is how Paycrest achieves coverage in markets where a single centraliz
 
 Senders are companies or developers who integrate Paycrest to provide on- or off-ramp services to their users:
 
-- Business verification (KYB) required before API access is granted
+- Business verification (KYB) required before going live
 - Register at [app.paycrest.io](https://app.paycrest.io) and complete the KYB process
-- KYB reviews are usually completed within a few business days
 
 ### For Providers
 
 Providers are entities supplying fiat liquidity in exchange for stablecoins:
 
 - Business verification (KYB) required before going live
-- Must demonstrate operational readiness in target corridors
+- Live payout connectivity in each corridor they serve
 - Ongoing compliance monitoring as a condition of continued participation
 
 ## Security
@@ -50,7 +47,7 @@ Providers are entities supplying fiat liquidity in exchange for stablecoins:
 
 The Gateway contract is the only place funds are held, and only temporarily, in escrow:
 
-- **Audited contracts**: All Gateway contracts undergo security audits before deployment. See [github.com/paycrest/contracts](https://github.com/paycrest/contracts) for audit reports.
+- **Open-source contracts**: The Gateway contracts are public at [github.com/paycrest/contracts](https://github.com/paycrest/contracts).
 - **Non-custodial escrow**: Funds are locked onchain until either (a) payout is verified and stablecoins are released to the provider, or (b) the order cannot be fulfilled and is refunded to the sender automatically.
 - **Multi-signature governance**: Protocol parameter changes require multi-signature approval
 
@@ -64,18 +61,18 @@ The Gateway contract is the only place funds are held, and only temporarily, in 
 ### Data Protection
 
 - **Encrypted recipient data**: Bank account and mobile wallet details are encrypted in transit and at rest
-- **Minimal data retention**: The protocol stores only what is necessary for order routing and settlement
+- **Minimal data retention**: The protocol stores only what is needed for routing, settlement and compliance
 
 ## Pricing & Sender Fees
 
 Every order gets **one all-in rate**, quoted live by the Paycrest Sender API. Senders pay no separate Paycrest fee.
 
 - **Rate**: Paycrest's fee is built into the provider's rate, never added on top.
-- **Transaction fee**: Covers the order's network costs. By default it comes out of the sender fee; the integrating app can pass it to its customers instead.
+- **Transaction fee**: Covers the gas the aggregator pays to create and settle the order. By default it comes out of the sender fee; the integrating app can pass it to its customers instead.
 - **Sender fee (optional)**: Set by the integrating app and settled onchain in the same transaction as the order.
 - **No offchain billing**: There is nothing to invoice or reconcile.
 
-Apart from the transaction fee, nothing is added to the quoted rate. Planning high volumes? Talk to us at [support@paycrest.io](mailto:support@paycrest.io).
+Apart from the transaction fee and any sender fee, nothing is added to the quoted rate. Planning high volumes? Talk to us at [support@paycrest.io](mailto:support@paycrest.io).
 
 <Note>
   Paycrest is not a licensed financial institution. This documentation does not constitute legal or regulatory advice. Participants are responsible for their own compliance obligations in their respective jurisdictions.
