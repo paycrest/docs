@@ -48,7 +48,7 @@ Providers are businesses that supply fiat and stablecoin liquidity in both direc
 The Gateway contract is the only place funds are held, and only temporarily, in escrow:
 
 - **Open-source contracts**: The Gateway contracts are public at [github.com/paycrest/contracts](https://github.com/paycrest/contracts).
-- **Non-custodial escrow**: Funds are locked onchain until either (a) payout is verified and stablecoins are released to the provider, or (b) the order cannot be fulfilled and is refunded to the sender automatically.
+- **Non-custodial escrow**: Funds are locked on-chain until either (a) payout is verified and stablecoins are released to the provider, or (b) the order cannot be fulfilled and is refunded to the sender automatically.
 - **Multi-signature governance**: Protocol parameter changes require multi-signature approval
 - **Emergency pause**: The Gateway contract can be paused in a security incident
 
@@ -74,8 +74,8 @@ Every order gets **one all-in rate**, quoted live by the Paycrest Sender API. Se
 
 - **Rate**: Paycrest's fee is built into the provider's rate, never added on top.
 - **Transaction fee**: Covers the gas the aggregator pays to create and settle the order. By default it comes out of the sender fee; the integrating app can pass it to its customers instead.
-- **Sender fee (optional)**: Set by the integrating app and settled onchain in the same transaction as the order.
-- **No offchain billing**: There is nothing to invoice or reconcile.
+- **Sender fee (optional)**: Set by the integrating app and settled on-chain in the same transaction as the order.
+- **No off-chain billing**: There is nothing to invoice or reconcile.
 
 Apart from the transaction fee and any sender fee, nothing is added to the quoted rate. Planning high volumes? Talk to us at [support@paycrest.io](mailto:support@paycrest.io).
 

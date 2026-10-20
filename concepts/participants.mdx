@@ -33,7 +33,7 @@ A **KYB-verified entity** that initiates either a fiat-to-stablecoin or stableco
 - **Wallets and apps**: Let users buy stablecoins with local currency (on-ramp)
 
 <Note>
-  **Sender Fee Model:** Sender businesses can optionally charge fees to their users. Configure a default fee via the dashboard, or pass `senderFee` / `senderFeePercent` on each V2 order request. When the effective fee is greater than zero, a fee recipient is required: either configured on the profile or passed as `senderFeeAddress` on the request. The fee is settled atomically onchain upon successful order settlement, with no offchain billing required.
+  **Sender Fee Model:** Sender businesses can optionally charge fees to their users. Configure a default fee via the dashboard, or pass `senderFee` / `senderFeePercent` on each V2 order request. When the effective fee is greater than zero, a fee recipient is required: either configured on the profile or passed as `senderFeeAddress` on the request. The fee is settled atomically on-chain upon successful order settlement, with no off-chain billing required.
 </Note>
 
 ## Recipient
@@ -138,7 +138,7 @@ The **Paycrest Aggregator** is the neutral middle between senders and independen
     Track order fulfillment and validate completion
   </Step>
   <Step title="Settlement Coordination">
-    Coordinate onchain settlement and fee distribution
+    Coordinate on-chain settlement and fee distribution
   </Step>
 </Steps>
 

@@ -40,10 +40,10 @@ stateDiagram-v2
     The provision node is actively disbursing fiat to the recipient's bank account or mobile wallet via a local PSP.
   </Step>
   <Step title="validated">
-    The provider has confirmed successful fiat delivery. The order is waiting for onchain settlement.
+    The provider has confirmed successful fiat delivery. The order is waiting for on-chain settlement.
   </Step>
   <Step title="settling">
-    Onchain settlement is in progress — the escrowed stablecoins are being released to the provider.
+    On-chain settlement is in progress: the escrowed stablecoins are being released to the provider.
   </Step>
   <Step title="settled">
     The order is fully closed. Stablecoins have been released to the provider; fiat has been delivered to the recipient.
@@ -91,7 +91,7 @@ stateDiagram-v2
     Fiat receipt confirmed and stablecoin release authorized.
   </Step>
   <Step title="settling">
-    Onchain transfer of stablecoins to the recipient's wallet is in progress.
+    On-chain transfer of stablecoins to the recipient's wallet is in progress.
   </Step>
   <Step title="settled">
     Stablecoins have been delivered to the recipient's wallet. The order is fully closed.
@@ -114,7 +114,7 @@ The complete set of order status values:
 | `fulfilling` | Provider is disbursing fiat or stablecoins |
 | `fulfilled` | Fulfillment completed by provider (internal) |
 | `validated` | Payout confirmed |
-| `settling` | Onchain settlement in progress |
+| `settling` | On-chain settlement in progress |
 | `settled` | Fully complete |
 | `cancelled` | Order cancelled |
 | `refunding` | Refund in progress (deposit received, fulfillment failed) |
@@ -130,7 +130,7 @@ Paycrest sends webhooks to your configured endpoint as an order progresses. Most
 | `payment_order.deposited` | Deposit confirmed on the receive address |
 | `payment_order.pending` | Order assigned to a provider |
 | `payment_order.validated` | Payout confirmed by provider |
-| `payment_order.settling` | Onchain settlement started |
+| `payment_order.settling` | On-chain settlement started |
 | `payment_order.settled` | Settlement complete — the recipient has the funds |
 | `payment_order.refunding` | Refund initiated |
 | `payment_order.refunded` | Refund complete — the funds have landed at the refund address |
@@ -315,7 +315,7 @@ There are two distinct failure paths:
 - User abandoned the payment flow
 - Deposit was sent to the wrong address or after the address expired
 
-**`refunded`** — A deposit was received but fulfillment failed. The deposited funds are automatically returned to the sender. For an off-ramp order already created onchain, the refund is `amount + senderFee`: the transaction fee has already paid for the network. Common causes:
+**`refunded`**: A deposit was received but fulfillment failed. The deposited funds are automatically returned to the sender. For an off-ramp order already created on-chain, the refund is `amount + senderFee`: the transaction fee has already paid for the network. Common causes:
 - No provider available at the requested rate
 - PSP unavailability in the corridor
 - Deposited amount doesn't match the quoted rate within tolerance

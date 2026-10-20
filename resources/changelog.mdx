@@ -79,7 +79,7 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 **API:**
 - `senderFee` in responses and webhooks is the fee you earn on the order. `amountToTransfer = amount + senderFee + transactionFee` still holds.
 - `PATCH /settings/sender` accepts `tokens[].transactionFeePayer`, and `GET /settings/sender` returns it.
-- The transaction fee now reimburses the gas the aggregator spends creating and settling the order. A refund after an order is created onchain returns `amount + senderFee`.
+- The transaction fee now reimburses the gas the aggregator spends creating and settling the order. A refund after an order is created on-chain returns `amount + senderFee`.
 
 See [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee).
 
@@ -101,9 +101,9 @@ See [Who pays the transaction fee](/implementation-guides/sender-api-integration
 
 ---
 
-### Onchain sender attribution via ERC-8021 (August 2026)
+### On-chain sender attribution via ERC-8021 (August 2026)
 
-**New:** The aggregator now stamps the EVM transactions it submits with an [ERC-8021](https://eip.tools/eip/8021) schema-0 data suffix carrying the sender's **trading name** from their KYB profile. It is applied to the transactions the aggregator submits for an order: creation, settlement, and refunds. Orders placed through the Sender API carry public onchain attribution with no integration work.
+**New:** The aggregator now stamps the EVM transactions it submits with an [ERC-8021](https://eip.tools/eip/8021) schema-0 data suffix carrying the sender's **trading name** from their KYB profile. It is applied to the transactions the aggregator submits for an order: creation, settlement, and refunds. Orders placed through the Sender API carry public on-chain attribution with no integration work.
 
 - **Sender code**: the sender's KYB trading name (for example, `AcmeCorp`). Senders with no trading name on file get no suffix.
 - **Suffix layout** (parsed backwards from the end of calldata): comma-joined ASCII `codes` · 1-byte length · 1-byte schema `0x00` · 16-byte marker `0x8021...8021`.
@@ -111,7 +111,7 @@ See [Who pays the transaction fee](/implementation-guides/sender-api-integration
 
 **Important:** the suffix is a public, human-readable attribution tag. It is **not** used for sender identification. Sender resolution, webhook delivery, and order lookup continue to use `metadata.apiKey` inside the encrypted `messageHash`, which is unchanged and not deprecated.
 
-Direct Gateway integrators can append their own suffix to `createOrder` calldata for public attribution. See [Onchain Attribution (ERC-8021)](/implementation-guides/smart-contract-interaction#onchain-attribution-erc-8021).
+Direct Gateway integrators can append their own suffix to `createOrder` calldata for public attribution. See [On-chain Attribution (ERC-8021)](/implementation-guides/smart-contract-interaction#on-chain-attribution-erc-8021).
 
 ---
 
@@ -127,7 +127,7 @@ Each order now carries a ranked queue of up to **3 providers**, resolved once at
 
 Pinned (`?provider_id=`) quotes still return exactly one id.
 
-**New:** order creation accepts an explicit **`providerIds`** queue — `destination.providerIds` on `POST /v2/sender/orders`, `recipient.providerIds` on `POST /v1/sender/orders`, and `providerIds` inside the encrypted recipient for onchain orders. Pass the ids from a rate quote to route the order to the providers your user was quoted.
+**New:** order creation accepts an explicit **`providerIds`** queue: `destination.providerIds` on `POST /v2/sender/orders`, `recipient.providerIds` on `POST /v1/sender/orders`, and `providerIds` inside the encrypted recipient for on-chain orders. Pass the ids from a rate quote to route the order to the providers your user was quoted.
 
 | Rule | Behavior |
 |------|----------|
@@ -160,7 +160,7 @@ See [Get Token Rate](/api-reference/general/get-token-rate), [Pin a provider que
 | Greater than zero (from `senderFee`, `senderFeePercent`, or a profile-configured fee) | **Required** — pass it on the request, or configure a fee address on the sender profile for that token |
 | Zero | **Not required** |
 
-`senderFee` and `senderFeePercent` remain mutually exclusive. Applies to both off-ramp and onramp. V1 create order is unchanged (still requires fee and refund addresses on the sender profile).
+`senderFee` and `senderFeePercent` remain mutually exclusive. Applies to both off-ramp and on-ramp. V1 create order is unchanged (still requires fee and refund addresses on the sender profile).
 
 See [Sender API Integration — Sender Fees](/implementation-guides/sender-api-integration#sender-fees) and [Initiate Order](/api-reference/sender/initiate-payment-order-v2).
 
@@ -295,7 +295,7 @@ See [Get Token Rate](/api-reference/general/get-token-rate) and [Get Market Rate
 
 ### FX on-ramp settlement amounts (April 2026)
 
-No REST schema changes. FX on-ramp recipients now receive at least the quoted net stablecoin amount. Onchain principal amounts may differ slightly from orders created before this change.
+No REST schema changes. FX on-ramp recipients now receive at least the quoted net stablecoin amount. On-chain principal amounts may differ slightly from orders created before this change.
 
 ---
 
@@ -303,7 +303,7 @@ No REST schema changes. FX on-ramp recipients now receive at least the quoted ne
 
 ### v2 API — On-ramp & Off-ramp (March 2026)
 
-The v2 API introduces a unified endpoint for both off-ramp and on-ramp flows, replacing the v1 offramp-only schema.
+The v2 API introduces a unified endpoint for both off-ramp and on-ramp flows, replacing the v1 off-ramp-only schema.
 
 **New endpoints:**
 - `POST /v2/sender/orders` — create off-ramp or on-ramp orders
@@ -329,7 +329,7 @@ The v1 API remains fully supported. No breaking changes to existing v1 integrati
 
 If you're building a new integration, use v2. Key differences to be aware of:
 
-1. The `source` and `destination` objects use a `type` discriminator (`"crypto"` or `"fiat"`) to distinguish off-ramp from onramp.
+1. The `source` and `destination` objects use a `type` discriminator (`"crypto"` or `"fiat"`) to distinguish off-ramp from on-ramp.
 2. For off-ramp, the `source.refundAddress` field replaces the v1 `returnAddress` field.
 3. All numeric values (amount, rate, fees) are returned as `string` in v2 — parse them as needed.
 4. The `providerAccount` in the create response is a virtual account (`V2FiatProviderAccount`) for on-ramp orders, replacing the `receiveAddress` string from v1.

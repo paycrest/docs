@@ -1,9 +1,9 @@
 ---
 title: "Smart Contract Interaction"
-description: "Integrate with Paycrest using the Gateway smart contract for onchain order management."
+description: "Integrate with Paycrest using the Gateway smart contract for on-chain order management."
 ---
 
-Interact directly with the Paycrest Gateway smart contract for onchain <strong>stablecoin-to-fiat (off-ramp)</strong> order creation, settlement, and refunds. This approach gives you full control over the blockchain transactions and is ideal for dapps, wallets, or any EVM-compatible application.
+Interact directly with the Paycrest Gateway smart contract for on-chain <strong>stablecoin-to-fiat (off-ramp)</strong> order creation, settlement, and refunds. This approach gives you full control over the blockchain transactions and is ideal for dapps, wallets, or any EVM-compatible application.
 
 <Note>
   This guide uses **Viem** for smart contract interactions, which is the recommended Ethereum library for modern applications. Viem provides better TypeScript support, improved performance, and a more intuitive API compared to ethers.js.
@@ -15,11 +15,11 @@ Interact directly with the Paycrest Gateway smart contract for onchain <strong>s
 
 ## Overview
 
-The Gateway contract is a multi-chain EVM-based smart contract that facilitates the onchain lifecycle of payment orders. It empowers users to create off-ramp orders while enabling liquidity providers to facilitate those orders at competitive exchange rates.
+The Gateway contract is a multi-chain EVM-based smart contract that facilitates the on-chain lifecycle of payment orders. It empowers users to create off-ramp orders while enabling liquidity providers to facilitate those orders at competitive exchange rates.
 
 ## Prerequisites
 
-- **Paycrest Sender Account**: Register at [app.paycrest.io](https://app.paycrest.io) and complete KYB verification. You'll need your **API Key** to embed in every order's encrypted metadata — this links the onchain order to your sender profile and enables webhooks.
+- **Paycrest Sender Account**: Register at [app.paycrest.io](https://app.paycrest.io) and complete KYB verification. You'll need your **API Key** to embed in every order's encrypted metadata: this links the on-chain order to your sender profile and enables webhooks.
 - **Ethereum Provider**: MetaMask, WalletConnect, or any Web3 provider
 - **Viem**: For smart contract interactions
 - **USDT/USDC Balance**: Sufficient token balance for orders
@@ -472,26 +472,26 @@ curl -X POST "https://api.paycrest.io/v2/verify-account" \
 
 ## Data Encryption
 
-The recipient object is encrypted with the aggregator's public key to produce the `messageHash` passed to the contract. **Always include your API Key in the `metadata.apiKey` field** — this is the same key used as the `API-Key` header in REST requests, and it links the onchain order to your sender profile, enabling webhooks and order attribution.
+The recipient object is encrypted with the aggregator's public key to produce the `messageHash` passed to the contract. **Always include your API Key in the `metadata.apiKey` field**: this is the same key used as the `API-Key` header in REST requests, and it links the on-chain order to your sender profile, enabling webhooks and order attribution.
 
 <Note>
   Your API Key is available in the dashboard at [app.paycrest.io](https://app.paycrest.io).
 </Note>
 
 <Note>
-  On EVM networks you can additionally (or instead) attribute orders with an onchain ERC-8021 data suffix. See [Onchain Attribution (ERC-8021)](#onchain-attribution-erc-8021).
+  On EVM networks you can additionally (or instead) attribute orders with an on-chain ERC-8021 data suffix. See [On-chain Attribution (ERC-8021)](#on-chain-attribution-erc-8021).
 </Note>
 
 ### Routing fields
 
-The recipient object may carry routing hints—this is the only channel for them onchain, since `createOrder` has no provider argument:
+The recipient object may carry routing hints: this is the only channel for them on-chain, since `createOrder` has no provider argument:
 
 | Field | Description |
 |-------|-------------|
 | `providerIds` | Ordered **provider queue** (max 3). Assignment tries entries in order. Typically the ids from [`GET /v2/rates`](/api-reference/general/get-token-rate). A one-entry queue routes to a single provider. |
 | `providerId` | Single provider, 8 alphabetic characters. Retained for backward compatibility—prefer `providerIds`. |
 
-The two are **mutually exclusive**. A hash carrying both is not rejected—the queue wins and `providerId` is ignored. A queue whose entries can't serve the corridor is **dropped silently** and the order routes as unpinned; there is no onchain rejection and no error webhook, so validate ids against a rate quote before encrypting.
+The two are **mutually exclusive**. A hash carrying both is not rejected: the queue wins and `providerId` is ignored. A queue whose entries can't serve the corridor is **dropped silently** and the order routes as unpinned; there is no on-chain rejection and no error webhook, so validate ids against a rate quote before encrypting.
 
 Omit both and the aggregator resolves a queue itself at order creation. Entries in a multi-entry queue must name providers that can serve the corridor: active, with a live standard offer, and, for a provider restricted to specific senders, one whose list includes the sender resolved from `metadata.apiKey`. A one-entry queue is simply a pin.
 
@@ -614,7 +614,7 @@ curl -X GET "https://api.paycrest.io/v2/pubkey"
   </Tab>
 </Tabs>
 
-## Onchain Attribution (ERC-8021)
+## On-chain Attribution (ERC-8021)
 
 Paycrest tags EVM transactions with an [ERC-8021](https://eip.tools/eip/8021) schema-0 data suffix that carries a sender's **trading name** as a public, human-readable attribution tag.
 
@@ -645,7 +645,7 @@ const senderCode = "AcmeCorp";
 ```
 
 <Callout type="warning">
-  Whatever you put in the suffix is **permanently public onchain**. Use a business identifier you are happy to publish. Never place an API secret, key ID, or any credential in the suffix: your API secret stays for webhooks and REST authentication only.
+  Whatever you put in the suffix is **permanently public on-chain**. Use a business identifier you are happy to publish. Never place an API secret, key ID, or any credential in the suffix: your API secret stays for webhooks and REST authentication only.
 </Callout>
 
 ### Suffix layout
@@ -876,7 +876,7 @@ gasLimit, err := client.EstimateGas(ctx, ethereum.CallMsg{
 ERC-8021 readers parse the **outer transaction calldata** backwards from its final byte, so the suffix has to be the last thing in the top-level input.
 
 - **EOA senders**: append to `tx.data`.
-- **Account abstraction / smart accounts**: append to the **outer** `userOp.callData`, the top-level input that lands onchain.
+- **Account abstraction / smart accounts**: append to the **outer** `userOp.callData`, the top-level input that lands on-chain.
 - **Do not** bury the suffix inside a nested or inner call. A suffix on an inner call is invisible to the parser, because ABI encoding pads inner `bytes` fields and the outer calldata will not end with the marker.
 
 Anything that appends bytes after your suffix breaks parsing too, since only the trailing suffix is read.
@@ -896,7 +896,7 @@ The `codes` field is a list, so a transaction can carry more than one code, comm
 | Present | Sender resolution |
 |---------|-------------------|
 | `metadata.apiKey` only | `metadata.apiKey` |
-| Onchain suffix only | **Order is not attributed to a sender.** The suffix is not read for identification |
+| On-chain suffix only | **Order is not attributed to a sender.** The suffix is not read for identification |
 | Both | `metadata.apiKey` |
 | Suffix malformed or absent | No effect: resolution uses `metadata.apiKey` |
 
@@ -908,7 +908,7 @@ Adding a suffix can never break order indexing. A malformed suffix, an unrecogni
 
 ### Network support
 
-Onchain attribution applies to **EVM networks only**. On **Starknet** no suffix is appended or read, and attribution works from `metadata.apiKey` exclusively.
+On-chain attribution applies to **EVM networks only**. On **Starknet** no suffix is appended or read, and attribution works from `metadata.apiKey` exclusively.
 
 **References:** [ERC-8021 specification](https://eip.tools/eip/8021)
 
@@ -1680,4 +1680,4 @@ See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for depl
   Failed transactions still consume gas. Validate all parameters before submitting transactions.
 </Callout>
 
-Choose this method for full onchain control and direct smart contract interaction. 
+Choose this method for full on-chain control and direct smart contract interaction. 
