@@ -72,7 +72,7 @@ The **aggregator node** is the coordination layer: it monitors onchain events, m
 - **Webhook Delivery**: Notifies senders of order status changes
 
 <Note>
-  Paycrest currently operates the **sole aggregator** in the network (federated model). All order matching and coordination fees flow to Paycrest. The protocol is designed to support multiple independent aggregators in a future phase. See the [Decentralization Path](/introduction#decentralization-path).
+  Paycrest operates the **Paycrest Aggregator** today. The protocol is designed to support multiple independent aggregators in future. See the [Decentralization Path](/introduction#decentralization-path).
 </Note>
 
 #### API Layers
@@ -162,7 +162,7 @@ See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the 
 The Gateway contract implements multiple security measures:
 
 - **Non-custodial escrow**: Funds are locked onchain, not held by Paycrest or providers
-- **Automatic refunds**: Orders not fulfilled within 5 minutes trigger automatic fund return
+- **Automatic refunds**: Unfulfilled orders are refunded automatically
 - **Access control**: Role-based permissions and multi-signature governance for protocol changes
 - **Audited contracts**: Gateway contracts are security-audited; see the [contracts repository](https://github.com/paycrest/contracts)
 

@@ -86,8 +86,7 @@ components:
             `providerId: X` for every provider you can pin.
             Multi-entry queues must name providers that can serve this corridor: active, with a live
             standard offer, and — for a provider restricted to specific senders — one whose list
-            includes you. The fallback provider may be listed but is ignored; it is already tried
-            after the queue is exhausted.
+            includes you.
             Accepted on create only; order responses and webhooks return the singular assigned `providerId`.
         metadata:
           type: object

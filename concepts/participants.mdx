@@ -13,7 +13,7 @@ A **KYB-verified entity** that initiates either a fiat-to-stablecoin or stableco
 
 - **KYB Required**: Must complete business verification
 - **API Access**: Uses the Sender API to create orders or can interact directly with the Gateway contract
-- **Fee Structure**: Zero protocol fees, with optional sender fees for business monetization
+- **Fee Structure**: One all-in rate per order with no separate Paycrest fee, plus a transaction fee for network costs. Optional sender fees support business monetization
 - **Flexibility**: Can be smart contracts, dApps, or traditional applications
 
 ### Responsibilities
@@ -81,10 +81,8 @@ A **KYB-verified participant** that supplies fiat liquidity in exchange for stab
 
 ### Revenue Model
 
-- **Bid-Ask Spreads**: Profit from currency exchange spreads
-- **Volume Incentives**: Earn bonuses for high transaction volume
-- **Quality Bonuses**: Rewards for reliable fulfillment
-- **Geographic Premiums**: Higher rates for underserved markets
+- **Rate spread**: Earn the spread between your quoted rate and your cost of liquidity
+- **Order flow**: Access order flow from senders integrated with Paycrest
 
 ### Provider Types
 
@@ -120,7 +118,7 @@ A **KYB-verified entity** that coordinates the entire order routing process and 
 - **Order Assignment**: Match orders with optimal providers
 - **Settlement Coordination**: Coordinate multi-provider settlements
 - **Compliance Verification**: Verify KYC and regulatory compliance
-- **Dispute Resolution**: If an order is not fulfilled, it is automatically refunded. The aggregator does not handle disputes directly. If an order is stuck, communication between senders and providers may occur via a decentralized messaging protocol (e.g., XMTP).
+- **Refunds**: Unfulfilled orders are refunded automatically, so there is no manual dispute process
 
 ### Aggregator Functions
 
@@ -144,9 +142,7 @@ A **KYB-verified entity** that coordinates the entire order routing process and 
 
 ### Aggregator Types
 
-- **Protocol Aggregators**: Official Paycrest aggregator nodes
-- **Third-Party Aggregators**: Independent aggregator services
-- **Hybrid Aggregators**: Providers that also run aggregator nodes
+Today the **Paycrest Aggregator**, operated by Paycrest, is the only aggregator. The protocol is designed to support independent aggregators in future.
 
 ## Participant Relationships
 
@@ -172,7 +168,7 @@ A **KYB-verified entity** that coordinates the entire order routing process and 
 
 <CardGroup cols={2}>
   <Card title="For Senders">
-    - Zero transaction fees
+    - One all-in rate, no separate Paycrest fee
     - Global reach with local delivery
     - Real-time status tracking
     - Automated compliance
@@ -187,7 +183,7 @@ A **KYB-verified entity** that coordinates the entire order routing process and 
     - Access to global liquidity
     - Automated order matching
     - Transparent fee structure
-    - Quality-based incentives
+    - Order flow from integrated senders
   </Card>
   <Card title="For Aggregators">
     - Network effect benefits

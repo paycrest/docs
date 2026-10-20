@@ -47,7 +47,7 @@ All error responses follow a consistent format:
 - **Service temporarily unavailable**: During maintenance or high load
 - **Geographic restrictions**: Service not available in your region
 
-A 503 means no provider could be found **at create time**. Once an order is created it is never 503'd: routing walks the order's provider queue, and exhausting that queue falls through to fallback assignment, then to refund after the refund window — not to an immediate refund.
+A 503 means no provider could be found **at create time**. Once an order is created it is never 503'd: routing walks the order's provider queue, and Paycrest may try other routing before the order is refunded. Exhausting the queue is not an immediate refund.
 
 ## Handling Service Unavailability
 

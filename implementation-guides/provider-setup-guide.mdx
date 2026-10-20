@@ -43,8 +43,7 @@ You need two credential groups:
 Choose your provision node hosting method:
 
 #### Option A: Blockops (Recommended for Low Technical Skills)
-- **Cost**: $10/month
-- Simplified setup with Paycrest partnership
+- Managed hosting with guided setup
 - Video setup guide available
 - Start here: [https://blockops.network](https://blockops.network)
 - After setup, obtain the Host Identifier URL from Blockops
@@ -92,15 +91,16 @@ AGGREGATOR_SECRET_KEY=your_paycrest_api_secret # Provider Dashboard → Settings
 AGGREGATOR_BASE_URL=https://api.paycrest.io/v2/provider
 
 # PSP Config - Only configure for PSPs you are using
-# Example env prefix (Payaza — names shown in dashboard; availability varies by corridor/currency)
-PAYAZA_API_KEY=
-PAYAZA_TRANSACTION_PIN=
+# Use the exact variable names shown for each PSP on the dashboard PSP setup page
+# (availability varies by corridor and currency)
+<PSP>_API_KEY=
+<PSP>_SECRET_KEY=
 ```
 
 > **Credential Mapping**
 > - `AGGREGATOR_CLIENT_ID` must be your Paycrest **API Key** (Settings → **Payout** → **API Keys**)
 > - `AGGREGATOR_SECRET_KEY` must be your Paycrest **API Secret** (Settings → **Payout** → **API Keys**)
-> - PSP variables (for example `PAYAZA_*`, `NOMBA_*`) use values issued by each PSP. Prefixes match PSPs listed in the dashboard; availability depends on your corridor and currency.
+> - PSP variables (`<PSP>_*`) use values issued by each PSP. Prefixes match PSPs listed in the dashboard; availability depends on your corridor and currency.
 
 #### `EVM_PRIVATE_KEY` explained
 

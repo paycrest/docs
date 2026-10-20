@@ -115,9 +115,9 @@ Direct Gateway integrators can append their own suffix to `createOrder` calldata
 
 ---
 
-### Optimistic provider routing (August 2026)
+### Ranked provider queues (August 2026)
 
-Order routing is now **optimistic**: a ranked queue of up to **3 providers** is resolved once, at order creation, and assignment walks it in order instead of re-ranking the public orderbook on every retry. The fulfilling provider is known upfront and routing no longer drifts between creation and fulfilment.
+Each order now carries a ranked queue of up to **3 providers**, resolved once at order creation and tried in order.
 
 **Updated:** `GET /v2/rates/{network}/{from}/{amount}/{to}` — each side's **`providerIds`** now carries up to **3 provider ids ranked best first**, in the order assignment would try them. Previously always 0 or 1 entry. `providerIds[0]` is still the provider whose rate is in `rate`, so clients reading `[0]` are unaffected.
 
@@ -125,7 +125,7 @@ Order routing is now **optimistic**: a ranked queue of up to **3 providers** is 
 |-------|------|----------|
 | `limit` | single | Max ranked ids per side. Integer **1–3**, default **3**. Anything else returns **400** |
 
-Pinned (`?provider_id=`) quotes still return exactly one id. The fallback provider is never listed.
+Pinned (`?provider_id=`) quotes still return exactly one id.
 
 **New:** order creation accepts an explicit **`providerIds`** queue — `destination.providerIds` on `POST /v2/sender/orders`, `recipient.providerIds` on `POST /v1/sender/orders`, and `providerIds` inside the encrypted recipient for onchain orders. Pass the ids from a rate quote to route the order to the providers your user was quoted.
 
@@ -135,7 +135,7 @@ Pinned (`?provider_id=`) quotes still return exactly one id. The fallback provid
 | Size | Off-ramp up to **3** entries; on-ramp **1** (it selects its provider at creation rather than walking a queue) |
 | No duplicates, no empty strings | **400** |
 | Format | Exactly 8 alphabetic characters per id |
-| Eligibility | Multi-entry queues must name active providers with a live standard offer for the corridor; a provider restricted to specific senders is allowed when you are on its list. The fallback provider may be listed and is ignored |
+| Eligibility | Multi-entry queues must name active providers with a live standard offer for the corridor; a provider restricted to specific senders is allowed when you are on its list. |
 | One-entry queues | Exactly a pin — `providerIds: [X]` routes like `providerId: X` for every provider you can pin |
 | Response | Accepted on create, never echoed back. Orders and webhooks return the singular assigned `providerId` |
 
@@ -145,7 +145,7 @@ The singular **`providerId`** is retained for backward compatibility on both flo
 
 **Behavior change:** pinning an **on-ramp** order to a provider restricted to other senders now returns **400** `provider X cannot serve this order`. Off-ramp has always enforced this; on-ramp previously accepted such a pin and routed the order. It applies to **`providerId`** as well as `providerIds`, so on-ramp integrations that pin providers should confirm they are authorized for them.
 
-**Exhausting a queue is not an immediate refund** — fallback assignment runs after the last entry, then refund only after the refund window.
+**Exhausting a queue is not an immediate refund.** Paycrest may try other routing after the last entry before the order is refunded.
 
 See [Get Token Rate](/api-reference/general/get-token-rate), [Pin a provider queue](/implementation-guides/sender-api-integration#pin-a-provider-queue), and [Smart Contract Interaction](/implementation-guides/smart-contract-interaction#routing-fields).
 
@@ -295,11 +295,9 @@ See [Get Token Rate](/api-reference/general/get-token-rate) and [Get Market Rate
 
 ---
 
-### FX on-ramp settleIn principal alignment (April 2026)
+### FX on-ramp settlement amounts (April 2026)
 
-No REST schema changes. For **FX on-ramp** pay-in, the aggregator now sizes onchain **`settleIn`** principal using Gateway fee settings (`providerToAggregatorFx`) so that, after the contract’s **floored** aggregator fee, the recipient still receives at least the **quoted net** crypto amount. Liquidity **reserve** and ERC-20 **approve** amounts align with that gross principal plus sender fee, and snapshots stored on the order keep release/cleanup consistent if chain settings move later.
-
-Onchain principal amounts may differ slightly from older builds that used a looser ceiling gross-up; recipients should match the quoted net more precisely.
+No REST schema changes. FX on-ramp recipients now receive at least the quoted net stablecoin amount. Onchain principal amounts may differ slightly from older builds.
 
 ---
 

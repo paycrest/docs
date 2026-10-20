@@ -493,7 +493,7 @@ The recipient object may carry routing hints—this is the only channel for them
 
 The two are **mutually exclusive**. A hash carrying both is not rejected—the queue wins and `providerId` is ignored. A queue whose entries can't serve the corridor is **dropped silently** and the order routes as unpinned; there is no onchain rejection and no error webhook, so validate ids against a rate quote before encrypting.
 
-Omit both and the aggregator resolves a queue itself at order creation. Entries in a multi-entry queue must name providers that can serve the corridor—active, with a live standard offer, and, for a provider restricted to specific senders, one whose list includes the sender resolved from `metadata.apiKey`. A one-entry queue is simply a pin. The fallback provider may be listed but is ignored.
+Omit both and the aggregator resolves a queue itself at order creation. Entries in a multi-entry queue must name providers that can serve the corridor: active, with a live standard offer, and, for a provider restricted to specific senders, one whose list includes the sender resolved from `metadata.apiKey`. A one-entry queue is simply a pin.
 
 <Warning>
   **Budget ~450 bytes for recipient data.** `MESSAGE_HASH_MAX_SIZE` caps the recipient JSON at **500 bytes**, measured **before** encryption. The size check reserves room for a full 3-provider queue on **every** order—including orders that send no `providerIds`—because the aggregator may resolve one onto the order, and it rides in the message hash at gateway submit.
@@ -887,7 +887,7 @@ Anything that appends bytes after your suffix breaks parsing too, since only the
 The `codes` field is a list, so a transaction can carry more than one code, comma-joined. For direct integrators the default is **your own code alone**, on every EVM network including Base.
 
 <Callout type="warning">
-  `bc_julg9gbq` is **Paycrest/Noblocks' own registered Base Builder Code**, appended by the Noblocks app on Base mainnet for base.dev analytics and rewards. It identifies Noblocks as the originating app. Do not include it in your own transactions unless you have an explicit co-branding arrangement with Paycrest: it is not a code for arbitrary senders to claim.
+  Use only your own code. Do not copy another app's Base Builder Code (for example, the one the Noblocks app appends on Base mainnet) into your own transactions.
 </Callout>
 
 ### Relationship to `metadata.apiKey`

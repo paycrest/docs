@@ -534,8 +534,8 @@ components:
           description: |
             Ranked provider queue for this side, best first — the order assignment would try them in.
             Up to 3 ids by default; use `limit` to request fewer. `providerIds[0]` is the provider whose rate
-            is quoted in `rate`. Returns a single id when `provider_id` pins the quote. The fallback provider
-            is never listed. Always an array — `[]` when no provider is available, never `null`. Pass these ids
+            is quoted in `rate`. Returns a single id when `provider_id` pins the quote.
+            Always an array: `[]` when no provider is available, never `null`. Pass these ids
             to `destination.providerIds` on order creation to lock routing to the providers you quoted.
         orderType:
           type: string
@@ -1052,8 +1052,7 @@ components:
             `providerId: X` for every provider you can pin.
             Multi-entry queues must name providers that can serve this corridor: active, with a live
             standard offer, and — for a provider restricted to specific senders — one whose list
-            includes you. The fallback provider may be listed but is ignored; it is already tried
-            after the queue is exhausted.
+            includes you.
             Accepted on create only; order responses and webhooks return the singular assigned `providerId`.
         kyc:
           description: Optional destination (recipient) KYC for offramp. Do not send sender or provider KYB on offramp create.
@@ -2301,8 +2300,8 @@ paths:
         **Provider routing.** On **offramp**, leave `destination.providerIds` unset and the API resolves a ranked
         queue of up to 3 providers at creation; assignment walks it in order. Set `destination.providerIds` to
         supply your own queue — typically the ids from a [rate quote](/api-reference/general/get-token-rate) — or a
-        one-entry queue to route to a single provider. Queue exhaustion is not an immediate refund: fallback
-        assignment runs first, then the refund window.
+        one-entry queue to route to a single provider. Queue exhaustion is not an immediate refund: Paycrest
+        may try other routing before the order is refunded.
 
         On **onramp**, the provider is selected when the order is created, so `destination.providerIds` accepts at
         most one entry and acts as a pin.

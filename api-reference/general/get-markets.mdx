@@ -80,6 +80,8 @@ Windowed success and median fields are `null` for a window when no terminal orde
 GET https://api.paycrest.io/v2/markets
 ```
 
+All values in this example are illustrative placeholders, not live network figures.
+
 ```json
 {
   "status": "success",
@@ -87,13 +89,13 @@ GET https://api.paycrest.io/v2/markets
   "data": {
     "asOf": "2026-06-08T14:30:00Z",
     "aggregates": {
-      "settledVolumeUsd": { "24h": "48200.00", "7d": "312500.00", "30d": "1420000.00", "all": "9800000.00" },
-      "settledTxns":       { "24h": 118,         "7d": 790,         "30d": 3350,         "all": 43000 },
-      "networkSuccessPercent": { "24h": "98.30", "7d": "97.60", "30d": "97.10" },
-      "medianDeliverySecs": { "24h": 175, "7d": 190, "30d": 205 },
-      "activeProviders":   { "24h": 42, "7d": 49, "30d": 55, "all": 115 },
-      "activeSenders":     { "24h": 1150, "7d": 8200, "30d": 33000, "all": 490000 },
-      "liveLiquidityUsd": "2350000.00",
+      "settledVolumeUsd": { "24h": "1000.00", "7d": "7000.00", "30d": "30000.00", "all": "100000.00" },
+      "settledTxns":       { "24h": 10,         "7d": 70,         "30d": 300,         "all": 1000 },
+      "networkSuccessPercent": { "24h": "99.00", "7d": "99.00", "30d": "99.00" },
+      "medianDeliverySecs": { "24h": 20, "7d": 20, "30d": 20 },
+      "activeProviders":   { "24h": 5, "7d": 5, "30d": 5, "all": 10 },
+      "activeSenders":     { "24h": 10, "7d": 50, "30d": 100, "all": 500 },
+      "liveLiquidityUsd": "50000.00",
       "corridors": 11,
       "tokens": 3,
       "networks": 4

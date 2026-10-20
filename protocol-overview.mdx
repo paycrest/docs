@@ -3,7 +3,7 @@ title: "Protocol Overview"
 description: "Deep dive into the Paycrest protocol architecture, participants, and core components"
 ---
 
-Paycrest is a decentralized payment routing protocol for stablecoin-fiat payments in emerging markets. It handles the full stack — order routing, encrypted message passing, onchain escrow, provider matching, and fiat execution — without ever custodying user funds. This page covers the core architecture, participants, and key technical components. For product overview, roadmap, and competitive positioning, see the [Introduction](/introduction).
+Paycrest is a decentralized payment routing protocol for stablecoin-fiat payments in emerging markets. It handles the full stack (order routing, encrypted message passing, onchain escrow, provider matching and fiat execution) without ever custodying user funds. This page covers the core architecture, participants, and key technical components. For a product overview, see the [Introduction](/introduction).
 
 ## Protocol Vision
 
@@ -39,33 +39,25 @@ The core multi-chain contract deployed on supported networks (EVM L2s such as Ba
 - **Fee distribution** and protocol governance
 - **Multi-chain interoperability**
 
-### 2. Paycrest Node
+### 2. Paycrest Aggregator
 
-The unified protocol client that can operate in three modes:
+The coordination layer, operated by Paycrest today. It:
 
-<CardGroup cols={3}>
-  <Card title="Aggregator Mode">
-    - Listens to onchain payment order events
-    - Indexes registered Providers
-    - Performs matching logic
-    - Validates KYC data offchain
-    - Issues onchain attestations
-  </Card>
-  <Card title="Provision Mode">
-    - Registers liquidity parameters
-    - Monitors order matching
-    - Integrates with Payment Service Providers (PSPs)
-    - Performs last-mile fiat delivery
-    - Submits fulfillment proofs
-  </Card>
-  <Card title="Hybrid Mode">
-    - Operates as both Aggregator and Provider
-    - Useful for participants with both capabilities
-    - Optimizes for participants with full-stack operations
-  </Card>
-</CardGroup>
+- **Listens** to onchain payment order events
+- **Matches** orders with suitable providers
+- **Coordinates** fulfillment, validation and settlement
+- **Notifies** senders of status changes by webhook
 
-### 3. Sender API & Webhooks
+### 3. Provision Nodes
+
+Run by independent liquidity providers. They:
+
+- **Register** rates and limits
+- **Integrate** with local Payment Service Providers (PSPs)
+- **Deliver** fiat to recipients, or receive it from senders on on-ramp
+- **Report** fulfillment back to the aggregator
+
+### 4. Sender API & Webhooks
 
 Interfaces that allow businesses and apps to:
 
@@ -74,15 +66,6 @@ Interfaces that allow businesses and apps to:
 - **Manage API keys** and authentication
 - **Receive real-time updates** on status transitions
 - **Handle webhook notifications** for order lifecycle events
-
-### 4. KYC Attestation Registry
-
-A registry of attestations for both Senders and Providers:
-
-- **Onchain attestations** for identity verification
-- **Offchain verifiable credentials** support
-- **Encrypted KYC data** stored on decentralized storage
-- **Compliance integration** with regulatory requirements
 
 ## Protocol Participants
 
@@ -124,8 +107,7 @@ A KYB-verified entity that coordinates the entire order routing process:
 - **Coordinates fulfillment** and settlement
 - **Performs offchain KYB verification** for both Senders and Providers
 - **Splits large orders** across multiple Providers
-- **Issues onchain attestations** for compliance
-- **Enforces penalties** for failed delivery
+- **Holds providers accountable** for delivery quality
 
 ## Order Lifecycle
 
@@ -148,7 +130,7 @@ A KYB-verified entity that coordinates the entire order routing process:
   </Step>
   <Step title="Validation">
     <ul>
-      <li><b>Off-ramp:</b> Provision node validates fulfillment by checking the status of the fiat transfer via PSP APIs.</li>
+      <li><b>Off-ramp:</b> The fiat payout to the recipient is confirmed.</li>
       <li><b>On-ramp:</b> Aggregator validates fulfillment by confirming the onchain stablecoin transfer to the recipient.</li>
     </ul>
   </Step>
@@ -164,7 +146,7 @@ A KYB-verified entity that coordinates the entire order routing process:
 </Steps>
 
 <Callout type="info">
-<b>Off-ramp:</b> Fulfillment = Provider delivers fiat to recipient. Validation = Provision node checks fiat transfer status via PSP API. Settlement = Escrowed stablecoins released to provider.
+<b>Off-ramp:</b> Fulfillment = Provider delivers fiat to recipient. Validation = Fiat payout to the recipient is confirmed. Settlement = Escrowed stablecoins released to provider.
 
 <b>On-ramp:</b> Fulfillment = Provider receives fiat from sender. Validation = Aggregator confirms onchain stablecoin transfer to recipient. Settlement = All three steps happen atomically after fiat receipt is confirmed.
 </Callout>
@@ -183,7 +165,7 @@ Paycrest is live on **6 EVM-compatible networks** plus **Starknet**, **Tron** an
 - **Tron** (USDT — network identifier `tron`; v2 API only)
 - **Solana** (USDT, USDC — network identifier `solana`; v2 API only)
 
-Additional networks (Optimism) have Gateway contracts deployed but aggregator support is pending. See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the full deployment table.
+See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the full deployment table.
 
 ## Security & Compliance
 
@@ -191,14 +173,11 @@ Additional networks (Optimism) have Gateway contracts deployed but aggregator su
 
 - **Audited Gateway contracts** with escrow functionality
 - **Multi-signature governance** for protocol upgrades
-- **Timelock mechanisms** for critical parameter changes
 - **Emergency pause functionality** for security incidents
 
 ### Compliance Integration
 
 - **KYB verification** for all participants
-- **Identity attestation registry** onchain
-- **Regulatory reporting** capabilities
 - **AML/CFT compliance** through integrated providers
 
 ### Privacy Protection
@@ -208,21 +187,16 @@ Additional networks (Optimism) have Gateway contracts deployed but aggregator su
 
 ## Fee Structure
 
-The Paycrest protocol implements a **zero-fee experience for senders**:
+Senders get **one all-in rate per order**, quoted live by the Paycrest Sender API. Paycrest charges senders no separate fee:
 
-- **Sender fees**: Optional fees that sender businesses can charge to their users
-- **Provider fees**: Competitive rates based on market conditions
-- **Protocol fees**: Fees paid to aggregators for order routing and coordination
-- **Network fees**: Each order's transaction fee covers its gas costs and is paid to the protocol treasury. By default it comes out of the sender fee; senders can pass it to their customers instead (see [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee))
+- **Provider rate**: Providers quote competitive rates based on market conditions. The aggregator fee is embedded in the provider's rate.
+- **Sender fees**: Optional fees that sender businesses can charge their own users
+- **Transaction fee**: Each order's transaction fee covers its network costs. By default it comes out of the sender fee; senders can pass it to their customers instead (see [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee))
 
-Providers earn fees by:
-- **Bid-ask spreads** on currency pairs
-- **Volume-based incentives** for high-frequency providers
-- **Quality bonuses** for reliable fulfillment
-- **Geographic premiums** for underserved markets
+Providers earn the spread between the rate they quote and their own cost of liquidity.
 
 <Note>
-  **Current fee model**: Paycrest currently operates the sole aggregator (federated model). The 0.5% aggregator fee on each settled order flows to Paycrest. This will transition to a competitive multi-aggregator model in a future protocol phase.
+  For volume pricing, contact [support@paycrest.io](mailto:support@paycrest.io).
 </Note>
 
 ### Delivery Methods
@@ -237,30 +211,19 @@ Providers earn fees by:
 
 ### Early Stage
 
-In early stages, protocol changes are ratified by a **Paycrest Core Multisig**:
-
-- **Founding contributors** and technical leads
-- **Multi-signature requirements** for all changes
-- **Transparent proposal process** with community input
-- **Emergency procedures** for critical updates
+Protocol changes are ratified by a **Paycrest Core Multisig**, and every change requires multiple signatures. The Gateway contract can be paused in an emergency.
 
 ### Future Decentralization
 
-As the protocol matures, governance will transition to:
-
-- **Community-led structure** with token-weighted voting
-- **Delegate-based technical councils** for specialized decisions
-- **Onchain governance** for parameter changes
-- **Offchain coordination** for complex upgrades
+As the protocol matures, governance is intended to move toward broader, community-led decision-making.
 
 ## Technical Specifications
 
 ### Smart Contracts
 
 - **Gateway Contract**: Core order management and escrow
-- **Token Contracts**: Standard ERC-20 implementations
-- **Governance Contracts**: Multi-signature and timelock mechanisms
-- **Attestation Registry**: KYC and compliance verification
+- **Multi-signature administration**: Protocol parameter changes
+- **Emergency pause**: The Gateway contract can be paused during a security incident
 
 ### API Standards
 
@@ -277,7 +240,7 @@ As the protocol matures, governance will transition to:
 
 ### Dispute Resolution
 
-If an order is not fulfilled, it is automatically refunded. The aggregator does not handle disputes directly. If an order is stuck, communication between senders and providers may occur via a decentralized messaging protocol (e.g., XMTP).
+Unfulfilled orders are refunded automatically, so there is no manual dispute process. For questions about a specific order, contact [support@paycrest.io](mailto:support@paycrest.io).
 
 ### Integration Options
 

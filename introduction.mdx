@@ -60,8 +60,8 @@ The key properties:
   <Card title="Provider-Sovereign" icon="building">
     Liquidity providers run their own provision nodes, set their own rates, and connect their own PSPs.
   </Card>
-  <Card title="Zero Fees for Senders" icon="coins">
-    The aggregator fee is embedded in the provider's rate, not charged to end users, enabling fee-free on- and offramps for consumer apps.
+  <Card title="One All-In Rate" icon="coins">
+    Each order gets one all-in rate, quoted live by the Paycrest Sender API. Paycrest charges senders no separate fee; the aggregator fee is embedded in the provider's rate.
   </Card>
 </CardGroup>
 
@@ -152,39 +152,33 @@ Paycrest is live across 4 active corridors with real provider liquidity. New cor
 
 ## Where We're Headed
 
-Paycrest is focused on one thing right now: making payment routing in emerging markets reliable enough to be trusted infrastructure. Q1 2026 delivered on that in the NGN corridor: sub-30 second completion for the majority of orders, a growing provider network with multiple independent PSPs, and on-ramp live in production.
+Paycrest is focused on making payment routing in emerging markets reliable enough to be trusted infrastructure. New corridors launch only when committed providers are onboarded and tested.
 
-The next phase is hardening what works and replicating it across new corridors, each launching only when committed providers are onboarded and tested.
-
-Over time, the goal is for Paycrest to become the default routing path for stablecoin-fiat payments, not because senders are locked in, but because it's the most reliable, most liquid, and most composable path available. The open architecture is what makes that outcome possible: every integration creates a compounding demand channel, and every new provider makes every existing corridor more robust.
+The goal is for Paycrest to become the default routing path for stablecoin-fiat payments: not because senders are locked in, but because it is the most reliable, most liquid and most composable path available. Every new provider makes each corridor it serves more robust.
 
 ---
 
 ## Decentralization Path
 
-Paycrest currently operates as a **federated protocol**: one aggregator (run by Paycrest), KYC-gated participation, webhook-based payout verification. This is an intentional design choice, not a shortcut. Reliable decentralized mechanisms require operational data and trust that can only be built by running the system in production first.
+Today Paycrest operates the **Paycrest Aggregator**, and every sender and provider is KYC/KYB-verified. The protocol is designed to support multiple independent aggregators in future. Starting federated is a deliberate choice: it lets the network prove itself in production before control is distributed.
 
-Here's how the protocol moves from federated today to credibly neutral infrastructure over time.
+Here's how the protocol is designed to evolve.
 
 <AccordionGroup>
-  <Accordion icon="circle-1" title="Phase 1 — Federated Foundation (Current)">
-    **How it works today**: Paycrest operates the sole aggregator. All order routing, provider matching, and payout verification run through Paycrest-controlled infrastructure. Senders and providers participate with KYC/KYB gating. The 0.5% aggregator fee flows entirely to Paycrest.
+  <Accordion icon="circle-1" title="Phase 1: Federated Foundation (Current)">
+    **How it works today**: The Paycrest Aggregator, operated by Paycrest, routes orders, matches providers and confirms payouts. Senders and providers participate after KYC/KYB verification.
 
-    **What this means for you**: The protocol is predictable and accountable — if something goes wrong, there's one team responsible. Integration is straightforward. The trust model is similar to using any other API-based payment infrastructure.
-
-    **What's being built toward**: This phase accumulates the operational data — order patterns, provider behavior, PSP reliability, corridor economics — required to design decentralized mechanisms that actually work at scale.
+    **What this means for you**: One accountable team and a straightforward integration. The trust model is similar to any other API-based payment infrastructure, with funds held in onchain escrow rather than by Paycrest.
   </Accordion>
-  <Accordion icon="circle-2" title="Phase 2 — Attested Settlement">
-    **What changes**: Decentralized attesters replace webhook-based payout verification. Instead of Paycrest's infrastructure confirming that a provider paid out, a distributed set of attesters reach quorum on payout events. A hybrid finality model provides a fast-path when quorum is reached quickly, with an optimistic fallback for slower cases. A DAO-governed PSP Registry standardizes the rules for what counts as verified delivery across corridors.
+  <Accordion icon="circle-2" title="Phase 2: Attested Settlement (Future)">
+    **What changes**: Independent attesters confirm payout events, so verification no longer rests with a single aggregator. A shared PSP registry standardizes what counts as verified delivery in each corridor.
 
-    **What this means for you**: The trust model improves. Payout verification is no longer a single point of failure tied to Paycrest's uptime. Senders get stronger guarantees — not just "Paycrest says it happened" but "a quorum of independent attesters confirmed it." Providers interact with a standardized registry rather than bespoke onboarding flows.
-
-    **What risks are removed**: Single-point-of-failure on payout verification. Paycrest's ability to unilaterally decide what counts as a valid payout.
+    **What this means for you**: Senders get stronger guarantees, with each payout confirmed by a quorum of independent attesters. Providers onboard against a standard registry.
   </Accordion>
-  <Accordion icon="circle-3" title="Phase 3 — Permissionless Protocol">
-    **What changes**: Multiple independent aggregators can operate on the protocol. Participation becomes permissionless — any provider meeting the economic and compliance requirements can join without approval from Paycrest. P2P communication handles quote negotiation and attestations. Economic security comes from staking and slashing, not from Paycrest's reputation.
+  <Accordion icon="circle-3" title="Phase 3: Permissionless Protocol (Future)">
+    **What changes**: Multiple independent aggregators can operate on the protocol. Participation becomes permissionless: any provider meeting the economic and compliance requirements can join without approval from Paycrest. P2P communication handles quote negotiation and attestations. Economic security comes from staking and slashing, not from Paycrest's reputation.
 
-    **What this means for you**: Paycrest the company is no longer a dependency. The protocol routes orders, enforces escrow, and coordinates providers regardless of whether Paycrest Inc. is operating. Senders get credible neutrality — the routing layer has no stake in which stablecoin you use, which provider wins the order, or which company built the aggregator they're running.
+    **What this means for you**: Paycrest the company is no longer a dependency. The protocol routes orders, enforces escrow, and coordinates providers regardless of whether Paycrest Inc. is operating. Senders get credible neutrality: the routing layer has no stake in which stablecoin you use, which provider wins the order, or which company built the aggregator they're running.
 
     **What stays constant across all phases**: Non-custodial onchain escrow. The Gateway contract's guarantees. Corridor-level completion rates. The API contract for senders. KYC/KYB gating (at the compliance layer, not the routing layer). None of these change as the protocol decentralizes.
   </Accordion>

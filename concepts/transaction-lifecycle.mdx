@@ -156,10 +156,6 @@ Two things make this event different from the rest:
 
 Do not prompt the customer to pay again: a second deposit into the same virtual account will be held as well. What you tell your own customer is your decision; contact Paycrest support if you need to know where a review stands.
 
-<Note>
-  Not every held order produces this event. Where a hold concerns your account rather than the counterparty, no webhook is sent; you will observe only the order's final `payment_order.settled` or `payment_order.refunded`.
-</Note>
-
 ### Webhook Payload (v1)
 
 ```json
@@ -307,13 +303,9 @@ func verifyWebhook(payload []byte, signature, secret string) bool {
   </Tab>
 </Tabs>
 
-## Timeframes & SLAs
+## Timeframes
 
-| Metric | Target |
-|--------|--------|
-| Median order completion time (NGN) | < 30 seconds |
-| Reliability (NGN) | ≥ 95% complete within 30s |
-| Refund rate | ≤ 3% |
+Most NGN orders complete in under 30 seconds. Completion times vary by corridor, provider and payment rail.
 
 ## Error Handling
 

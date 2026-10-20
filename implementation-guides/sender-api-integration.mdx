@@ -413,7 +413,7 @@ Every on-ramp order must identify the customer paying in, in **`source.kyc`**. A
 
 **The customer must pay from their own account.** The provider reports who each deposit came from, and Paycrest checks it against `source.kyc`. An organization pays from an account in its `legalName` or `tradingName`, or from the personal account of a director whose national identifier you sent: the BVN or NIN for NGN, or the director's national ID (`personDetails.idDocument` with `"type": "nationalID"`) for other currencies. A deposit from anyone else is returned in full to the account it came from, and you receive `payment_order.refunded`; when it cannot be returned automatically, it is held for compliance review and you receive [`payment_order.compliance_hold`](/concepts/transaction-lifecycle#compliance-holds).
 
-**The refund account must belong to the customer.** Where the bank resolves the `source.refundAccount` holder's name (NGN), it must match `personDetails.fullName` — or, for an organization, `legalName` or `tradingName`. Word order, case, titles and legal-form words such as "Ltd" are ignored. A mismatch returns **400** `Refund account name does not match the customer in source.kyc`.
+**The refund account must belong to the customer.** Where the bank resolves the `source.refundAccount` holder's name (NGN), it must match `personDetails.fullName` or, for an organization, `legalName` or `tradingName`. A mismatch returns **400** `Refund account name does not match the customer in source.kyc`.
 
 **KYC on the other sides of an order** uses the same shape and is optional:
 
@@ -449,7 +449,6 @@ Set **`destination.providerIds`** when you want routing pinned to providers you 
 | Mutually exclusive with `providerId` | Sending **both** returns **400**. To route to a single provider, send a one-entry `providerIds`—the singular `providerId` is retained for backward compatibility. |
 | No duplicates, no empty strings | Both return **400**. |
 | Providers you can route to | Multi-entry queues must name **active** providers with a **live standard offer** for this corridor. A provider restricted to specific senders is allowed when **you are on its list**. |
-| Fallback is ignored, not rejected | Listing the fallback provider is accepted and has no effect—it is already tried after the queue is exhausted. |
 
 **A one-entry queue is a pin.** `providerIds: ["AbCdEfGh"]` routes exactly like `providerId: "AbCdEfGh"`, for every provider you're able to pin—the corridor checks above apply only to queues of two or more. That equivalence is what lets you use `providerIds` everywhere and never reach for the singular field.
 
@@ -465,7 +464,7 @@ Validation failures return **400** with `message: "Failed to validate payload"` 
 | `provider AbCdEfGh cannot serve this order` | Entry is inactive, has no live offer for this corridor, or is restricted to senders that don't include you |
 
 <Note>
-  **Exhausting the queue does not refund immediately.** After the last entry, the order falls through to **fallback assignment**, and only then to refund after the refund window. `providerIds` is accepted on create but **not echoed back**—order responses and webhooks return the singular assigned **`providerId`**.
+  **Exhausting the queue does not refund immediately.** After the last entry, Paycrest may try other routing before the order is refunded. `providerIds` is accepted on create but **not echoed back**: order responses and webhooks return the singular assigned **`providerId`**.
 </Note>
 
 ### Pinning on on-ramp
