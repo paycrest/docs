@@ -149,7 +149,7 @@ A deposit from an account that is not the customer's own (the payer must match t
 
 Two things make this event different from the rest:
 
-- **It is not a status change.** The order deliberately remains `pending`, so `data.status` reads `pending`, not `compliance_hold`. If you route webhooks by `data.status`, this event will look like a duplicate `pending` — branch on `event` instead.
+- **It is not a status change.** The order deliberately remains `pending`, so `data.status` reads `pending`, not `compliance_hold`. If you route webhooks by `data.status`, this event will look like a duplicate `pending`, so branch on `event` instead.
 - **It is not final.** A held order does not expire. When the review ends, the order either settles (`payment_order.settled`) or the deposit is returned to the account it came from (`payment_order.refunded`). A review can take several days.
 
 **Polling instead of webhooks?** A held order reads `"status": "pending"` and may carry `"statusDetail": "under_review"`, which tells it apart from an order that has not been paid. A deposit returned to the account it came from ends `refunded` with a `refundReason`: `payer_mismatch` when it came from an account not in the customer's name, or `payer_unverified` when the payer could not be confirmed. Both fields are on the v2 order and in v2 webhooks.

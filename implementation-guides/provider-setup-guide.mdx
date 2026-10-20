@@ -105,7 +105,7 @@ AGGREGATOR_BASE_URL=https://api.paycrest.io/v2/provider
 #### `EVM_PRIVATE_KEY` explained
 
 - **What it is**: The private key for a dedicated EVM wallet (EOA) used by your provision node.
-- **When you need it**: Required for EVM onramp-related wallet/authorization flows. If you're running offramp-only operations, you can leave it unset.
+- **When you need it**: Required for EVM on-ramp-related wallet/authorization flows. If you're running off-ramp-only operations, you can leave it unset.
 - **How to generate it**: Create a new dedicated EVM wallet (do not reuse a personal wallet) and use that wallet's private key.
 - **Security**: Treat this as a production secret. Never commit it to git, store it in a secure secret manager or protected `.env`, and rotate it immediately if exposed.
 
@@ -114,7 +114,7 @@ AGGREGATOR_BASE_URL=https://api.paycrest.io/v2/provider
 - **What they are**:
   - `STARKNET_SNIP9_USER_ADDRESS` — Starknet account address used to sign SNIP-9 OutsideExecution payin messages
   - `STARKNET_SNIP9_PRIVATE_KEY` — private key for that Starknet account
-- **When you need them**: Required when fulfilling **Starknet on-ramp (payin)** orders. If you only handle EVM or offramp-only flows, you can leave them unset.
+- **When you need them**: Required when fulfilling **Starknet on-ramp (payin)** orders. If you only handle EVM or off-ramp-only flows, you can leave them unset.
 - **Address format**: Use a Starknet felt hex address (`0x` + 63–64 hex characters), not an EVM checksum address.
 - **Security**: Treat both as production secrets. Never commit them to git, store them in a secure secret manager or protected `.env`, and rotate them immediately if exposed.
 

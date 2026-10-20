@@ -70,7 +70,7 @@ The Gateway contract is the only place funds are held, and only temporarily, in 
 
 Every order gets **one all-in rate**, quoted live by the Paycrest Sender API. Senders pay no separate Paycrest fee.
 
-- **Rate**: Paycrest's fee is built into the provider's rate. Nothing is charged to senders or recipients on top.
+- **Rate**: Paycrest's fee is built into the provider's rate, never added on top.
 - **Transaction fee**: Covers the order's network costs. By default it comes out of the sender fee; the integrating app can pass it to its customers instead.
 - **Sender fee (optional)**: Set by the integrating app and settled onchain in the same transaction as the order.
 - **No offchain billing**: There is nothing to invoice or reconcile.

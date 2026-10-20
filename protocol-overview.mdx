@@ -189,8 +189,8 @@ See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the 
 Senders get **one all-in rate per order**, quoted live by the Paycrest Sender API. There is no separate Paycrest fee.
 
 - **Rate**: Providers compete on the rates they quote. Paycrest's fee is built into the rate, never added on top.
-- **Transaction fee**: Covers the order's network costs. By default it comes out of your sender fee, or you can pass it to your customers (see [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee)).
-- **Sender fee (optional)**: A fee you set for your own users, settled onchain in the same transaction as the order.
+- **Transaction fee**: Covers the order's network costs. By default it comes out of the sender fee; senders can pass it to their customers instead (see [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee)).
+- **Sender fee (optional)**: A fee senders can set for their own users, settled onchain in the same transaction as the order.
 
 Providers earn the spread between the rate they quote and their own cost of liquidity.
 
