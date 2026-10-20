@@ -1271,6 +1271,7 @@ components:
           type: string
         transactionFee:
           type: string
+          description: "For senders: the order's transaction fee (its gas cost). For providers: the protocol fee deducted from this order, net of any rebate once the order is settled; before settlement it is the gross fee."
         reference:
           type: string
         txHash:

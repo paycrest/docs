@@ -2,3 +2,7 @@
 title: "List Orders"
 openapi: "openapi-v2.yaml GET /provider/orders"
 ---
+
+<Note>
+  On provider order endpoints, `transactionFee` is the protocol fee deducted from that order, net of any rebate once the order is settled. Before settlement it reflects the gross fee.
+</Note>
