@@ -481,4 +481,4 @@ Need help with the API?
 
 ## Fee Model
 
-Protocol fees are paid by providers. Senders pay no protocol fee, maximizing their payout. Each order carries a `transactionFee` for network costs, which by default comes out of the sender fee. See [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee).
+Senders pay the quoted rate, plus a `transactionFee` for the order's gas (by default it comes out of the sender fee) and any optional sender fee they set. See [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee).

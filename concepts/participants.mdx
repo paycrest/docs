@@ -13,7 +13,7 @@ A **KYB-verified entity** that initiates either a fiat-to-stablecoin or stableco
 
 - **KYB Required**: Must complete business verification
 - **API Access**: Uses the Sender API to create orders or can interact directly with the Gateway contract
-- **Fee Structure**: One all-in rate per order with no separate Paycrest fee, plus a transaction fee that covers the order's gas. Senders can add their own optional fee
+- **Fee Structure**: The quoted rate, plus a transaction fee that covers the order's gas. Senders can add their own optional fee
 - **Flexibility**: Can be smart contracts, dApps, smart accounts (e.g. EIP-7702), or traditional applications
 
 ### Responsibilities
@@ -138,7 +138,7 @@ The **Paycrest Aggregator** is the neutral middle between senders and independen
     Track order fulfillment and validate completion
   </Step>
   <Step title="Settlement Coordination">
-    Coordinate on-chain settlement and fee distribution
+    Coordinate on-chain settlement
   </Step>
 </Steps>
 
@@ -170,7 +170,7 @@ Today the **Paycrest Aggregator**, operated by Paycrest, is the only aggregator.
 
 <CardGroup cols={2}>
   <Card title="For Senders">
-    - One all-in rate, no separate Paycrest fee
+    - One quoted rate per order
     - Global reach with local delivery
     - Real-time status tracking
     - Verified counterparties

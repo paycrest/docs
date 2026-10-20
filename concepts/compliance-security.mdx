@@ -70,14 +70,13 @@ Protocol changes are ratified by the Paycrest Core Multisig. As the protocol mat
 
 ## Pricing & Sender Fees
 
-Every order gets **one all-in rate**, quoted live by the Paycrest Sender API. Senders pay no separate Paycrest fee.
+What a sender pays on each order:
 
-- **Rate**: Paycrest's fee is built into the provider's rate, never added on top.
+- **Rate**: Quoted live by the Paycrest Sender API before the order is created.
 - **Transaction fee**: Covers the gas the aggregator pays to create and settle the order. By default it comes out of the sender fee; the integrating app can pass it to its customers instead.
 - **Sender fee (optional)**: Set by the integrating app and settled on-chain in the same transaction as the order.
-- **No off-chain billing**: There is nothing to invoice or reconcile.
 
-Apart from the transaction fee and any sender fee, nothing is added to the quoted rate. Planning high volumes? Talk to us at [support@paycrest.io](mailto:support@paycrest.io).
+Apart from the transaction fee and any sender fee, nothing is added to the quoted rate, and there is nothing to invoice or reconcile off-chain. Planning high volumes? Talk to us at [support@paycrest.io](mailto:support@paycrest.io).
 
 <Note>
   Paycrest is not a licensed financial institution. This documentation does not constitute legal or regulatory advice. Participants are responsible for their own compliance obligations in their respective jurisdictions.
