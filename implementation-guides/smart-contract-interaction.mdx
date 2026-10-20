@@ -630,7 +630,6 @@ The suffix is execution-inert: the Gateway contract ignores trailing bytes beyon
 |------|----------------|-----------|
 | **Sender API** (aggregator-relayed orders) | The aggregator, automatically | The sender's KYB trading name |
 | **Direct Gateway integration** (this guide) | You, on your own `createOrder` calldata | Whatever you choose to publish |
-| **Noblocks** on Base mainnet | The Noblocks app | Its registered Base Builder Code |
 
 On the Sender API path the aggregator appends the suffix to the transactions it submits for an order: creation, settlement, and refunds. Senders with no trading name on their KYB profile get no suffix. There is nothing to configure.
 
@@ -887,7 +886,7 @@ Anything that appends bytes after your suffix breaks parsing too, since only the
 The `codes` field is a list, so a transaction can carry more than one code, comma-joined. For direct integrators the default is **your own code alone**, on every EVM network including Base.
 
 <Callout type="warning">
-  Use only your own code. Do not copy another app's Base Builder Code (for example, the one the Noblocks app appends on Base mainnet) into your own transactions.
+  Use only your own code. Do not copy another app's Base Builder Code into your transactions.
 </Callout>
 
 ### Relationship to `metadata.apiKey`

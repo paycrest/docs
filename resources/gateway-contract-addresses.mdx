@@ -6,7 +6,7 @@ description: "Deployment addresses for Paycrest Gateway contracts across all sup
 Paycrest Gateway contracts are deployed across multiple networks (EVM-compatible chains and Starknet). The table below shows the deployments the Paycrest Aggregator supports.
 
 <Note>
-  Gateway contracts on retired networks (Lisk, Optimism and Scroll) are no longer supported and are not listed here.
+  Lisk, Optimism and Scroll are retired. Their Gateway contracts are no longer supported and are not listed here.
 </Note>
 
 ## Deployment Addresses
@@ -66,8 +66,8 @@ Starknet is supported via the Sender API (`network: "starknet"`).
 Prefer the [Sender API Integration](/implementation-guides/sender-api-integration) path for order creation on Starknet; the [Smart Contract Interaction](/implementation-guides/smart-contract-interaction) guide covers EVM Gateway calls.
 
 For detailed integration guides, see:
-- **[Sender API Integration](/implementation-guides/sender-api-integration)** — API-based integration (recommended for Starknet)
-- **[Smart Contract Interaction](/implementation-guides/smart-contract-interaction)** — Direct EVM contract integration
+- **[Sender API Integration](/implementation-guides/sender-api-integration)**: API-based integration (recommended for Starknet)
+- **[Smart Contract Interaction](/implementation-guides/smart-contract-interaction)**: Direct EVM contract integration
 
 <Note>
   Contract addresses vary by network. Always use the correct address for your target network and verify it on the block explorer before use. Check our [contracts repository](https://github.com/paycrest/contracts) for the latest deployment information.

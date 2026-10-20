@@ -464,7 +464,7 @@ Validation failures return **400** with `message: "Failed to validate payload"` 
 | `provider AbCdEfGh cannot serve this order` | Entry is inactive, has no live offer for this corridor, or is restricted to senders that don't include you |
 
 <Note>
-  **Exhausting the queue does not refund immediately.** After the last entry, Paycrest may try other routing before the order is refunded. `providerIds` is accepted on create but **not echoed back**: order responses and webhooks return the singular assigned **`providerId`**.
+  **Exhausting the queue does not refund immediately.** After the last entry, Paycrest may still route the order elsewhere before refunding it. `providerIds` is accepted on create but **not echoed back**: order responses and webhooks return the singular assigned **`providerId`**.
 </Note>
 
 ### Pinning on on-ramp

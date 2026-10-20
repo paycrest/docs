@@ -7,7 +7,7 @@ Paycrest is a decentralized payment routing protocol for stablecoin-fiat payment
 
 ## Protocol Vision
 
-Paycrest exists to be **the neutral routing layer for stablecoin-fiat payments** — open infrastructure that any application can integrate to offer on- and offramps without being locked into a single stablecoin issuer's ecosystem.
+Paycrest exists to be **the neutral routing layer for stablecoin-fiat payments**: open infrastructure that any application can integrate to offer on-ramps and off-ramps without being locked into a single stablecoin issuer's ecosystem.
 
 The key properties:
 
@@ -22,7 +22,7 @@ The key properties:
     Liquidity providers run their own nodes, set their own rates, and connect their own PSPs.
   </Card>
   <Card title="Compliance at the Edges" icon="shield-check">
-    Providers own local regulatory obligations; senders own theirs. The protocol coordinates requirement exchange — not centralized compliance vetting.
+    Providers own local regulatory obligations; senders own theirs. The protocol coordinates the exchange of requirements. It does not vet compliance centrally.
   </Card>
 </CardGroup>
 
@@ -32,7 +32,7 @@ The Paycrest protocol consists of several key components working together:
 
 ### 1. Gateway Smart Contract
 
-The core multi-chain contract deployed on supported networks (EVM L2s such as Base, Arbitrum, and Celo, plus Starknet). It manages:
+The core multi-chain contract deployed on supported networks (EVM networks such as Ethereum, Base and Arbitrum One, plus Starknet). It manages:
 
 - **Order creation** and validation
 - **Token escrow** and conditional settlement
@@ -41,7 +41,7 @@ The core multi-chain contract deployed on supported networks (EVM L2s such as Ba
 
 ### 2. Paycrest Aggregator
 
-The coordination layer, operated by Paycrest today. It:
+The neutral coordination layer between senders and independent licensed providers, operated by Paycrest today. It never holds funds. It:
 
 - **Listens** to onchain payment order events
 - **Matches** orders with suitable providers
@@ -54,7 +54,7 @@ Run by independent liquidity providers. They:
 
 - **Register** rates and limits
 - **Integrate** with local Payment Service Providers (PSPs)
-- **Deliver** fiat to recipients, or receive it from senders on on-ramp
+- **Deliver** fiat to recipients on off-ramp orders, and collect fiat from senders on on-ramp orders
 - **Report** fulfillment back to the aggregator
 
 ### 4. Sender API & Webhooks
@@ -87,7 +87,7 @@ The beneficiary of the transaction who receives:
 - **Local fiat** in a bank account or mobile wallet
 - **Stablecoins** in a crypto wallet
 
-The recipient doesn't need to interact with the protocol directly - they simply receive the funds through their preferred method.
+The recipient doesn't need to interact with the protocol directly. They simply receive the funds through their preferred method.
 
 ### Provider
 
@@ -100,13 +100,12 @@ A KYB-verified participant that supplies fiat liquidity in exchange for stableco
 
 ### Aggregator
 
-A KYB-verified entity that coordinates the entire order routing process:
+The Paycrest Aggregator coordinates every order from creation to settlement:
 
 - **Listens to payment order events** from the Gateway contract
 - **Matches orders** with suitable Providers
 - **Coordinates fulfillment** and settlement
 - **Performs offchain KYB verification** for both Senders and Providers
-- **Splits large orders** across multiple Providers
 - **Holds providers accountable** for delivery quality
 
 ## Order Lifecycle
@@ -119,7 +118,7 @@ A KYB-verified entity that coordinates the entire order routing process:
     Aggregator indexes the order and matches it with suitable Providers based on rates, limits, and availability.
   </Step>
   <Step title="Provider Assignment">
-    One or more Providers are assigned to fulfill the order, with the order potentially split across multiple Providers.
+    A Provider is assigned to fulfill the order.
   </Step>
   <Step title="Fulfillment">
     Providers execute the payment:
@@ -161,9 +160,9 @@ Paycrest is live on **6 EVM-compatible networks** plus **Starknet**, **Tron** an
 - **BNB Smart Chain**
 - **Arbitrum One**
 - **Celo**
-- **Starknet** (USDT, USDC — network identifier `starknet`)
-- **Tron** (USDT — network identifier `tron`; v2 API only)
-- **Solana** (USDT, USDC — network identifier `solana`; v2 API only)
+- **Starknet** (USDT, USDC; network identifier `starknet`)
+- **Tron** (USDT; network identifier `tron`; v2 API only)
+- **Solana** (USDT, USDC; network identifier `solana`; v2 API only)
 
 See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the full deployment table.
 
@@ -187,16 +186,16 @@ See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the 
 
 ## Fee Structure
 
-Senders get **one all-in rate per order**, quoted live by the Paycrest Sender API. Paycrest charges senders no separate fee:
+Senders get **one all-in rate per order**, quoted live by the Paycrest Sender API. There is no separate Paycrest fee.
 
-- **Provider rate**: Providers quote competitive rates based on market conditions. The aggregator fee is embedded in the provider's rate.
-- **Sender fees**: Optional fees that sender businesses can charge their own users
-- **Transaction fee**: Each order's transaction fee covers its network costs. By default it comes out of the sender fee; senders can pass it to their customers instead (see [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee))
+- **Rate**: Providers compete on the rates they quote. Paycrest's fee is built into the rate, never added on top.
+- **Transaction fee**: Covers the order's network costs. By default it comes out of your sender fee, or you can pass it to your customers (see [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee)).
+- **Sender fee (optional)**: A fee you set for your own users, settled onchain in the same transaction as the order.
 
 Providers earn the spread between the rate they quote and their own cost of liquidity.
 
 <Note>
-  For volume pricing, contact [support@paycrest.io](mailto:support@paycrest.io).
+  Planning high volumes? Talk to us at [support@paycrest.io](mailto:support@paycrest.io).
 </Note>
 
 ### Delivery Methods
@@ -209,7 +208,7 @@ Providers earn the spread between the rate they quote and their own cost of liqu
 
 ## Governance
 
-### Early Stage
+### Today
 
 Protocol changes are ratified by a **Paycrest Core Multisig**, and every change requires multiple signatures. The Gateway contract can be paused in an emergency.
 
@@ -222,8 +221,7 @@ As the protocol matures, governance is intended to move toward broader, communit
 ### Smart Contracts
 
 - **Gateway Contract**: Core order management and escrow
-- **Multi-signature administration**: Protocol parameter changes
-- **Emergency pause**: The Gateway contract can be paused during a security incident
+- **Multi-signature administration**: Required for protocol parameter changes
 
 ### API Standards
 
@@ -240,7 +238,7 @@ As the protocol matures, governance is intended to move toward broader, communit
 
 ### Dispute Resolution
 
-Unfulfilled orders are refunded automatically, so there is no manual dispute process. For questions about a specific order, contact [support@paycrest.io](mailto:support@paycrest.io).
+Unfulfilled orders are refunded to the sender automatically, so there is no dispute process to run. For questions about a specific order, contact [support@paycrest.io](mailto:support@paycrest.io).
 
 ### Integration Options
 
@@ -249,5 +247,5 @@ Senders can create orders via:
 - Direct contract interaction (for advanced/off-ramp use cases)
 
 <Note>
-  The Paycrest protocol is designed to be both Web3-native and accessible to traditional financial applications. The modular architecture allows for different deployment models while maintaining the core benefits of decentralization.
+  The Paycrest protocol is designed to be both Web3-native and accessible to traditional financial applications. The modular architecture allows for different deployment models while keeping funds in onchain escrow.
 </Note> 

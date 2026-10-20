@@ -13,7 +13,7 @@ A **KYB-verified entity** that initiates either a fiat-to-stablecoin or stableco
 
 - **KYB Required**: Must complete business verification
 - **API Access**: Uses the Sender API to create orders or can interact directly with the Gateway contract
-- **Fee Structure**: One all-in rate per order with no separate Paycrest fee, plus a transaction fee for network costs. Optional sender fees support business monetization
+- **Fee Structure**: One all-in rate per order with no separate Paycrest fee, plus a transaction fee for network costs. Senders can add their own optional fee
 - **Flexibility**: Can be smart contracts, dApps, or traditional applications
 
 ### Responsibilities
@@ -32,7 +32,7 @@ A **KYB-verified entity** that initiates either a fiat-to-stablecoin or stableco
 - **E-commerce**: Accept crypto payments and settle in fiat
 
 <Note>
-  **Sender Fee Model:** Sender businesses can optionally charge fees to their users. Configure a default fee via the dashboard, or pass `senderFee` / `senderFeePercent` on each V2 order request. When the effective fee is greater than zero, a fee recipient is required — either configured on the profile or passed as `senderFeeAddress` on the request. The fee is settled atomically onchain upon successful order settlement, with no offchain billing required.
+  **Sender Fee Model:** Sender businesses can optionally charge fees to their users. Configure a default fee via the dashboard, or pass `senderFee` / `senderFeePercent` on each V2 order request. When the effective fee is greater than zero, a fee recipient is required: either configured on the profile or passed as `senderFeeAddress` on the request. The fee is settled atomically onchain upon successful order settlement, with no offchain billing required.
 </Note>
 
 ## Recipient
@@ -102,7 +102,7 @@ A **KYB-verified participant** that supplies fiat liquidity in exchange for stab
 
 ## Aggregator
 
-A **KYB-verified entity** that coordinates the entire order routing process and ensures protocol efficiency.
+The **Paycrest Aggregator** is the neutral middle between senders and independent licensed providers. It coordinates every order from creation to settlement and never holds funds.
 
 ### Characteristics
 
@@ -114,9 +114,9 @@ A **KYB-verified entity** that coordinates the entire order routing process and 
 ### Responsibilities
 
 - **Order Indexing**: Monitor blockchain for new orders
-- **Provider Management**: Maintain provider registry and ratings
+- **Provider Management**: Maintain the provider registry
 - **Order Assignment**: Match orders with optimal providers
-- **Settlement Coordination**: Coordinate multi-provider settlements
+- **Settlement Coordination**: Coordinate settlement with the assigned provider
 - **Compliance Verification**: Verify KYC and regulatory compliance
 - **Refunds**: Unfulfilled orders are refunded automatically, so there is no manual dispute process
 
@@ -140,9 +140,9 @@ A **KYB-verified entity** that coordinates the entire order routing process and 
   </Step>
 </Steps>
 
-### Aggregator Types
+### Who runs the aggregator
 
-Today the **Paycrest Aggregator**, operated by Paycrest, is the only aggregator. The protocol is designed to support independent aggregators in future.
+Today the **Paycrest Aggregator**, operated by Paycrest, is the only aggregator. The protocol is designed to support independent aggregators in the future.
 
 ## Participant Relationships
 
@@ -171,7 +171,7 @@ Today the **Paycrest Aggregator**, operated by Paycrest, is the only aggregator.
     - One all-in rate, no separate Paycrest fee
     - Global reach with local delivery
     - Real-time status tracking
-    - Automated compliance
+    - Verified counterparties
   </Card>
   <Card title="For Recipients">
     - No technical knowledge required
@@ -180,15 +180,9 @@ Today the **Paycrest Aggregator**, operated by Paycrest, is the only aggregator.
     - Competitive exchange rates
   </Card>
   <Card title="For Providers">
-    - Access to global liquidity
+    - Access to global demand
     - Automated order matching
-    - Transparent fee structure
+    - Escrow-backed settlement
     - Order flow from integrated senders
-  </Card>
-  <Card title="For Aggregators">
-    - Network effect benefits
-    - Quality assurance control
-    - Compliance management
-    - Infrastructure optimization
   </Card>
 </CardGroup> 

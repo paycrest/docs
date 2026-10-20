@@ -2301,7 +2301,7 @@ paths:
         queue of up to 3 providers at creation; assignment walks it in order. Set `destination.providerIds` to
         supply your own queue — typically the ids from a [rate quote](/api-reference/general/get-token-rate) — or a
         one-entry queue to route to a single provider. Queue exhaustion is not an immediate refund: Paycrest
-        may try other routing before the order is refunded.
+        may still route the order elsewhere before refunding it.
 
         On **onramp**, the provider is selected when the order is created, so `destination.providerIds` accepts at
         most one entry and acts as a pin.

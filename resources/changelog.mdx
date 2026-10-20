@@ -24,9 +24,9 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ### Third-party on-ramp deposits are returned automatically (October 2026)
 
-**Updated:** an on-ramp deposit from an account that is not the customer's own is now usually returned in full to the account it came from within minutes, instead of waiting for a compliance review. You receive `payment_order.refunded`, with no `payment_order.compliance_hold`. A deposit that cannot be returned automatically, or that needs a closer look, is still held for review. See [Compliance holds](/concepts/transaction-lifecycle#compliance-holds).
+**Updated:** an on-ramp deposit from an account that is not the customer's own is now usually returned in full to the account it came from, instead of waiting for a compliance review. You receive `payment_order.refunded`, with no `payment_order.compliance_hold`. Paycrest may hold a deposit for review instead. See [Compliance holds](/concepts/transaction-lifecycle#compliance-holds).
 
-- **New:** v2 orders and v2 webhooks carry `statusDetail: "under_review"` while a deposit is held, and `refundReason` (`payer_mismatch` or `payer_unverified`) when it was returned to the account it came from.
+- **New:** v2 orders and v2 webhooks can carry `statusDetail: "under_review"` while a deposit is held, and `refundReason` (`payer_mismatch` or `payer_unverified`) when it was returned to the account it came from.
 
 ### On-ramp deposits must come from the customer (October 2026)
 
@@ -145,7 +145,7 @@ The singular **`providerId`** is retained for backward compatibility on both flo
 
 **Behavior change:** pinning an **on-ramp** order to a provider restricted to other senders now returns **400** `provider X cannot serve this order`. Off-ramp has always enforced this; on-ramp previously accepted such a pin and routed the order. It applies to **`providerId`** as well as `providerIds`, so on-ramp integrations that pin providers should confirm they are authorized for them.
 
-**Exhausting a queue is not an immediate refund.** Paycrest may try other routing after the last entry before the order is refunded.
+**Exhausting a queue is not an immediate refund.** After the last entry, Paycrest may still route the order elsewhere before refunding it.
 
 See [Get Token Rate](/api-reference/general/get-token-rate), [Pin a provider queue](/implementation-guides/sender-api-integration#pin-a-provider-queue), and [Smart Contract Interaction](/implementation-guides/smart-contract-interaction#routing-fields).
 
@@ -297,7 +297,7 @@ See [Get Token Rate](/api-reference/general/get-token-rate) and [Get Market Rate
 
 ### FX on-ramp settlement amounts (April 2026)
 
-No REST schema changes. FX on-ramp recipients now receive at least the quoted net stablecoin amount. Onchain principal amounts may differ slightly from older builds.
+No REST schema changes. FX on-ramp recipients now receive at least the quoted net stablecoin amount. Onchain principal amounts may differ slightly from orders created before this change.
 
 ---
 

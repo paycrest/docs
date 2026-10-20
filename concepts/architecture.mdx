@@ -1,6 +1,6 @@
 ---
 title: "Protocol Architecture"
-description: "The technical components behind Paycrest's payment routing — Gateway contract, aggregator, and provision nodes"
+description: "The technical components behind Paycrest's payment routing: Gateway contract, aggregator and provision nodes"
 ---
 
 Paycrest is a payment routing protocol built on three cooperating layers: a Gateway smart contract for onchain escrow, an aggregator for order routing and coordination, and provision nodes for fiat execution. This page explains how those components interact.
@@ -35,7 +35,7 @@ flowchart TD
 
 ### Gateway Contract
 
-The **Gateway contract** is the onchain entry point for all payment orders. It holds stablecoins in escrow during the settlement process — neither Paycrest nor any provider ever custodies the funds directly.
+The **Gateway contract** is the onchain entry point for all payment orders. It holds stablecoins in escrow during the settlement process. Neither Paycrest nor any provider ever custodies the funds directly.
 
 #### Key Functions
 
@@ -72,33 +72,14 @@ The **aggregator node** is the coordination layer: it monitors onchain events, m
 - **Webhook Delivery**: Notifies senders of order status changes
 
 <Note>
-  Paycrest operates the **Paycrest Aggregator** today. The protocol is designed to support multiple independent aggregators in future. See the [Decentralization Path](/introduction#decentralization-path).
+  Paycrest operates the **Paycrest Aggregator** today. The protocol is designed to support multiple independent aggregators in the future. See the [Decentralization Path](/introduction#decentralization-path).
 </Note>
 
-#### API Layers
+#### API Layer
 
-<CardGroup cols={2}>
-  <Card title="Blockchain Layer">
-    - Gateway contract event monitoring
-    - Transaction submission and confirmation
-    - Multi-chain support
-  </Card>
-  <Card title="Business Logic Layer">
-    - Order matching and provider selection
-    - Rate validation and optimization
-    - Refund and timeout handling
-  </Card>
-  <Card title="API Layer">
-    - REST API (v1 and v2 sender/provider endpoints)
-    - Webhook delivery to senders
-    - Rate limiting and authentication
-  </Card>
-  <Card title="Data Layer">
-    - Order state management
-    - Provider registry and availability
-    - Transaction logs and audit trail
-  </Card>
-</CardGroup>
+- REST API (v1 and v2 sender/provider endpoints)
+- Webhook delivery to senders
+- Rate limiting and authentication
 
 ### Provision Nodes
 
@@ -178,9 +159,9 @@ Senders have two integration options:
 
 <CardGroup cols={2}>
   <Card title="Sender API" href="/implementation-guides/sender-api-integration" icon="code">
-    REST API integration — fastest time to integration. Paycrest handles the onchain interaction on your behalf.
+    REST API integration and the fastest way to go live. Paycrest handles the onchain interaction for you.
   </Card>
   <Card title="Smart Contract" href="/implementation-guides/smart-contract-interaction" icon="file-contract">
-    Direct Gateway contract integration — full onchain composability. Automated flows like yield-to-fiat and liquidation-to-bank work natively.
+    Direct Gateway contract integration with full onchain composability. Automated flows like yield-to-fiat and liquidation-to-bank work natively.
   </Card>
 </CardGroup>

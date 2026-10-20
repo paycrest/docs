@@ -116,7 +116,7 @@ The queue is resolved **once, at order creation**, and the order carries it for 
 </Steps>
 
 <Note>
-  **Exhausting the queue is not an immediate refund.** After the last entry, Paycrest may try other routing before the order is refunded. Don't model this as "3 tries then refund".
+  **Exhausting the queue is not an immediate refund.** After the last entry, Paycrest may still route the order elsewhere before refunding it. Don't model this as "3 tries then refund".
 </Note>
 
 Quotes rank the **public** book, so `providerIds` lists only providers open to every sender. If you route to a provider dedicated to you, name it directly in **`destination.providerIds`** on create—it will not appear in a public quote.
