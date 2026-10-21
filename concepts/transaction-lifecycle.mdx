@@ -40,10 +40,10 @@ stateDiagram-v2
     The provision node is actively disbursing fiat to the recipient's bank account or mobile wallet via a local PSP.
   </Step>
   <Step title="validated">
-    The provider has confirmed successful fiat delivery. The order is waiting for onchain settlement.
+    The provider has confirmed successful fiat delivery. The order is waiting for on-chain settlement.
   </Step>
   <Step title="settling">
-    Onchain settlement is in progress — the escrowed stablecoins are being released to the provider.
+    On-chain settlement is in progress: the escrowed stablecoins are being released to the provider.
   </Step>
   <Step title="settled">
     The order is fully closed. Stablecoins have been released to the provider; fiat has been delivered to the recipient.
@@ -51,7 +51,7 @@ stateDiagram-v2
 </Steps>
 
 <Note>
-  **Performance**: The majority of orders complete in under 30 seconds from deposit to completion. If fulfillment fails after a deposit is received, the sender is automatically refunded.
+  **Performance**: The median NGN order completes in under 30 seconds from deposit. If fulfillment fails after a deposit is received, the sender is refunded automatically.
 </Note>
 
 <Warning>
@@ -91,7 +91,7 @@ stateDiagram-v2
     Fiat receipt confirmed and stablecoin release authorized.
   </Step>
   <Step title="settling">
-    Onchain transfer of stablecoins to the recipient's wallet is in progress.
+    On-chain transfer of stablecoins to the recipient's wallet is in progress.
   </Step>
   <Step title="settled">
     Stablecoins have been delivered to the recipient's wallet. The order is fully closed.
@@ -114,7 +114,7 @@ The complete set of order status values:
 | `fulfilling` | Provider is disbursing fiat or stablecoins |
 | `fulfilled` | Fulfillment completed by provider (internal) |
 | `validated` | Payout confirmed |
-| `settling` | Onchain settlement in progress |
+| `settling` | On-chain settlement in progress |
 | `settled` | Fully complete |
 | `cancelled` | Order cancelled |
 | `refunding` | Refund in progress (deposit received, fulfillment failed) |
@@ -130,7 +130,7 @@ Paycrest sends webhooks to your configured endpoint as an order progresses. Most
 | `payment_order.deposited` | Deposit confirmed on the receive address |
 | `payment_order.pending` | Order assigned to a provider |
 | `payment_order.validated` | Payout confirmed by provider |
-| `payment_order.settling` | Onchain settlement started |
+| `payment_order.settling` | On-chain settlement started |
 | `payment_order.settled` | Settlement complete — the recipient has the funds |
 | `payment_order.refunding` | Refund initiated |
 | `payment_order.refunded` | Refund complete — the funds have landed at the refund address |
@@ -143,22 +143,18 @@ Paycrest sends webhooks to your configured endpoint as an order progresses. Most
 
 ### Compliance holds
 
-`payment_order.compliance_hold` fires when an on-ramp order's fiat has been received but Paycrest cannot settle it while a compliance review is open. It is sent at most once per order.
+You may receive `payment_order.compliance_hold` when an on-ramp order's fiat has been received and the order is held for a compliance review. It is sent at most once per order. Always treat `payment_order.settled` or `payment_order.refunded` as the order's final outcome.
 
-A deposit from an account that is not the customer's own (the payer must match the customer in `source.kyc`) is usually not reviewed: Paycrest returns it in full to the account it came from within minutes, and you receive `payment_order.refunded` without a `payment_order.compliance_hold`. Paycrest holds such a deposit for review instead when it cannot be returned automatically, or when the deposit pattern needs a closer look.
+A deposit from an account that is not the customer's own (the payer must match the customer in `source.kyc`) is usually not reviewed: Paycrest returns it in full to the account it came from, and you receive `payment_order.refunded` without a `payment_order.compliance_hold`. Paycrest may hold a deposit for review instead.
 
 Two things make this event different from the rest:
 
-- **It is not a status change.** The order deliberately remains `pending`, so `data.status` reads `pending`, not `compliance_hold`. If you route webhooks by `data.status`, this event will look like a duplicate `pending` — branch on `event` instead.
+- **It is not a status change.** The order deliberately remains `pending`, so `data.status` reads `pending`, not `compliance_hold`. If you route webhooks by `data.status`, this event will look like a duplicate `pending`, so branch on `event` instead.
 - **It is not final.** A held order does not expire. When the review ends, the order either settles (`payment_order.settled`) or the deposit is returned to the account it came from (`payment_order.refunded`). A review can take several days.
 
-**Polling instead of webhooks?** While a deposit is held, the order reads `"status": "pending"` with `"statusDetail": "under_review"`, so you can tell it from an order that has not been paid. A deposit returned to the account it came from ends `refunded` with a `refundReason`: `payer_mismatch` when it came from an account not in the customer's name, or `payer_unverified` when the payer could not be confirmed. Both fields are on the v2 order and in v2 webhooks.
+**Polling instead of webhooks?** A held order reads `"status": "pending"` and may carry `"statusDetail": "under_review"`. Treat `status` as the source of truth; `statusDetail` is informational and may be absent. A deposit returned to the account it came from ends `refunded` with a `refundReason`: `payer_mismatch` when it came from an account not in the customer's name, or `payer_unverified` when the payer could not be confirmed. Both fields are on the v2 order and in v2 webhooks.
 
 Do not prompt the customer to pay again: a second deposit into the same virtual account will be held as well. What you tell your own customer is your decision; contact Paycrest support if you need to know where a review stands.
-
-<Note>
-  Not every held order produces this event. Where a hold concerns your account rather than the counterparty, no webhook is sent; you will observe only the order's final `payment_order.settled` or `payment_order.refunded`.
-</Note>
 
 ### Webhook Payload (v1)
 
@@ -307,13 +303,9 @@ func verifyWebhook(payload []byte, signature, secret string) bool {
   </Tab>
 </Tabs>
 
-## Timeframes & SLAs
+## Timeframes
 
-| Metric | Target |
-|--------|--------|
-| Median order completion time (NGN) | < 30 seconds |
-| Reliability (NGN) | ≥ 95% complete within 30s |
-| Refund rate | ≤ 3% |
+The median NGN order completes in under 30 seconds. Completion times vary by corridor, provider and payment rail.
 
 ## Error Handling
 
@@ -323,7 +315,7 @@ There are two distinct failure paths:
 - User abandoned the payment flow
 - Deposit was sent to the wrong address or after the address expired
 
-**`refunded`** — A deposit was received but fulfillment failed. The deposited funds are automatically returned to the sender. For an off-ramp order already created onchain, the refund is `amount + senderFee`: the transaction fee has already paid for the network. Common causes:
+**`refunded`**: A deposit was received but fulfillment failed. The deposited funds are automatically returned to the sender. For an off-ramp order already created on-chain, the refund is `amount + senderFee`: the transaction fee has already paid for the network. Common causes:
 - No provider available at the requested rate
 - PSP unavailability in the corridor
 - Deposited amount doesn't match the quoted rate within tolerance

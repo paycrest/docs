@@ -13,8 +13,8 @@ A **KYB-verified entity** that initiates either a fiat-to-stablecoin or stableco
 
 - **KYB Required**: Must complete business verification
 - **API Access**: Uses the Sender API to create orders or can interact directly with the Gateway contract
-- **Fee Structure**: Zero protocol fees, with optional sender fees for business monetization
-- **Flexibility**: Can be smart contracts, dApps, or traditional applications
+- **Fee Structure**: The quoted rate, plus a transaction fee that covers the order's gas. Senders can add their own optional fee
+- **Flexibility**: Can be smart contracts, dApps, smart accounts (e.g. EIP-7702), or traditional applications
 
 ### Responsibilities
 
@@ -30,9 +30,10 @@ A **KYB-verified entity** that initiates either a fiat-to-stablecoin or stableco
 - **Business Payments**: Pay suppliers in different currencies
 - **DeFi Applications**: Bridge between crypto and traditional finance
 - **E-commerce**: Accept crypto payments and settle in fiat
+- **Wallets and apps**: Let users buy stablecoins with local currency (on-ramp)
 
 <Note>
-  **Sender Fee Model:** Sender businesses can optionally charge fees to their users. Configure a default fee via the dashboard, or pass `senderFee` / `senderFeePercent` on each V2 order request. When the effective fee is greater than zero, a fee recipient is required — either configured on the profile or passed as `senderFeeAddress` on the request. The fee is settled atomically onchain upon successful order settlement, with no offchain billing required.
+  **Sender Fee Model:** Sender businesses can optionally charge fees to their users. Configure a default fee via the dashboard, or pass `senderFee` / `senderFeePercent` on each V2 order request. When the effective fee is greater than zero, a fee recipient is required: either configured on the profile or passed as `senderFeeAddress` on the request. The fee is settled atomically on-chain upon successful order settlement, with no off-chain billing required.
 </Note>
 
 ## Recipient
@@ -60,6 +61,7 @@ The **beneficiary** of the transaction who receives funds without interacting wi
 - **Freelancer Payment**: Get paid in local currency for crypto work
 - **Business Settlement**: Receive supplier payments in preferred currency
 - **Investment Returns**: Convert crypto gains to fiat
+- **Stablecoin Purchase**: Pay in local currency and receive stablecoins in a wallet
 
 ## Provider
 
@@ -74,17 +76,15 @@ A **KYB-verified participant** that supplies fiat liquidity in exchange for stab
 
 ### Responsibilities
 
-- **Order Fulfillment**: Execute payments to recipients
+- **Order Fulfillment**: Pay out fiat on off-ramp orders and collect fiat on on-ramp orders
 - **Rate Management**: Set competitive rates for currency pairs
 - **Compliance**: Maintain regulatory compliance and reporting
 - **Infrastructure**: Operate reliable payment infrastructure
 
 ### Revenue Model
 
-- **Bid-Ask Spreads**: Profit from currency exchange spreads
-- **Volume Incentives**: Earn bonuses for high transaction volume
-- **Quality Bonuses**: Rewards for reliable fulfillment
-- **Geographic Premiums**: Higher rates for underserved markets
+- **Rate spread**: Earn the spread between your quoted rate and your cost of liquidity
+- **Order flow**: Access order flow from senders integrated with Paycrest
 
 ### Provider Types
 
@@ -104,23 +104,23 @@ A **KYB-verified participant** that supplies fiat liquidity in exchange for stab
 
 ## Aggregator
 
-A **KYB-verified entity** that coordinates the entire order routing process and ensures protocol efficiency.
+The **Paycrest Aggregator** is the neutral middle between senders and independent verified providers. It coordinates every order from creation to settlement and never holds funds.
 
 ### Characteristics
 
 - **Order Matching**: Matches orders with suitable providers
 - **Quality Assurance**: Ensures reliable order fulfillment
-- **Compliance Oversight**: Manages KYC and regulatory compliance
+- **Compliance Oversight**: Verifies sender and provider businesses (KYB) and screens orders for sanctions risk
 - **Infrastructure**: Operates high-availability nodes
 
 ### Responsibilities
 
 - **Order Indexing**: Monitor blockchain for new orders
-- **Provider Management**: Maintain provider registry and ratings
+- **Provider Management**: Maintain the provider registry
 - **Order Assignment**: Match orders with optimal providers
-- **Settlement Coordination**: Coordinate multi-provider settlements
-- **Compliance Verification**: Verify KYC and regulatory compliance
-- **Dispute Resolution**: If an order is not fulfilled, it is automatically refunded. The aggregator does not handle disputes directly. If an order is stuck, communication between senders and providers may occur via a decentralized messaging protocol (e.g., XMTP).
+- **Settlement Coordination**: Coordinate settlement with the assigned provider
+- **Compliance Verification**: Verify businesses before they go live and hold flagged orders for review
+- **Refunds**: Unfulfilled orders are refunded automatically, so there is no manual dispute process
 
 ### Aggregator Functions
 
@@ -138,15 +138,13 @@ A **KYB-verified entity** that coordinates the entire order routing process and 
     Track order fulfillment and validate completion
   </Step>
   <Step title="Settlement Coordination">
-    Coordinate onchain settlement and fee distribution
+    Coordinate on-chain settlement
   </Step>
 </Steps>
 
-### Aggregator Types
+### Who runs the aggregator
 
-- **Protocol Aggregators**: Official Paycrest aggregator nodes
-- **Third-Party Aggregators**: Independent aggregator services
-- **Hybrid Aggregators**: Providers that also run aggregator nodes
+Today the **Paycrest Aggregator**, operated by Paycrest, is the only aggregator. The protocol is designed to support independent aggregators in the future.
 
 ## Participant Relationships
 
@@ -172,10 +170,10 @@ A **KYB-verified entity** that coordinates the entire order routing process and 
 
 <CardGroup cols={2}>
   <Card title="For Senders">
-    - Zero transaction fees
+    - One quoted rate per order
     - Global reach with local delivery
     - Real-time status tracking
-    - Automated compliance
+    - Verified counterparties
   </Card>
   <Card title="For Recipients">
     - No technical knowledge required
@@ -184,15 +182,9 @@ A **KYB-verified entity** that coordinates the entire order routing process and 
     - Competitive exchange rates
   </Card>
   <Card title="For Providers">
-    - Access to global liquidity
+    - Access to global demand
     - Automated order matching
-    - Transparent fee structure
-    - Quality-based incentives
-  </Card>
-  <Card title="For Aggregators">
-    - Network effect benefits
-    - Quality assurance control
-    - Compliance management
-    - Infrastructure optimization
+    - Escrow-backed settlement
+    - Order flow from integrated senders
   </Card>
 </CardGroup> 

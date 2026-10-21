@@ -31,7 +31,7 @@
                 "pages": [
                   "introduction",
                   "quickstart",
-                  "protocol-overview"
+                  "concepts/use-cases"
                 ]
               },
               {
@@ -40,16 +40,21 @@
                   "concepts/participants",
                   "concepts/architecture",
                   "concepts/compliance-security",
-                  "concepts/transaction-lifecycle",
-                  "concepts/use-cases"
+                  "concepts/transaction-lifecycle"
                 ]
               },
               {
-                "group": "Implementation Guides",
+                "group": "For Senders",
                 "pages": [
                   "implementation-guides/sender-api-integration",
-                  "implementation-guides/sender-mcp",
                   "implementation-guides/smart-contract-interaction",
+                  "implementation-guides/sender-mcp",
+                  "resources/code-standards"
+                ]
+              },
+              {
+                "group": "For Providers",
+                "pages": [
                   "implementation-guides/provider-setup-guide"
                 ]
               },
@@ -58,7 +63,6 @@
                 "pages": [
                   "resources/supported-stablecoins",
                   "resources/supported-currencies",
-                  "resources/code-standards",
                   "resources/gateway-contract-addresses",
                   "resources/troubleshooting",
                   "resources/changelog"
@@ -83,6 +87,7 @@
                   "api-reference/sender/initiate-payment-order-v2",
                   "api-reference/sender/list-payment-orders-v2",
                   "api-reference/sender/get-payment-order-by-id-v2",
+                  "api-reference/sender/get-order-by-gateway-id",
                   "api-reference/sender/get-sender-stats",
                   "api-reference/sender/list-webhook-deliveries",
                   "api-reference/sender/get-webhook-delivery-by-id",
@@ -109,7 +114,6 @@
                   "api-reference/general/get-markets",
                   "api-reference/general/get-aggregator-public-key",
                   "api-reference/general/verify-account",
-                  "api-reference/sender/get-lock-payment-order-status",
                   "api-reference/general/reindex-transaction"
                 ]
               }
@@ -193,6 +197,14 @@
     {
       "source": "/implementation-guides/bridge-rails",
       "destination": "/resources/supported-stablecoins"
+    },
+    {
+      "source": "/protocol-overview",
+      "destination": "/concepts/architecture"
+    },
+    {
+      "source": "/api-reference/sender/get-lock-payment-order-status",
+      "destination": "/api-reference/sender/get-order-by-gateway-id"
     }
   ],
   "footer": {

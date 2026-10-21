@@ -3,7 +3,7 @@ title: 'Provider Setup Guide'
 description: 'Complete step-by-step guide to become a Paycrest provider and run a provision node'
 ---
 
-This guide walks you through the complete process of becoming a Paycrest provider, from initial signup to running a production provision node. Follow these steps to start earning from stablecoin-to-fiat transactions.
+This guide walks you through the complete process of becoming a Paycrest provider, from initial signup to running a production provision node. Follow these steps to start earning from on-ramp and off-ramp orders.
 
 
 ### Step 1: Signup as a Provider
@@ -42,9 +42,8 @@ You need two credential groups:
 
 Choose your provision node hosting method:
 
-#### Option A: Blockops (Recommended for Low Technical Skills)
-- **Cost**: $10/month
-- Simplified setup with Paycrest partnership
+#### Option A: Blockops (Managed hosting)
+- Managed hosting with guided setup
 - Video setup guide available
 - Start here: [https://blockops.network](https://blockops.network)
 - After setup, obtain the Host Identifier URL from Blockops
@@ -92,20 +91,21 @@ AGGREGATOR_SECRET_KEY=your_paycrest_api_secret # Provider Dashboard → Settings
 AGGREGATOR_BASE_URL=https://api.paycrest.io/v2/provider
 
 # PSP Config - Only configure for PSPs you are using
-# Example env prefix (Payaza — names shown in dashboard; availability varies by corridor/currency)
-PAYAZA_API_KEY=
-PAYAZA_TRANSACTION_PIN=
+# Use the exact variable names shown for each PSP on the dashboard PSP setup page
+# (availability varies by corridor and currency)
+<PSP>_API_KEY=
+<PSP>_SECRET_KEY=
 ```
 
 > **Credential Mapping**
 > - `AGGREGATOR_CLIENT_ID` must be your Paycrest **API Key** (Settings → **Payout** → **API Keys**)
 > - `AGGREGATOR_SECRET_KEY` must be your Paycrest **API Secret** (Settings → **Payout** → **API Keys**)
-> - PSP variables (for example `PAYAZA_*`, `NOMBA_*`) use values issued by each PSP. Prefixes match PSPs listed in the dashboard; availability depends on your corridor and currency.
+> - PSP variables (`<PSP>_*`) use values issued by each PSP. Prefixes match PSPs listed in the dashboard; availability depends on your corridor and currency.
 
 #### `EVM_PRIVATE_KEY` explained
 
 - **What it is**: The private key for a dedicated EVM wallet (EOA) used by your provision node.
-- **When you need it**: Required for EVM onramp-related wallet/authorization flows. If you're running offramp-only operations, you can leave it unset.
+- **When you need it**: Required for EVM on-ramp-related wallet/authorization flows. If you're running off-ramp-only operations, you can leave it unset.
 - **How to generate it**: Create a new dedicated EVM wallet (do not reuse a personal wallet) and use that wallet's private key.
 - **Security**: Treat this as a production secret. Never commit it to git, store it in a secure secret manager or protected `.env`, and rotate it immediately if exposed.
 
@@ -114,7 +114,7 @@ PAYAZA_TRANSACTION_PIN=
 - **What they are**:
   - `STARKNET_SNIP9_USER_ADDRESS` — Starknet account address used to sign SNIP-9 OutsideExecution payin messages
   - `STARKNET_SNIP9_PRIVATE_KEY` — private key for that Starknet account
-- **When you need them**: Required when fulfilling **Starknet on-ramp (payin)** orders. If you only handle EVM or offramp-only flows, you can leave them unset.
+- **When you need them**: Required when fulfilling **Starknet on-ramp (payin)** orders. If you only handle EVM or off-ramp-only flows, you can leave them unset.
 - **Address format**: Use a Starknet felt hex address (`0x` + 63–64 hex characters), not an EVM checksum address.
 - **Security**: Treat both as production secrets. Never commit them to git, store them in a secure secret manager or protected `.env`, and rotate them immediately if exposed.
 
@@ -177,6 +177,8 @@ Expected response:
 **Order Limits:**
 - Set your minimum limit: Set the minimum amount (in USD) you can fulfill
 - Set your maximum limit: Set an amount (in USD) based on the available fiat balance in your PSP account
+
+**Protocol fee:** A protocol fee, a percentage of each order, is deducted at settlement. It appears as `transactionFee` on provider orders in the API and as **Protocol Fee** on order details in the dashboard.
 
 #### Set Settlement Addresses
 

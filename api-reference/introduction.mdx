@@ -72,7 +72,7 @@ For protocol information and utilities:
 - **`GET /rates/{network}/{from}/{amount}/{to}`** - Get public buy/sell rate quotes (token+fiat or fiat+fiat via USDC on a network; no API key)
 - **`GET /pubkey`** - Get aggregator public key
 - **`POST /verify-account`** - Verify bank or mobile money account details before creating an order (mobile MSISDN normalized server-side; see [Verify Account](/api-reference/general/verify-account))
-- **`GET /orders/{chain_id}/{id}`** - Get order status by onchain Gateway ID
+- **`GET /orders/{chain_id}/{id}`** - Get order status by on-chain Gateway ID
 - **`GET /reindex/{network}/{tx_hash_or_address}`** - Reindex a transaction or address
 
 ## Request Format
@@ -396,8 +396,8 @@ Set up webhooks to receive real-time updates:
 - **`payment_order.deposited`** - Deposit detected on the receive address
 - **`payment_order.pending`** - Order matched and awaiting provider fulfillment
 - **`payment_order.validated`** - Provider confirmed fiat delivery
-- **`payment_order.settling`** - Settlement transaction broadcast onchain
-- **`payment_order.settled`** - Settlement confirmed onchain; the recipient has the funds
+- **`payment_order.settling`** - Settlement transaction broadcast on-chain
+- **`payment_order.settled`** - Settlement confirmed on-chain; the recipient has the funds
 - **`payment_order.refunding`** - Refund transaction initiated
 - **`payment_order.refunded`** - Deposit refunded to sender (fulfillment failed); the refund has landed at the refund address
 - **`payment_order.expired`** - Order expired with no deposit received
@@ -481,4 +481,4 @@ Need help with the API?
 
 ## Fee Model
 
-Protocol fees are paid by providers. Senders pay no protocol fee, maximizing their payout. Each order carries a `transactionFee` for network costs, which by default comes out of the sender fee. See [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee).
+Senders pay the quoted rate, plus a `transactionFee` for the order's gas (by default it comes out of the sender fee) and any optional sender fee they set. See [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee).

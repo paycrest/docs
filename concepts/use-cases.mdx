@@ -1,9 +1,9 @@
 ---
 title: "Use Cases"
-description: "Explore how businesses and developers can leverage Paycrest for various payment scenarios"
+description: "How businesses and developers use Paycrest for on-ramp and off-ramp payments"
 ---
 
-Paycrest enables a wide range of payment scenarios across different industries and use cases. From crypto businesses to traditional fintech applications, our protocol provides the infrastructure for seamless cross-border payments.
+Paycrest works in both directions: off-ramp (stablecoins to local currency) and on-ramp (local currency to stablecoins). The scenarios below show common ways businesses use it. For code, see the [Sender API Integration](/implementation-guides/sender-api-integration) guide.
 
 ## Crypto Businesses
 
@@ -39,6 +39,21 @@ const payoutOrder = await gateway.createOrder(
   messageHash
 );
 ```
+
+### Wallet and App On-ramp
+
+**Overview:** Let users buy stablecoins with local currency from inside a wallet or app.
+
+**How it works:**
+- The app creates an on-ramp order through the Sender API from its backend
+- The user pays the exact amount shown into the provider's local account
+- Once the provider confirms the payment, stablecoins are delivered to the user's wallet on-chain
+- If the payment can't be completed, it is refunded to the user's account
+
+**Benefits:**
+- Users fund their wallets without leaving the app
+- The rate is quoted before the user pays
+- The same integration also handles off-ramp
 
 ### NFT Marketplace Payouts
 
@@ -90,22 +105,6 @@ const payoutOrder = await gateway.createOrder(
 - Transparent exchange rates
 - Simplified compliance and reporting
 
-**Example Implementation:**
-```javascript
-// Automated payroll system
-const payrollOrder = await paycrest.createOrder({
-  amount: '2500.00',
-  token: 'USDC',
-  network: 'polygon',
-  recipient: {
-    institution: 'KCB',
-    accountIdentifier: '9876543210',
-    accountName: 'Sarah Johnson',
-    currency: 'KES'
-  },
-  reference: 'payroll-2024-01-sarah-johnson'
-});
-```
 
 ### E-commerce Payment Processing
 
@@ -164,7 +163,7 @@ const payrollOrder = await paycrest.createOrder({
 **How it works:**
 - Lenders use stablecoins for loan disbursement
 - Paycrest converts to local currencies for borrowers
-- Repayments can be collected in crypto or fiat
+- Repayments can be collected in local currency and converted to stablecoins (on-ramp)
 - Automated payment processing
 
 **Benefits:**
@@ -241,180 +240,17 @@ const payrollOrder = await paycrest.createOrder({
 - Faster international payments
 - Simplified cash management
 
-## Integration Examples
-
-### Web Application Integration
-
-```javascript
-// Express.js server with Paycrest integration
-const express = require('express');
-const crypto = require('crypto');
-const app = express();
-
-// Use raw body for this route only — do not use express.json() before webhook verification
-function verifyPaycrestSignature(rawBody, signature, secret) {
-  const sig = (signature && String(signature).trim().toLowerCase()) || '';
-  const key = String(secret || '').trim();
-  if (!sig || !key) return false;
-  const bodyBuf = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody, 'utf8');
-  const computed = crypto.createHmac('sha256', key).update(bodyBuf).digest('hex').toLowerCase();
-  if (computed.length !== sig.length) return false;
-  try {
-    return crypto.timingSafeEqual(Buffer.from(computed, 'utf8'), Buffer.from(sig, 'utf8'));
-  } catch {
-    return false;
-  }
-}
-
-// Webhook endpoint for order updates (raw JSON bytes for HMAC)
-app.post('/webhooks/paycrest', express.raw({ type: 'application/json' }), async (req, res) => {
-  const signature = req.get('X-Paycrest-Signature');
-
-  if (!verifyPaycrestSignature(req.body, signature, process.env.WEBHOOK_SECRET)) {
-    return res.status(401).send('Invalid signature');
-  }
-
-  const { event, orderId, status, data } = JSON.parse(req.body);
-  
-  try {
-    // Update order status in database
-    await updateOrderStatus(orderId, status);
-    
-    // Send notification to user based on status
-    if (status === 'settled') {
-      await notifyUserSuccess(orderId, data);
-    } else if (status === 'expired') {
-      await notifyUserExpired(orderId);
-    }
-    
-    res.status(200).send('Webhook processed');
-  } catch (error) {
-    console.error('Webhook processing error:', error);
-    res.status(500).send('Internal server error');
-  }
-});
-
-// API endpoint to create payment order
-app.post('/api/payments', async (req, res) => {
-  try {
-    const { amount, recipient } = req.body;
-    
-    const order = await paycrest.createOrder({
-      amount: amount.toString(),
-      token: 'USDT',
-      network: 'base',
-      recipient: recipient,
-      reference: `payment-${Date.now()}`
-    });
-    
-    res.json({
-      success: true,
-      orderId: order.id,
-      receiveAddress: order.receiveAddress,
-      validUntil: order.validUntil
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-```
-
-### Mobile Application Integration
-
-```javascript
-// React Native payment flow
-// Direct API integration
-
-// Direct API integration using fetch
-const API_BASE_URL = 'https://api.paycrest.io/v2';
-const API_KEY = 'YOUR_API_KEY';
-
-const initiatePayment = async (amount, recipient) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/orders`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'API-Key': API_KEY
-  },
-  body: JSON.stringify({
-    amount: amount.toString(),
-    token: 'USDT',
-    network: 'base',
-    recipient: recipient,
-    reference: `mobile-payment-${Date.now()}`
-  })
-});
-
-if (!response.ok) {
-  throw new Error(`API request failed: ${response.statusText}`);
-}
-
-const order = await response.json();
-    
-    // Show payment instructions to user
-    showPaymentInstructions(order.receiveAddress, order.validUntil);
-    
-    // Start polling for status updates
-    pollOrderStatus(order.id);
-    
-    return order;
-  } catch (error) {
-    console.error('Payment initiation failed:', error);
-    throw error;
-  }
-};
-
-const pollOrderStatus = async (orderId) => {
-  const checkStatus = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
-  headers: {
-    'API-Key': API_KEY
-  }
-});
-
-if (!response.ok) {
-  throw new Error(`Status check failed: ${response.statusText}`);
-}
-
-const orderData = await response.json();
-const status = orderData.status;
-      
-      if (status === 'settled') {
-        showSuccessMessage('Payment completed successfully!');
-        stopPolling();
-      } else if (status === 'expired') {
-        showErrorMessage('Payment expired. Please try again.');
-        stopPolling();
-      }
-    } catch (error) {
-      console.error('Status check failed:', error);
-    }
-  };
-  
-  // Poll every 10 seconds
-  const interval = setInterval(checkStatus, 10000);
-  
-  // Stop polling after 5 minutes
-  setTimeout(() => {
-    clearInterval(interval);
-  }, 300000);
-};
-```
-
 ## Getting Started
 
 To implement any of these use cases:
 
-1. **Sign up** for a Paycrest account
-2. **Complete KYC/KYB** requirements
+1. **Sign up** as a sender at [app.paycrest.io](https://app.paycrest.io)
+2. **Complete KYB** for your business
 3. **Get API credentials** from your dashboard
-4. **Integrate the Sender API** using our documentation
-5. **Test thoroughly** with small amounts ($0.50+)
-6. **Go live** with production integration
+4. **Integrate the Sender API**: start with the [Quickstart](/quickstart), then the [Sender API Integration](/implementation-guides/sender-api-integration) guide
+5. **Test** with small amounts ($0.50 minimum on most networks)
+6. **Go live**
 
-For detailed implementation guides, see our [Sender API Integration](/implementation-guides/sender-api-integration) documentation. 
+<Warning>
+  Call the Sender API from your backend. Never put your API key or secret in a browser or mobile app.
+</Warning>
