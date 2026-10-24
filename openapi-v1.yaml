@@ -1308,7 +1308,9 @@ paths:
       tags:
         - Provider
       summary: Decline an order
-      description: Provider declines an assigned order. The aggregator will reassign it to another provider.
+      description: |
+        Provider declines an assigned order. The aggregator will reassign it to another provider.
+        A duplicate `reason` declines the order without reassignment; see `reason` below.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -1318,6 +1320,26 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timestamp:
+                  type: integer
+                  description: Unix timestamp in seconds
+                reason:
+                  type: string
+                  description: |
+                    Optional. Omit it (or send no body) for a normal decline, which reassigns the order.
+                    `duplicate_gateway_order:<holdingOrderId>` (another Paycrest order already holds the same on-chain order) or
+                    `duplicate_reference:<holdingOrderId>`, where `<holdingOrderId>` is the UUID of that other order, tells the
+                    aggregator you will not pay out because the order is a duplicate. The order is then cancelled and not reassigned,
+                    but only if the aggregator can confirm the claim: the holding order must be a different order with the same
+                    on-chain order and token, or the on-chain order must already be fulfilled or refunded. A reason without a valid
+                    holding order id is never confirmed. An unconfirmed claim is handled as an ordinary decline.
+                    The Paycrest provider node sends these reasons automatically.
       responses:
         '200':
           description: Order declined
@@ -1375,7 +1397,9 @@ paths:
       tags:
         - Provider
       summary: Cancel an order
-      description: Provider cancels a previously accepted order. The aggregator will attempt reassignment.
+      description: |
+        Provider cancels a previously accepted order. The aggregator will attempt reassignment.
+        A duplicate `reason` cancels the order without reassignment; see `reason` below.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -1393,7 +1417,15 @@ paths:
               properties:
                 reason:
                   type: string
-                  description: Reason for cancellation
+                  description: |
+                    Reason for cancellation.
+                    `duplicate_gateway_order:<holdingOrderId>` (another Paycrest order already holds the same on-chain order) or
+                    `duplicate_reference:<holdingOrderId>`, where `<holdingOrderId>` is the UUID of that other order, tells the
+                    aggregator you will not pay out because the order is a duplicate. The order is then cancelled and not reassigned,
+                    but only if the aggregator can confirm the claim: the holding order must be a different order with the same
+                    on-chain order and token, or the on-chain order must already be fulfilled or refunded. A reason without a valid
+                    holding order id is never confirmed. An unconfirmed claim is handled as an ordinary cancel.
+                    The Paycrest provider node sends these reasons automatically.
       responses:
         '200':
           description: Order cancelled

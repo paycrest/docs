@@ -9,6 +9,14 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q4 2026
 
+### Duplicate reasons on provider decline and cancel (October 2026)
+
+**New:** `POST /provider/orders/{id}/decline` accepts an optional JSON body with `timestamp` and `reason`. Without `reason`, a decline still reassigns the order to another provider.
+
+- **New:** on decline and on `POST /provider/orders/{id}/cancel`, the reason `duplicate_gateway_order:<holdingOrderId>` or `duplicate_reference:<holdingOrderId>` tells the aggregator the provider will not pay out because another order already holds it. The order is cancelled and not reassigned.
+- This applies only when the aggregator can confirm the claim: the holding order shares this order's on-chain order and token, or the on-chain order is already fulfilled or refunded. Otherwise the request is handled as an ordinary decline or cancel.
+- Providers running the Paycrest provider node get this automatically.
+
 ### Payment reference on v2 off-ramp orders (October 2026)
 
 **New:** v2 orders ([`GET /v2/sender/orders/:id`](/api-reference/sender/get-payment-order-by-id-v2) and [`GET /v2/sender/orders`](/api-reference/sender/list-payment-orders-v2)) and v2 webhooks carry `paymentReference`, the receipt from the bank or mobile-money network that paid the recipient (for example an M-Pesa receipt code). See [Monitor completion](/implementation-guides/sender-api-integration#monitor-completion).
