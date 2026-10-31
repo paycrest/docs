@@ -9,6 +9,14 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q4 2026
 
+### Verify-account status codes: 400 vs 503 (October 2026)
+
+**Updated:** [`POST /v2/verify-account`](/api-reference/general/verify-account) and [`POST /v1/verify-account`](/api-reference/general/verify-account-v1) now separate a definitive "not verified" from a temporary failure. Previously every verification failure returned **503**. Successful responses are unchanged. See [Status codes](/api-reference/general/verify-account#status-codes).
+
+- **Behavior change:** an unsupported or unknown institution, or an account every eligible provider rejects, returns **400**. Treat it as final and ask the user to check the institution and account number.
+- **Behavior change:** provider outages, timeouts and inconclusive results return **503** "Failed to verify account". Retry with backoff. For NGN, a response with no real account name also returns 503.
+- Branch on the status code, not the message text. If you already treat any non-200 as "not verified", no change is needed.
+
 ### Duplicate reasons on provider decline and cancel (October 2026)
 
 **New:** `POST /provider/orders/{id}/decline` accepts an optional JSON body with `timestamp` and `reason`. Without `reason`, a decline still reassigns the order to another provider.

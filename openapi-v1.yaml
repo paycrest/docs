@@ -1182,19 +1182,21 @@ paths:
                     description: Resolved account name, or `"OK"` when valid but name lookup is unavailable
                     example: JOHN DOE
         '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '502':
-          description: Bad gateway
+          description: |
+            Final for this request. Do not retry it unchanged.
+
+            - Malformed request body: `Failed to validate payload`, with field errors in `data`.
+            - Unsupported or unknown institution: for example `institution <code> is not supported` or `no enabled fiat currency for institution <code>`. `data` is `null`.
+            - Every eligible provider rejected the account: `Account could not be verified`. `data` is `null`.
+
+            For the last two, ask the user to check the institution and account number.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: Service unavailable
+          description: |
+            Verification could not complete: `Failed to verify account`. `data` is `null`. Covers provider outages, timeouts and errors, malformed provider responses, no available provider, and mixed reject and outage outcomes across providers. For NGN, also returned when no provider returns a real account name. Retry with backoff.
           content:
             application/json:
               schema:
