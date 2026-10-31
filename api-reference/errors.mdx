@@ -7,8 +7,8 @@ The Paycrest API uses standard HTTP status codes and provides detailed error inf
 | `200` | OK | Request successful |
 | `201` | Created | Resource created successfully |
 | `400` | Bad Request | Invalid parameters or request format |
-| `401` | Unauthorized | Invalid or missing API key |
-| `403` | Forbidden | Insufficient permissions for this action |
+| `401` | Unauthorized | Missing, invalid or revoked credentials (API key, signature or token) |
+| `403` | Forbidden | Authenticated, but the account type or API key scope isn't allowed on this route. The response has `data.field: "role"` |
 | `404` | Not Found | Resource not found |
 | `409` | Conflict | Resource conflict (e.g., duplicate order) |
 | `422` | Unprocessable Entity | Validation failed |

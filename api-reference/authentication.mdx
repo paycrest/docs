@@ -9,7 +9,7 @@ API-Key: YOUR_API_KEY
 ```
 
 - You can find your API Key in your dashboard.
-- Requests without a valid or correct API-Key will return **401 Unauthorized**.
+- Requests with a missing, invalid or revoked API-Key return **401 Unauthorized**. A valid key used on a route its account type can't access (for example, a sender key on a provider route) returns **403 Forbidden**.
 
 <Warning>
 Do not commit your API keys to git, or use them in client-side code. Never share your API Secret. If you believe it has been compromised, rotate it immediately in your dashboard.
