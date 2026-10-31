@@ -4,3 +4,5 @@ openapi: "openapi-v1.yaml POST /verify-account"
 ---
 
 Verify bank or mobile money account details before creating an order (legacy v1 API). Behavior matches v2 for request shape and mobile money normalization — see [Verify Account (v2)](/api-reference/general/verify-account) for mobile MSISDN formats, optional **`metadata`** (KES Till/Paybill), and when `data` is `"OK"` vs a resolved name.
+
+Status codes are the same as v2: **400** means not verified (do not retry), **503** means verification could not complete (retry with backoff). See [Status codes](/api-reference/general/verify-account#status-codes).
