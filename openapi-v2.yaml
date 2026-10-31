@@ -1420,8 +1420,8 @@ components:
       type: object
       description: |
         A single outbound webhook delivery attempt. Returned in list responses
-        (the large `requestPayload` and `responseBody` fields are omitted from list
-        items — fetch a single delivery to see them).
+        (the large `payload` and `responseBody` fields are omitted from list
+        items; fetch a single delivery to see them).
       properties:
         id:
           type: string
@@ -1433,11 +1433,12 @@ components:
           description: The webhook event that was delivered.
         eventId:
           type: string
+          format: uuid
           description: Identifier of the underlying event (matches the `event_id` filter).
         orderId:
           type: string
           format: uuid
-          description: The payment order this delivery relates to, if any.
+          description: The payment order this delivery relates to. Omitted when there is none.
         status:
           type: string
           enum: [pending, success, failed, expired]
@@ -1452,7 +1453,7 @@ components:
             What produced this attempt. `automatic` — first send on the event;
             `cron_retry` — automatic backoff retry; `manual_sync`/`manual_async` —
             a sender-initiated retry via the retry endpoint.
-        httpStatusCode:
+        statusCode:
           type: integer
           description: HTTP status code returned by your endpoint (0 if no response was received).
           example: 200
@@ -1460,23 +1461,19 @@ components:
           type: integer
           description: 1-based attempt counter for this delivery.
           example: 1
-        destinationUrl:
+        webhookUrl:
           type: string
-          format: uri
           description: The webhook URL the request was sent to.
-        signature:
-          type: string
-          description: The `X-Paycrest-Signature` (HMAC-SHA256 hex) sent with the request.
         errorMessage:
           type: string
-          description: Transport or HTTP error message, if the attempt failed.
+          description: Transport or HTTP error message. Omitted unless the attempt failed.
         durationMs:
           type: integer
           description: Round-trip duration of the attempt, in milliseconds.
         nextRetryTime:
           type: string
           format: date-time
-          description: When the next automatic retry is scheduled (null once delivered or expired).
+          description: When the next automatic retry is scheduled. Omitted when no retry is scheduled.
         createdAt:
           type: string
           format: date-time
@@ -1490,8 +1487,9 @@ components:
         - $ref: '#/components/schemas/WebhookDelivery'
         - type: object
           properties:
-            requestPayload:
+            payload:
               type: object
+              additionalProperties: true
               description: The exact JSON body that was (or will be) sent, frozen at first attempt.
             responseBody:
               type: string
@@ -1514,8 +1512,10 @@ components:
     WebhookRetryResult:
       type: object
       description: |
-        Result of a synchronous retry (`?sync=true`). Reports the HTTP outcome of
-        replaying the original payload inline.
+        Result of a retry. A synchronous retry (`?sync=true`) reports the HTTP outcome
+        of replaying the original payload inline, with `status` `success` or `failed`.
+        An asynchronous retry returns `status` `pending` and omits `statusCode` and
+        `durationMs`.
       properties:
         id:
           type: string
@@ -1523,14 +1523,21 @@ components:
           description: ID of the delivery record created for this retry.
         status:
           type: string
-          enum: [success, failed]
-        httpStatusCode:
+          enum: [pending, success, failed]
+        statusCode:
           type: integer
+          description: HTTP status code returned by your endpoint. Omitted when 0 (no response, or the retry was queued).
           example: 200
+        attemptNumber:
+          type: integer
+          description: Attempt number of the new delivery record (the source attempt plus one).
+          example: 2
         durationMs:
           type: integer
-        errorMessage:
+          description: Round-trip duration of the replay, in milliseconds. Omitted when 0.
+        message:
           type: string
+          example: Webhook delivered successfully
 
 
 
@@ -2683,8 +2690,8 @@ paths:
       description: |
         Returns the authenticated sender's webhook delivery log, newest first.
         Use this to audit which events were delivered and to find failed or expired
-        deliveries to replay. List items omit the large `requestPayload` and
-        `responseBody` fields — fetch a single delivery to see them.
+        deliveries to replay. List items omit the large `payload` and
+        `responseBody` fields; fetch a single delivery to see them.
       security:
         - ApiKeyAuth: []
       servers:
@@ -2705,6 +2712,7 @@ paths:
           name: event_id
           schema:
             type: string
+            format: uuid
           description: Filter by the underlying event identifier.
         - in: query
           name: order_id
@@ -2744,8 +2752,12 @@ paths:
                 properties:
                   status:
                     type: string
+                  message:
+                    type: string
                   data:
                     $ref: '#/components/schemas/WebhookDeliveryList'
+        '400':
+          description: Invalid `status`, `event_id`, `order_id`, `from` or `to` filter
         '401':
           description: Unauthorized
 
@@ -2755,7 +2767,7 @@ paths:
         - Sender
       summary: Get a webhook delivery by ID
       description: |
-        Returns a single webhook delivery, including the frozen `requestPayload`
+        Returns a single webhook delivery, including the frozen `payload`
         and the captured `responseBody`. Returns `404` if the delivery belongs to
         another sender.
       security:
@@ -2778,6 +2790,8 @@ paths:
                 type: object
                 properties:
                   status:
+                    type: string
+                  message:
                     type: string
                   data:
                     $ref: '#/components/schemas/WebhookDeliveryDetail'
@@ -2827,6 +2841,8 @@ paths:
                 properties:
                   status:
                     type: string
+                  message:
+                    type: string
                   data:
                     $ref: '#/components/schemas/WebhookRetryResult'
         '202':
@@ -2843,16 +2859,13 @@ paths:
                     type: string
                     example: Webhook retry queued
                   data:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                        description: ID of the newly queued delivery.
+                    $ref: '#/components/schemas/WebhookRetryResult'
         '401':
           description: Unauthorized
         '404':
           description: Delivery not found
+        '429':
+          description: Too many retries
 
   # ─── V2 Provider Endpoints ────────────────────────────────────────────────────
 
