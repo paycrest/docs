@@ -85,7 +85,7 @@ Each populated side includes:
 
 When `side=buy` or `side=sell`, only that key is present under `data`.
 
-**`providerIds` is always an array**—`[]` when no provider is available, never `null`. It carries **exactly one** id when you pass `?provider_id=` or `?limit=1`. Fewer than 3 ids means fewer eligible providers for that corridor and notional. The **fallback provider is never listed**.
+**`providerIds` is always an array**: `[]` when no provider is available, never `null`. It carries **exactly one** id when you pass `?provider_id=` or `?limit=1`. Fewer than 3 ids means fewer eligible providers for that corridor and notional.
 
 ## Errors
 
@@ -116,7 +116,7 @@ The queue is resolved **once, at order creation**, and the order carries it for 
 </Steps>
 
 <Note>
-  **Exhausting the queue is not an immediate refund.** After the last entry, the order falls through to **fallback assignment**, and only then to refund after the refund window and its guards. Don't model this as "3 tries then refund".
+  **Exhausting the queue is not an immediate refund.** After the last entry, Paycrest may still route the order elsewhere before refunding it. Don't model this as "3 tries then refund".
 </Note>
 
 Quotes rank the **public** book, so `providerIds` lists only providers open to every sender. If you route to a provider dedicated to you, name it directly in **`destination.providerIds`** on create—it will not appear in a public quote.

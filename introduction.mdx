@@ -1,21 +1,21 @@
 ---
 title: "Introduction"
-description: "Decentralized payment routing infrastructure for stablecoin-fiat conversion — connecting apps and users to a global network of fiat liquidity providers."
+description: "Decentralized payment routing infrastructure for stablecoin-fiat conversion, connecting apps and users to a global network of fiat liquidity providers."
 ---
 
 # Welcome to Paycrest
 
-Paycrest is a **decentralized payment routing protocol** for stablecoin-fiat payments in emerging markets. It routes bidirectional conversion orders between stablecoins and local currencies through a distributed network of liquidity providers, with onchain escrow ensuring trustless, automatic completion in under 30 seconds for the majority of orders, without custodying user funds.
+Paycrest is a **decentralized payment routing protocol** for stablecoin-fiat payments in emerging markets. It routes bidirectional conversion orders between stablecoins and local currencies through a distributed network of liquidity providers, with on-chain escrow that settles orders automatically without Paycrest ever holding user funds.
 
-Paycrest is built for **wallets, fintechs, exchanges, DeFi protocols, and platforms** that need to move stablecoins into and out of local fiat accounts in high-friction markets. If you're building a product that touches cross-border payments, remittances, payroll, or stablecoin on/offramps — Paycrest is the routing layer.
+Paycrest is built for **wallets, fintechs, exchanges, DeFi protocols, and platforms** that need to move stablecoins into and out of local fiat accounts in high-friction markets. If you're building a product that touches cross-border payments, remittances, payroll, or stablecoin on-ramps and off-ramps, Paycrest is the routing layer.
 
 ## The Problem
 
 Cross-border payments, especially in Africa and other emerging markets, remain globally expensive, slow, and fragmented. Sending $200 to Sub-Saharan Africa costs an average of 7.9% in fees, according to the World Bank's [Migration and Development Brief 40](https://www.worldbank.org/en/news/press-release/2024/06/26/remittances-slowed-in-2023-expected-to-grow-faster-in-2024). For the $54 billion in remittances that flowed into the region in 2023, a large share of that value is lost to intermediaries.
 
-Stablecoins have emerged as the most viable alternative: they move in minutes, cost fractions of a cent on modern L2 chains, and are already seeing massive organic adoption. But there is a critical gap: the **last mile**. Converting between stablecoins and local currency remains fragmented and increasingly contested by platform-specific networks tied to individual stablecoin issuers — each building a walled garden around their own token.
+Stablecoins have emerged as the most viable alternative: they move in minutes, cost fractions of a cent on modern L2 chains, and are already seeing massive organic adoption. But there is a critical gap: the **last mile**. Converting between stablecoins and local currency remains fragmented and increasingly contested by platform-specific networks tied to individual stablecoin issuers, each building a walled garden around their own token.
 
-**There is no neutral, open, protocol-level routing layer for stablecoin-fiat conversion. Paycrest is building that layer — issuer-agnostic by design, with no preference for one stablecoin or issuer over another.**
+**There is no neutral, open, protocol-level routing layer for stablecoin-fiat conversion. Paycrest is building that layer: issuer-agnostic by design, with no preference for one stablecoin or issuer over another.**
 
 ## How It Works
 
@@ -30,29 +30,29 @@ Stablecoins have emerged as the most viable alternative: they move in minutes, c
     The provider's automated provision node disburses fiat to the recipient's bank account or mobile wallet via a local PSP.
   </Step>
   <Step title="Complete">
-    Once payout is verified, the escrowed stablecoins are released to the provider onchain. If the order can't be fulfilled, the sender is automatically refunded.
+    Once payout is verified, the escrowed stablecoins are released to the provider on-chain. If the order can't be fulfilled, the sender is automatically refunded.
   </Step>
 </Steps>
 
 <Note>
-  The entire flow completes in under 30 seconds for the majority of orders. The on-ramp flow inverts this: a user deposits fiat through a provider, and the protocol delivers stablecoins to their wallet.
+  The on-ramp flow runs the other way: a user deposits fiat with a provider, and the protocol delivers stablecoins to their wallet.
 </Note>
 
 ## What is Paycrest?
 
-Paycrest is not a payment app. It is infrastructure: an open payment routing protocol that any application can integrate to offer stablecoin on- and offramps to its users. It is also not a P2P consumer product, not a card-issuing solution, and not suitable for anonymous flows — all senders and providers are KYB-verified.
+Paycrest is not a payment app. It is infrastructure: an open payment routing protocol that any application can integrate to offer stablecoin on-ramps and off-ramps to its users. It is also not a P2P consumer product, not a card-issuing solution, and not suitable for anonymous flows. All senders and providers are KYB-verified.
 
 The protocol handles the full stack:
-- **Order routing** — matching senders with the right provider for each corridor and rate
-- **Encrypted message passing** — recipient bank/wallet details transmitted securely
-- **Onchain escrow** — neither party needs to trust the other; the contract enforces completion
-- **Compliance coordination** — providers own local regulatory obligations, senders own theirs
+- **Order routing**: matching senders with the right provider for each corridor and rate
+- **Encrypted message passing**: recipient bank/wallet details transmitted securely
+- **On-chain escrow**: neither party needs to trust the other; the contract enforces completion
+- **Compliance coordination**: providers own local regulatory obligations, senders own theirs
 
 The key properties:
 
 <CardGroup cols={2}>
   <Card title="Non-Custodial" icon="lock">
-    Paycrest never holds user funds. Escrow is onchain; provider fiat is provider-controlled.
+    Paycrest never holds user funds. Escrow is on-chain; provider fiat is provider-controlled.
   </Card>
   <Card title="Open & Composable" icon="puzzle-piece">
     Any smart contract can trigger settlement. Any app can integrate the Sender API.
@@ -60,8 +60,8 @@ The key properties:
   <Card title="Provider-Sovereign" icon="building">
     Liquidity providers run their own provision nodes, set their own rates, and connect their own PSPs.
   </Card>
-  <Card title="Zero Fees for Senders" icon="coins">
-    The aggregator fee is embedded in the provider's rate, not charged to end users, enabling fee-free on- and offramps for consumer apps.
+  <Card title="Simple Pricing" icon="coins">
+    Senders pay the rate quoted live by the Paycrest Sender API, plus the transaction fee and any sender fee they set.
   </Card>
 </CardGroup>
 
@@ -69,16 +69,16 @@ The key properties:
 
 <CardGroup cols={2}>
   <Card title="Sender" icon="paper-plane">
-    KYC/KYB-verified entities (wallets, fintechs, DeFi protocols) that initiate payment orders via the Sender API or Gateway contract.
+    KYB-verified businesses (wallets, fintechs, DeFi protocols) that initiate payment orders via the Sender API or Gateway contract.
   </Card>
   <Card title="Recipient" icon="user-check">
     The beneficiary who receives local fiat or stablecoins without interacting with the protocol directly.
   </Card>
   <Card title="Provider" icon="building">
-    KYB-verified participants that supply fiat liquidity in exchange for stablecoins, running automated provision nodes.
+    KYB-verified participants that supply fiat and stablecoin liquidity in both directions, running automated provision nodes.
   </Card>
   <Card title="Aggregator" icon="sitemap">
-    Matches orders with suitable providers, coordinates fulfillment, and manages the settlement pipeline. Currently operated by Paycrest.
+    The Paycrest Aggregator matches orders with suitable providers, coordinates fulfillment and manages settlement.
   </Card>
 </CardGroup>
 
@@ -86,10 +86,10 @@ The key properties:
 
 <CardGroup cols={2}>
   <Card title="For Senders" href="/quickstart" icon="paper-plane">
-    Learn how to create payment orders and integrate with the Paycrest API. The Sender API v2 supports both off-ramp (stablecoin → fiat) and on-ramp (fiat → stablecoin).
+    Learn how to create payment orders with the Paycrest Sender API. The Sender API v2 supports both off-ramp (stablecoin → fiat) and on-ramp (fiat → stablecoin).
   </Card>
-  <Card title="For Providers" href="/implementation-guides/provider-setup-guide" icon="building">
-    Set up a provision node to supply liquidity and earn fees
+  <Card title="Become a provider" href="/implementation-guides/provider-setup-guide" icon="building">
+    Complete KYB, set up a provision node and serve on-ramp and off-ramp order flow from integrated senders.
   </Card>
 </CardGroup>
 
@@ -100,10 +100,10 @@ Paycrest is live across 4 active corridors with real provider liquidity. New cor
 <CardGroup cols={2}>
   <Card title="African Markets" icon="globe">
     <ul>
-      <li>NGN 🇳🇬 — Nigerian Naira</li>
-      <li>KES 🇰🇪 — Kenyan Shilling</li>
-      <li>UGX 🇺🇬 — Ugandan Shilling</li>
-      <li>TZS 🇹🇿 — Tanzanian Shilling</li>
+      <li>NGN 🇳🇬: Nigerian Naira</li>
+      <li>KES 🇰🇪: Kenyan Shilling</li>
+      <li>UGX 🇺🇬: Ugandan Shilling</li>
+      <li>TZS 🇹🇿: Tanzanian Shilling</li>
     </ul>
   </Card>
 </CardGroup>
@@ -113,9 +113,9 @@ Paycrest is live across 4 active corridors with real provider liquidity. New cor
 <CardGroup cols={2}>
   <Card title="Stablecoins" icon="coins">
     <ul>
-      <li><strong>USDT</strong> — Tether USDt (multi-chain)</li>
-      <li><strong>USDC</strong> — USD Coin (multi-chain)</li>
-      <li><strong>cNGN</strong> — Compliant Naira (multi-chain)</li>
+      <li><strong>USDT</strong>: Tether USDt (multi-chain)</li>
+      <li><strong>USDC</strong>: USD Coin (multi-chain)</li>
+      <li><strong>cNGN</strong>: Compliant Naira (multi-chain)</li>
     </ul>
   </Card>
   <Card title="Networks" icon="link">
@@ -134,17 +134,17 @@ Paycrest is live across 4 active corridors with real provider liquidity. New cor
 ## Security & Compliance
 
 <CardGroup cols={2}>
-  <Card title="KYC/KYB Verification" icon="shield-check">
-    All senders and providers undergo identity verification before participating
+  <Card title="KYB-gated participation" icon="shield-check">
+    Every sender and provider business is verified before going live.
   </Card>
   <Card title="Smart Contract Security" icon="lock">
-    Audited Gateway contracts with onchain escrow — funds are never held by the protocol
+    Non-custodial on-chain escrow. Funds are never held by Paycrest.
   </Card>
   <Card title="Compliance at the Edges" icon="shield">
-    Providers own local regulatory obligations; senders own theirs. The protocol coordinates requirement exchange.
+    Providers own their local regulatory obligations; senders own theirs, including customer KYC. Paycrest verifies every business before it goes live and screens orders for sanctions risk.
   </Card>
   <Card title="Built-in Sender Monetization" icon="dollar-sign">
-    Senders can set their own fee on top of the protocol, settled atomically onchain in the same transaction
+    Senders can add their own fee on top of the quoted rate, settled on-chain in the same transaction as the order.
   </Card>
 </CardGroup>
 
@@ -152,40 +152,38 @@ Paycrest is live across 4 active corridors with real provider liquidity. New cor
 
 ## Where We're Headed
 
-Paycrest is focused on one thing right now: making payment routing in emerging markets reliable enough to be trusted infrastructure. Q1 2026 delivered on that in the NGN corridor: sub-30 second completion for the majority of orders, a growing provider network with multiple independent PSPs, and on-ramp live in production.
+Paycrest is focused on one thing: making stablecoin-fiat routing in emerging markets reliable enough to be trusted infrastructure.
 
-The next phase is hardening what works and replicating it across new corridors, each launching only when committed providers are onboarded and tested.
-
-Over time, the goal is for Paycrest to become the default routing path for stablecoin-fiat payments, not because senders are locked in, but because it's the most reliable, most liquid, and most composable path available. The open architecture is what makes that outcome possible: every integration creates a compounding demand channel, and every new provider makes every existing corridor more robust.
+We want Paycrest to become the default routing path for stablecoin-fiat payments because it is the most reliable, not because anyone is locked in. Every new provider makes the corridors it serves more robust.
 
 ---
 
 ## Decentralization Path
 
-Paycrest currently operates as a **federated protocol**: one aggregator (run by Paycrest), KYC-gated participation, webhook-based payout verification. This is an intentional design choice, not a shortcut. Reliable decentralized mechanisms require operational data and trust that can only be built by running the system in production first.
+Today the **Paycrest Aggregator**, operated by Paycrest, is the neutral middle between senders and independent verified providers. It is non-custodial and works in both directions, on-ramp and off-ramp. The protocol is designed so that multiple independent aggregators can run on it in the future. Starting with one is deliberate: the network proves itself in production before control is distributed.
 
-Here's how the protocol moves from federated today to credibly neutral infrastructure over time.
+The protocol is designed to evolve in three phases.
 
 <AccordionGroup>
-  <Accordion icon="circle-1" title="Phase 1 — Federated Foundation (Current)">
-    **How it works today**: Paycrest operates the sole aggregator. All order routing, provider matching, and payout verification run through Paycrest-controlled infrastructure. Senders and providers participate with KYC/KYB gating. The 0.5% aggregator fee flows entirely to Paycrest.
+  <Accordion icon="circle-1" title="Phase 1: Federated Foundation (Current)">
+    **How it works today**: The Paycrest Aggregator routes each order to a provider, confirms the payout and coordinates settlement. Every sender and provider is KYB-verified before going live.
 
-    **What this means for you**: The protocol is predictable and accountable — if something goes wrong, there's one team responsible. Integration is straightforward. The trust model is similar to using any other API-based payment infrastructure.
-
-    **What's being built toward**: This phase accumulates the operational data — order patterns, provider behavior, PSP reliability, corridor economics — required to design decentralized mechanisms that actually work at scale.
+    **What this means for you**: You integrate once and work with one accountable team. Funds sit in on-chain escrow, never with Paycrest.
   </Accordion>
-  <Accordion icon="circle-2" title="Phase 2 — Attested Settlement">
-    **What changes**: Decentralized attesters replace webhook-based payout verification. Instead of Paycrest's infrastructure confirming that a provider paid out, a distributed set of attesters reach quorum on payout events. A hybrid finality model provides a fast-path when quorum is reached quickly, with an optimistic fallback for slower cases. A DAO-governed PSP Registry standardizes the rules for what counts as verified delivery across corridors.
+  <Accordion icon="circle-2" title="Phase 2: Attested Settlement (Future)">
+    **What changes**: Independent parties confirm each payout, so verification no longer rests with a single aggregator.
 
-    **What this means for you**: The trust model improves. Payout verification is no longer a single point of failure tied to Paycrest's uptime. Senders get stronger guarantees — not just "Paycrest says it happened" but "a quorum of independent attesters confirmed it." Providers interact with a standardized registry rather than bespoke onboarding flows.
-
-    **What risks are removed**: Single-point-of-failure on payout verification. Paycrest's ability to unilaterally decide what counts as a valid payout.
+    **What this means for you**: Stronger guarantees for senders, because no single party decides whether a payout happened.
   </Accordion>
-  <Accordion icon="circle-3" title="Phase 3 — Permissionless Protocol">
-    **What changes**: Multiple independent aggregators can operate on the protocol. Participation becomes permissionless — any provider meeting the economic and compliance requirements can join without approval from Paycrest. P2P communication handles quote negotiation and attestations. Economic security comes from staking and slashing, not from Paycrest's reputation.
+  <Accordion icon="circle-3" title="Phase 3: Permissionless Protocol (Future)">
+    **What changes**: Multiple independent aggregators run on the protocol, and any provider that meets the compliance requirements can join without approval from Paycrest.
 
-    **What this means for you**: Paycrest the company is no longer a dependency. The protocol routes orders, enforces escrow, and coordinates providers regardless of whether Paycrest Inc. is operating. Senders get credible neutrality — the routing layer has no stake in which stablecoin you use, which provider wins the order, or which company built the aggregator they're running.
+    **What this means for you**: The routing layer stays neutral. It has no stake in which stablecoin you use, which provider fills your order, or who runs the aggregator.
 
-    **What stays constant across all phases**: Non-custodial onchain escrow. The Gateway contract's guarantees. Corridor-level completion rates. The API contract for senders. KYC/KYB gating (at the compliance layer, not the routing layer). None of these change as the protocol decentralizes.
+    **What stays the same in every phase**: non-custodial on-chain escrow, the Gateway contract's guarantees, the Paycrest Sender API contract, and KYB verification at the compliance layer.
   </Accordion>
 </AccordionGroup>
+
+## Talk to us
+
+Integrating as a sender, or want to supply liquidity as a provider? Email [support@paycrest.io](mailto:support@paycrest.io).

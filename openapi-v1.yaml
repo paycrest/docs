@@ -86,8 +86,7 @@ components:
             `providerId: X` for every provider you can pin.
             Multi-entry queues must name providers that can serve this corridor: active, with a live
             standard offer, and — for a provider restricted to specific senders — one whose list
-            includes you. The fallback provider may be listed but is ignored; it is already tried
-            after the queue is exhausted.
+            includes you.
             Accepted on create only; order responses and webhooks return the singular assigned `providerId`.
         metadata:
           type: object
@@ -1183,19 +1182,21 @@ paths:
                     description: Resolved account name, or `"OK"` when valid but name lookup is unavailable
                     example: JOHN DOE
         '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '502':
-          description: Bad gateway
+          description: |
+            Final for this request. Do not retry it unchanged.
+
+            - Malformed request body: `Failed to validate payload`, with field errors in `data`.
+            - Unsupported or unknown institution: for example `institution <code> is not supported` or `no enabled fiat currency for institution <code>`. `data` is `null`.
+            - Every eligible provider rejected the account: `Account could not be verified`. `data` is `null`.
+
+            For the last two, ask the user to check the institution and account number.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: Service unavailable
+          description: |
+            Verification could not complete: `Failed to verify account`. `data` is `null`. Covers provider outages, timeouts and errors, malformed provider responses, no available provider, and mixed reject and outage outcomes across providers. For NGN, also returned when no provider returns a real account name. Retry with backoff.
           content:
             application/json:
               schema:
@@ -1309,7 +1310,9 @@ paths:
       tags:
         - Provider
       summary: Decline an order
-      description: Provider declines an assigned order. The aggregator will reassign it to another provider.
+      description: |
+        Provider declines an assigned order. The aggregator will reassign it to another provider.
+        A duplicate `reason` declines the order without reassignment; see `reason` below.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -1319,6 +1322,26 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timestamp:
+                  type: integer
+                  description: Unix timestamp in seconds
+                reason:
+                  type: string
+                  description: |
+                    Optional. Omit it (or send no body) for a normal decline, which reassigns the order.
+                    `duplicate_gateway_order:<holdingOrderId>` (another Paycrest order already holds the same on-chain order) or
+                    `duplicate_reference:<holdingOrderId>`, where `<holdingOrderId>` is the UUID of that other order, tells the
+                    aggregator you will not pay out because the order is a duplicate. The order is then cancelled and not reassigned,
+                    but only if the aggregator can confirm the claim: the holding order must be a different order with the same
+                    on-chain order and token, or the on-chain order must already be fulfilled or refunded. A reason without a valid
+                    holding order id is never confirmed. An unconfirmed claim is handled as an ordinary decline.
+                    The Paycrest provider node sends these reasons automatically.
       responses:
         '200':
           description: Order declined
@@ -1376,7 +1399,9 @@ paths:
       tags:
         - Provider
       summary: Cancel an order
-      description: Provider cancels a previously accepted order. The aggregator will attempt reassignment.
+      description: |
+        Provider cancels a previously accepted order. The aggregator will attempt reassignment.
+        A duplicate `reason` cancels the order without reassignment; see `reason` below.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -1394,7 +1419,15 @@ paths:
               properties:
                 reason:
                   type: string
-                  description: Reason for cancellation
+                  description: |
+                    Reason for cancellation.
+                    `duplicate_gateway_order:<holdingOrderId>` (another Paycrest order already holds the same on-chain order) or
+                    `duplicate_reference:<holdingOrderId>`, where `<holdingOrderId>` is the UUID of that other order, tells the
+                    aggregator you will not pay out because the order is a duplicate. The order is then cancelled and not reassigned,
+                    but only if the aggregator can confirm the claim: the holding order must be a different order with the same
+                    on-chain order and token, or the on-chain order must already be fulfilled or refunded. A reason without a valid
+                    holding order id is never confirmed. An unconfirmed claim is handled as an ordinary cancel.
+                    The Paycrest provider node sends these reasons automatically.
       responses:
         '200':
           description: Order cancelled

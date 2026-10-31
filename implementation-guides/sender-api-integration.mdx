@@ -380,12 +380,12 @@ order = requests.post(
 | `amountIn` | string | — | `"crypto"` (default) or `"fiat"`. Set to `"fiat"` when `amount` is in the fiat currency. |
 | `rate` | string | — | Exchange rate (fiat per crypto). **Omit** to let the API choose a valid rate. Pass **`rate`** only when you lock a quote from the user; it must stay within market tolerance. See [Prefetch a quote for the UI](#prefetch-a-quote-for-the-ui) if you display rates before create. |
 | `senderFee` | string | — | Optional fixed fee in crypto units. Mutually exclusive with `senderFeePercent`. |
-| `senderFeePercent` | string | — | Optional fee percentage you collect, settled atomically onchain. Mutually exclusive with `senderFee`. |
+| `senderFeePercent` | string | — | Optional fee percentage you collect, settled atomically on-chain. Mutually exclusive with `senderFee`. |
 | `senderFeeAddress` | string | Conditionally | Fee recipient address. **Required when the effective sender fee is greater than zero** and no fee address is configured on the sender profile. Not required when fee is zero. |
 | `transactionFeePayer` | string | — | `"sender"` or `"customer"`: who pays the transaction fee on this order. Overrides the token's dashboard setting (default `"sender"`). See [Who pays the transaction fee](#who-pays-the-transaction-fee). |
 | `reference` | string | — | Your internal order ID. |
-| `source` | object | ✅ | `{ type: "crypto", ... }` for off-ramp; `{ type: "fiat", ... }` for onramp. |
-| `destination` | object | ✅ | `{ type: "fiat", ... }` for off-ramp; `{ type: "crypto", ... }` for onramp. |
+| `source` | object | ✅ | `{ type: "crypto", ... }` for off-ramp; `{ type: "fiat", ... }` for on-ramp. |
+| `destination` | object | ✅ | `{ type: "fiat", ... }` for off-ramp; `{ type: "crypto", ... }` for on-ramp. |
 
 ### On-ramp customer KYC
 
@@ -413,7 +413,7 @@ Every on-ramp order must identify the customer paying in, in **`source.kyc`**. A
 
 **The customer must pay from their own account.** The provider reports who each deposit came from, and Paycrest checks it against `source.kyc`. An organization pays from an account in its `legalName` or `tradingName`, or from the personal account of a director whose national identifier you sent: the BVN or NIN for NGN, or the director's national ID (`personDetails.idDocument` with `"type": "nationalID"`) for other currencies. A deposit from anyone else is returned in full to the account it came from, and you receive `payment_order.refunded`; when it cannot be returned automatically, it is held for compliance review and you receive [`payment_order.compliance_hold`](/concepts/transaction-lifecycle#compliance-holds).
 
-**The refund account must belong to the customer.** Where the bank resolves the `source.refundAccount` holder's name (NGN), it must match `personDetails.fullName` — or, for an organization, `legalName` or `tradingName`. Word order, case, titles and legal-form words such as "Ltd" are ignored. A mismatch returns **400** `Refund account name does not match the customer in source.kyc`.
+**The refund account must belong to the customer.** Where the bank resolves the `source.refundAccount` holder's name (NGN), it must match `personDetails.fullName` or, for an organization, `legalName` or `tradingName`. A mismatch returns **400** `Refund account name does not match the customer in source.kyc`.
 
 **KYC on the other sides of an order** uses the same shape and is optional:
 
@@ -449,7 +449,6 @@ Set **`destination.providerIds`** when you want routing pinned to providers you 
 | Mutually exclusive with `providerId` | Sending **both** returns **400**. To route to a single provider, send a one-entry `providerIds`—the singular `providerId` is retained for backward compatibility. |
 | No duplicates, no empty strings | Both return **400**. |
 | Providers you can route to | Multi-entry queues must name **active** providers with a **live standard offer** for this corridor. A provider restricted to specific senders is allowed when **you are on its list**. |
-| Fallback is ignored, not rejected | Listing the fallback provider is accepted and has no effect—it is already tried after the queue is exhausted. |
 
 **A one-entry queue is a pin.** `providerIds: ["AbCdEfGh"]` routes exactly like `providerId: "AbCdEfGh"`, for every provider you're able to pin—the corridor checks above apply only to queues of two or more. That equivalence is what lets you use `providerIds` everywhere and never reach for the singular field.
 
@@ -465,7 +464,7 @@ Validation failures return **400** with `message: "Failed to validate payload"` 
 | `provider AbCdEfGh cannot serve this order` | Entry is inactive, has no live offer for this corridor, or is restricted to senders that don't include you |
 
 <Note>
-  **Exhausting the queue does not refund immediately.** After the last entry, the order falls through to **fallback assignment**, and only then to refund after the refund window. `providerIds` is accepted on create but **not echoed back**—order responses and webhooks return the singular assigned **`providerId`**.
+  **Exhausting the queue does not refund immediately.** After the last entry, Paycrest may still route the order elsewhere before refunding it. `providerIds` is accepted on create but **not echoed back**: order responses and webhooks return the singular assigned **`providerId`**.
 </Note>
 
 ### Pinning on on-ramp
@@ -593,7 +592,7 @@ When `providerAccount.memo` is present, include it with the deposit — without 
 }
 ```
 
-Display the `providerAccount` details to your user. They must transfer exactly `amountToTransfer` in `currency` to `accountIdentifier` before `validUntil`. (There is no onchain token `transfer` from your app for this path—the user moves **fiat** through their bank or mobile wallet.)
+Display the `providerAccount` details to your user. They must transfer exactly `amountToTransfer` in `currency` to `accountIdentifier` before `validUntil`. (There is no on-chain token `transfer` from your app for this path: the user moves **fiat** through their bank or mobile wallet.)
 
 The order's `amount` is what the recipient receives in stablecoins. When `destination.recipient.network` is `solana`, the recipient wallet must already have a token account for the stablecoin's mint.
 
@@ -628,7 +627,7 @@ Configure your webhook URL in the [Sender Dashboard](https://app.paycrest.io). M
 | `payment_order.deposited` | Stablecoin deposit detected (off-ramp) |
 | `payment_order.pending` | Assigned to provider / fiat deposit confirmed (on-ramp) |
 | `payment_order.validated` | Fiat payout confirmed by provider |
-| `payment_order.settling` | Onchain release in progress |
+| `payment_order.settling` | On-chain release in progress |
 | `payment_order.settled` | Order complete — the recipient has the funds |
 | `payment_order.refunding` | Refund in progress |
 | `payment_order.refunded` | Funds returned — the refund has landed at the refund address |
@@ -636,7 +635,7 @@ Configure your webhook URL in the [Sender Dashboard](https://app.paycrest.io). M
 | `payment_order.compliance_hold` | On-ramp fiat received, settlement held pending compliance review. **Not a status change** — `data.status` stays `pending` |
 
 <Note>
-  You can notify the user of a successful off-ramp at `payment_order.validated` — that's when the provider has confirmed fiat delivery. For on-ramp, use `payment_order.settled` — that's when stablecoins are confirmed onchain at the recipient's address.
+  You can notify the user of a successful off-ramp at `payment_order.validated`: that's when the provider has confirmed fiat delivery. For on-ramp, use `payment_order.settled`: that's when stablecoins are confirmed on-chain at the recipient's address.
 </Note>
 
 **Payment reference.** On an off-ramp, the v2 order and v2 webhooks carry `paymentReference`: the receipt from the bank or mobile-money network that paid the recipient, such as an M-Pesa receipt code or a bank transfer session ID. Your customer can use it to trace the payout with their bank or mobile-money network. It is not your `reference`, the ID you set when creating the order. It is `null` until the payout is confirmed, and stays `null` on on-ramp orders, on orders paid before the field was added, and when the provider did not report one. Coverage depends on the provider, so treat `null` as normal. Once set, it does not change.
@@ -885,7 +884,7 @@ provider_ids = (data.get("sell") or {}).get("providerIds") or []
 
 ## Sender Fees
 
-You can optionally charge your users a fee on each order. It's settled atomically onchain — no offchain billing required.
+You can optionally charge your users a fee on each order. It's settled atomically on-chain: no off-chain billing required.
 
 You can configure a default fee in [Sender Dashboard](https://app.paycrest.io) settings, or pass a per-request fee via `senderFee` (fixed amount) or `senderFeePercent`. Do not send both `senderFee` and `senderFeePercent` on the same request.
 
@@ -997,15 +996,15 @@ With no sender fee, both modes are the same. On-ramp works the same way: the fia
 
 ---
 
-## Onchain attribution
+## On-chain attribution
 
-On EVM networks, the aggregator tags the transactions it submits for your orders (creation, settlement, and refunds) with an [ERC-8021](https://eip.tools/eip/8021) data suffix carrying the **trading name** from your KYB profile. It makes your orders publicly attributable to your business onchain.
+On EVM networks, the aggregator tags the transactions it submits for your orders (creation, settlement, and refunds) with an [ERC-8021](https://eip.tools/eip/8021) data suffix carrying the **trading name** from your KYB profile. It makes your orders publicly attributable to your business on-chain.
 
 - **Automatic.** There is nothing to configure or send. Senders with no trading name on file simply get no suffix.
 - **EVM only.** Starknet and Tron transactions carry no suffix.
 - **Display only.** The suffix does not affect order processing, sender resolution, or webhooks, and it is not read back by the aggregator. It costs roughly 16 gas per non-zero byte.
 
-If you call the Gateway contract directly instead of using this API, see [Onchain Attribution (ERC-8021)](/implementation-guides/smart-contract-interaction#onchain-attribution-erc-8021) for appending your own suffix.
+If you call the Gateway contract directly instead of using this API, see [On-chain Attribution (ERC-8021)](/implementation-guides/smart-contract-interaction#on-chain-attribution-erc-8021) for appending your own suffix.
 
 ---
 

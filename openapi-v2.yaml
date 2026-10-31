@@ -26,7 +26,7 @@ components:
         type: string
         enum: [onramp, offramp]
       description: |
-        Filter to **onramp** (fiat → crypto) or **offramp** (crypto → fiat). Omit to include **both** directions.
+        Filter to **on-ramp** (fiat → crypto) or **off-ramp** (crypto → fiat). Omit to include **both** directions.
 
         On **stats** endpoints, invalid values return **400 Bad Request**. On **list** endpoints, values other than `onramp` or `offramp` are ignored (no direction filter).
 
@@ -357,7 +357,7 @@ components:
         side:
           type: string
           enum: [sell, buy]
-          description: '`sell` = offramp (crypto → fiat); `buy` = onramp (fiat → crypto).'
+          description: '`sell` = off-ramp (crypto → fiat); `buy` = on-ramp (fiat → crypto).'
         token:
           type: string
           description: Token symbol (e.g. `USDT`, `USDC`).
@@ -534,8 +534,8 @@ components:
           description: |
             Ranked provider queue for this side, best first — the order assignment would try them in.
             Up to 3 ids by default; use `limit` to request fewer. `providerIds[0]` is the provider whose rate
-            is quoted in `rate`. Returns a single id when `provider_id` pins the quote. The fallback provider
-            is never listed. Always an array — `[]` when no provider is available, never `null`. Pass these ids
+            is quoted in `rate`. Returns a single id when `provider_id` pins the quote.
+            Always an array: `[]` when no provider is available, never `null`. Pass these ids
             to `destination.providerIds` on order creation to lock routing to the providers you quoted.
         orderType:
           type: string
@@ -795,7 +795,7 @@ components:
           type: string
           description: Your internal reference ID for this order.
         source:
-          description: "Polymorphic source — set `type: \"crypto\"` for offramp or `type: \"fiat\"` for onramp."
+          description: "Polymorphic source: set `type: \"crypto\"` for off-ramp or `type: \"fiat\"` for on-ramp."
           oneOf:
             - $ref: '#/components/schemas/V2CryptoSource'
             - $ref: '#/components/schemas/V2FiatSource'
@@ -805,7 +805,7 @@ components:
               crypto: '#/components/schemas/V2CryptoSource'
               fiat: '#/components/schemas/V2FiatSource'
         destination:
-          description: "Polymorphic destination — set `type: \"fiat\"` for offramp or `type: \"crypto\"` for onramp."
+          description: "Polymorphic destination: set `type: \"fiat\"` for off-ramp or `type: \"crypto\"` for on-ramp."
           oneOf:
             - $ref: '#/components/schemas/V2FiatDestination'
             - $ref: '#/components/schemas/V2CryptoDestination'
@@ -1052,11 +1052,10 @@ components:
             `providerId: X` for every provider you can pin.
             Multi-entry queues must name providers that can serve this corridor: active, with a live
             standard offer, and — for a provider restricted to specific senders — one whose list
-            includes you. The fallback provider may be listed but is ignored; it is already tried
-            after the queue is exhausted.
+            includes you.
             Accepted on create only; order responses and webhooks return the singular assigned `providerId`.
         kyc:
-          description: Optional destination (recipient) KYC for offramp. Do not send sender or provider KYB on offramp create.
+          description: Optional destination (recipient) KYC for off-ramp. Do not send sender or provider KYB on off-ramp create.
           allOf:
             - $ref: '#/components/schemas/KYCDetail'
         recipient:
@@ -1082,7 +1081,7 @@ components:
           description: Payment narration / reference
         metadata:
           type: object
-          description: Corridor-specific hints. For KES mobile offramp, use channel and optional businessNumber (see Sender API Integration guide).
+          description: Corridor-specific hints. For KES mobile off-ramp, use channel and optional businessNumber (see Sender API Integration guide).
           properties:
             channel:
               type: string
@@ -1115,7 +1114,7 @@ components:
             type: string
             pattern: '^[A-Za-z]{8}$'
           description: |
-            Optional provider pin in queue form, for parity with offramp. Onramp selects its provider
+            Optional provider pin in queue form, for parity with off-ramp. On-ramp selects its provider
             when the order is created rather than walking a queue, so **at most one entry** is
             accepted — more returns **400**. Mutually exclusive with `providerId`.
             The provider must be one you can route to: pinning a provider restricted to other
@@ -1143,7 +1142,7 @@ components:
 
     V2CryptoProviderAccount:
       type: object
-      description: Returned for offramp orders — where to send the stablecoins.
+      description: "Returned for off-ramp orders: where to send the stablecoins."
       properties:
         network:
           type: string
@@ -1167,7 +1166,7 @@ components:
 
     V2FiatProviderAccount:
       type: object
-      description: Returned for onramp orders — the virtual account to deposit fiat into
+      description: "Returned for on-ramp orders: the virtual account to deposit fiat into"
       properties:
         institution:
           type: string
@@ -1205,7 +1204,7 @@ components:
           format: date-time
         amount:
           type: string
-          description: Crypto amount in token units. On onramp, this is what the recipient receives.
+          description: Crypto amount in token units. For on-ramp, this is what the recipient receives.
         rate:
           type: string
         senderFee:
@@ -1219,7 +1218,7 @@ components:
         reference:
           type: string
         providerAccount:
-          description: Crypto provider account for offramp; fiat provider account (virtual account) for onramp
+          description: Crypto provider account for off-ramp; fiat provider account (virtual account) for on-ramp
           oneOf:
             - $ref: '#/components/schemas/V2CryptoProviderAccount'
             - $ref: '#/components/schemas/V2FiatProviderAccount'
@@ -1272,6 +1271,7 @@ components:
           type: string
         transactionFee:
           type: string
+          description: "For senders: the order's transaction fee (its gas cost). For providers: the protocol fee deducted from this order, net of any rebate once the order is settled; before settlement it is the gross fee."
         reference:
           type: string
         txHash:
@@ -1291,7 +1291,7 @@ components:
         statusDetail:
           type: string
           enum: [under_review]
-          description: On-ramp only. `under_review` while the order is `pending` because its deposit is held for compliance review. Absent otherwise.
+          description: May be `under_review` while an order is held for review. Treat `status` as the source of truth; `statusDetail` is informational and may be absent.
         refundReason:
           type: string
           enum: [payer_mismatch, payer_unverified]
@@ -1586,7 +1586,7 @@ paths:
       tags:
         - General
       summary: Get order status by Gateway ID
-      description: Retrieve the status of an order by its onchain Gateway ID and chain ID. Use this for smart contract integrations.
+      description: Retrieve the status of an order by its on-chain Gateway ID and chain ID. Use this for smart contract integrations.
       servers:
         - url: https://api.paycrest.io/v2
       parameters:
@@ -1655,7 +1655,9 @@ paths:
       tags:
         - Provider
       summary: Decline an order
-      description: Provider declines an assigned order. The aggregator will reassign it to another provider.
+      description: |
+        Provider declines an assigned order. The aggregator will reassign it to another provider.
+        A duplicate `reason` declines the order without reassignment; see `reason` below.
       security:
         - ApiKeyAuth: []
       servers:
@@ -1667,6 +1669,26 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timestamp:
+                  type: integer
+                  description: Unix timestamp in seconds
+                reason:
+                  type: string
+                  description: |
+                    Optional. Omit it (or send no body) for a normal decline, which reassigns the order.
+                    `duplicate_gateway_order:<holdingOrderId>` (another Paycrest order already holds the same on-chain order) or
+                    `duplicate_reference:<holdingOrderId>`, where `<holdingOrderId>` is the UUID of that other order, tells the
+                    aggregator you will not pay out because the order is a duplicate. The order is then cancelled and not reassigned,
+                    but only if the aggregator can confirm the claim: the holding order must be a different order with the same
+                    on-chain order and token, or the on-chain order must already be fulfilled or refunded. A reason without a valid
+                    holding order id is never confirmed. An unconfirmed claim is handled as an ordinary decline.
+                    The Paycrest provider node sends these reasons automatically.
       responses:
         '200':
           description: Order declined
@@ -1726,7 +1748,9 @@ paths:
       tags:
         - Provider
       summary: Cancel an order
-      description: Provider cancels a previously accepted order. The aggregator will attempt reassignment.
+      description: |
+        Provider cancels a previously accepted order. The aggregator will attempt reassignment.
+        A duplicate `reason` cancels the order without reassignment; see `reason` below.
       security:
         - ApiKeyAuth: []
       servers:
@@ -1746,7 +1770,15 @@ paths:
               properties:
                 reason:
                   type: string
-                  description: Reason for cancellation
+                  description: |
+                    Reason for cancellation.
+                    `duplicate_gateway_order:<holdingOrderId>` (another Paycrest order already holds the same on-chain order) or
+                    `duplicate_reference:<holdingOrderId>`, where `<holdingOrderId>` is the UUID of that other order, tells the
+                    aggregator you will not pay out because the order is a duplicate. The order is then cancelled and not reassigned,
+                    but only if the aggregator can confirm the claim: the holding order must be a different order with the same
+                    on-chain order and token, or the on-chain order must already be fulfilled or refunded. A reason without a valid
+                    holding order id is never confirmed. An unconfirmed claim is handled as an ordinary cancel.
+                    The Paycrest provider node sends these reasons automatically.
       responses:
         '200':
           description: Order cancelled
@@ -2167,11 +2199,25 @@ paths:
                     description: Resolved account name, or `"OK"` when valid but name lookup is unavailable
                     example: JOHN DOE
         '400':
-          description: Bad request
-        '502':
-          description: Bad gateway
+          description: |
+            Final for this request. Do not retry it unchanged.
+
+            - Malformed request body: `Failed to validate payload`, with field errors in `data`.
+            - Unsupported or unknown institution: for example `institution <code> is not supported` or `no enabled fiat currency for institution <code>`. `data` is `null`.
+            - Every eligible provider rejected the account: `Account could not be verified`. `data` is `null`.
+
+            For the last two, ask the user to check the institution and account number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: Service unavailable
+          description: |
+            Verification could not complete: `Failed to verify account`. `data` is `null`. Covers provider outages, timeouts and errors, malformed provider responses, no available provider, and mixed reject and outage outcomes across providers. For NGN, also returned when no provider returns a real account name. Retry with backoff.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /reindex/{network}/{tx_hash_or_address}:
     get:
@@ -2284,16 +2330,16 @@ paths:
     post:
       tags:
         - Sender
-      summary: Create a v2 payment order (offramp or onramp)
+      summary: Create a v2 payment order (off-ramp or on-ramp)
       description: |
         Creates a new payment order.
 
-        - **Offramp** (stablecoin → fiat): set `source.type = "crypto"` and `destination.type = "fiat"`.
+        - **Off-ramp** (stablecoin → fiat): set `source.type = "crypto"` and `destination.type = "fiat"`.
           The response `providerAccount` contains a `receiveAddress` to send tokens to.
-        - **Onramp** (fiat → stablecoin): set `source.type = "fiat"` and `destination.type = "crypto"`.
+        - **On-ramp** (fiat → stablecoin): set `source.type = "fiat"` and `destination.type = "crypto"`.
           The response `providerAccount` contains a virtual bank account for the user to deposit fiat into.
 
-        **Offramp deposit.** Send exactly `providerAccount.amountToTransfer` of `providerAccount.currency` — that is
+        **Off-ramp deposit.** Send exactly `providerAccount.amountToTransfer` of `providerAccount.currency`: that is
         `amount + senderFee + transactionFee`. When `providerAccount.memo` is present, include it with the deposit
         or the deposit cannot be credited.
 
@@ -2302,16 +2348,16 @@ paths:
         "customer"` (or change the token's setting in the dashboard) to add the transaction fee on top of the full
         sender fee instead.
 
-        **Solana** (`solana`) is available through this endpoint only; v1 order endpoints reject it. On onramp to
+        **Solana** (`solana`) is available through this endpoint only; v1 order endpoints reject it. For on-ramp to
         Solana, the recipient wallet must already have a token account for the stablecoin's mint.
 
-        **Provider routing.** On **offramp**, leave `destination.providerIds` unset and the API resolves a ranked
+        **Provider routing.** On **off-ramp**, leave `destination.providerIds` unset and the API resolves a ranked
         queue of up to 3 providers at creation; assignment walks it in order. Set `destination.providerIds` to
         supply your own queue — typically the ids from a [rate quote](/api-reference/general/get-token-rate) — or a
-        one-entry queue to route to a single provider. Queue exhaustion is not an immediate refund: fallback
-        assignment runs first, then the refund window.
+        one-entry queue to route to a single provider. Queue exhaustion is not an immediate refund: Paycrest
+        may still route the order elsewhere before refunding it.
 
-        On **onramp**, the provider is selected when the order is created, so `destination.providerIds` accepts at
+        On **on-ramp**, the provider is selected when the order is created, so `destination.providerIds` accepts at
         most one entry and acts as a pin.
 
         The singular `destination.providerId` is retained for backward compatibility on both flows and is mutually
@@ -2329,7 +2375,7 @@ paths:
               $ref: '#/components/schemas/V2PaymentOrderPayload'
             examples:
               offramp:
-                summary: Offramp — USDT on Base → NGN bank account
+                summary: "Off-ramp: USDT on Base → NGN bank account"
                 value:
                   amount: "100"
                   source:
@@ -2346,7 +2392,7 @@ paths:
                       accountName: John Doe
                       memo: Payment
               offrampCustomerPaysFee:
-                summary: Offramp — your customer pays the transaction fee on top of a 1% sender fee
+                summary: "Off-ramp: your customer pays the transaction fee on top of a 1% sender fee"
                 value:
                   amount: "100"
                   senderFeePercent: "1"
@@ -2366,7 +2412,7 @@ paths:
                       accountName: John Doe
                       memo: Payment
               offrampWithQueue:
-                summary: Offramp with an explicit provider queue from a rate quote
+                summary: Off-ramp with an explicit provider queue from a rate quote
                 value:
                   amount: "100"
                   source:
@@ -2384,7 +2430,7 @@ paths:
                       accountName: John Doe
                       memo: Payment
               offrampSolana:
-                summary: Offramp — USDC on Solana → NGN bank account
+                summary: "Off-ramp: USDC on Solana → NGN bank account"
                 value:
                   amount: "100"
                   source:
@@ -2401,7 +2447,7 @@ paths:
                       accountName: John Doe
                       memo: Payment
               onramp:
-                summary: Onramp — NGN → USDT on Base
+                summary: "On-ramp: NGN → USDT on Base"
                 value:
                   amount: "50000"
                   amountIn: fiat
@@ -2428,7 +2474,7 @@ paths:
                       address: "0xRecipientWalletAddress"
                       network: base
               onrampSolana:
-                summary: Onramp — NGN → USDC on Solana
+                summary: "On-ramp: NGN → USDC on Solana"
                 value:
                   amount: "100"
                   amountIn: crypto
@@ -2472,7 +2518,7 @@ paths:
                     $ref: '#/components/schemas/V2PaymentOrderResponse'
               examples:
                 offrampSolana:
-                  summary: Offramp created — USDC on Solana
+                  summary: "Off-ramp created: USDC on Solana"
                   value:
                     status: success
                     message: Payment order created successfully
@@ -2507,7 +2553,7 @@ paths:
                           accountName: John Doe
                           memo: Payment
                 onrampSolana:
-                  summary: Onramp created — NGN → USDC on Solana
+                  summary: "On-ramp created: NGN → USDC on Solana"
                   value:
                     status: success
                     message: Payment order created successfully

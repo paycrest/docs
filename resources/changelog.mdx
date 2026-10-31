@@ -16,6 +16,22 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 - Delivery records: `webhookUrl` (was documented as `destinationUrl`), `statusCode` (was `httpStatusCode`) and `payload` (was `requestPayload`). `signature` was never returned and has been removed.
 - Retry results: `statusCode` (was `httpStatusCode`), plus `attemptNumber` and `message`. `errorMessage` was never returned and has been removed. A queued retry (`202`) returns the same shape with `status: "pending"`.
 
+### Verify-account status codes: 400 vs 503 (October 2026)
+
+**Updated:** [`POST /v2/verify-account`](/api-reference/general/verify-account) and [`POST /v1/verify-account`](/api-reference/general/verify-account-v1) now separate a definitive "not verified" from a temporary failure. Previously every verification failure returned **503**. Successful responses are unchanged. See [Status codes](/api-reference/general/verify-account#status-codes).
+
+- **Behavior change:** an unsupported or unknown institution, or an account every eligible provider rejects, returns **400**. Treat it as final and ask the user to check the institution and account number.
+- **Behavior change:** provider outages, timeouts and inconclusive results return **503** "Failed to verify account". Retry with backoff. For NGN, a response with no real account name also returns 503.
+- Branch on the status code, not the message text. If you already treat any non-200 as "not verified", no change is needed.
+
+### Duplicate reasons on provider decline and cancel (October 2026)
+
+**New:** `POST /provider/orders/{id}/decline` accepts an optional JSON body with `timestamp` and `reason`. Without `reason`, a decline still reassigns the order to another provider.
+
+- **New:** on decline and on `POST /provider/orders/{id}/cancel`, the reason `duplicate_gateway_order:<holdingOrderId>` or `duplicate_reference:<holdingOrderId>` tells the aggregator the provider will not pay out because another order already holds it. The order is cancelled and not reassigned.
+- This applies only when the aggregator can confirm the claim: the holding order shares this order's on-chain order and token, or the on-chain order is already fulfilled or refunded. Otherwise the request is handled as an ordinary decline or cancel.
+- Providers running the Paycrest provider node get this automatically.
+
 ### Payment reference on v2 off-ramp orders (October 2026)
 
 **New:** v2 orders ([`GET /v2/sender/orders/:id`](/api-reference/sender/get-payment-order-by-id-v2) and [`GET /v2/sender/orders`](/api-reference/sender/list-payment-orders-v2)) and v2 webhooks carry `paymentReference`, the receipt from the bank or mobile-money network that paid the recipient (for example an M-Pesa receipt code). See [Monitor completion](/implementation-guides/sender-api-integration#monitor-completion).
@@ -31,9 +47,9 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ### Third-party on-ramp deposits are returned automatically (October 2026)
 
-**Updated:** an on-ramp deposit from an account that is not the customer's own is now usually returned in full to the account it came from within minutes, instead of waiting for a compliance review. You receive `payment_order.refunded`, with no `payment_order.compliance_hold`. A deposit that cannot be returned automatically, or that needs a closer look, is still held for review. See [Compliance holds](/concepts/transaction-lifecycle#compliance-holds).
+**Updated:** an on-ramp deposit from an account that is not the customer's own is now usually returned in full to the account it came from, instead of waiting for a compliance review. You receive `payment_order.refunded`, with no `payment_order.compliance_hold`. Paycrest may hold a deposit for review instead. See [Compliance holds](/concepts/transaction-lifecycle#compliance-holds).
 
-- **New:** v2 orders and v2 webhooks carry `statusDetail: "under_review"` while a deposit is held, and `refundReason` (`payer_mismatch` or `payer_unverified`) when it was returned to the account it came from.
+- **New:** v2 orders and v2 webhooks can carry `statusDetail: "under_review"` while a deposit is held, and `refundReason` (`payer_mismatch` or `payer_unverified`) when it was returned to the account it came from.
 
 ### On-ramp deposits must come from the customer (October 2026)
 
@@ -86,7 +102,7 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 **API:**
 - `senderFee` in responses and webhooks is the fee you earn on the order. `amountToTransfer = amount + senderFee + transactionFee` still holds.
 - `PATCH /settings/sender` accepts `tokens[].transactionFeePayer`, and `GET /settings/sender` returns it.
-- The transaction fee now goes to the protocol treasury. A refund after an order is created onchain returns `amount + senderFee`.
+- The transaction fee now reimburses the gas the aggregator spends creating and settling the order. A refund after an order is created on-chain returns `amount + senderFee`.
 
 See [Who pays the transaction fee](/implementation-guides/sender-api-integration#who-pays-the-transaction-fee).
 
@@ -108,9 +124,9 @@ See [Who pays the transaction fee](/implementation-guides/sender-api-integration
 
 ---
 
-### Onchain sender attribution via ERC-8021 (August 2026)
+### On-chain sender attribution via ERC-8021 (August 2026)
 
-**New:** The aggregator now stamps the EVM transactions it submits with an [ERC-8021](https://eip.tools/eip/8021) schema-0 data suffix carrying the sender's **trading name** from their KYB profile. It is applied to the transactions the aggregator submits for an order: creation, settlement, and refunds. Orders placed through the Sender API carry public onchain attribution with no integration work.
+**New:** The aggregator now stamps the EVM transactions it submits with an [ERC-8021](https://eip.tools/eip/8021) schema-0 data suffix carrying the sender's **trading name** from their KYB profile. It is applied to the transactions the aggregator submits for an order: creation, settlement, and refunds. Orders placed through the Sender API carry public on-chain attribution with no integration work.
 
 - **Sender code**: the sender's KYB trading name (for example, `AcmeCorp`). Senders with no trading name on file get no suffix.
 - **Suffix layout** (parsed backwards from the end of calldata): comma-joined ASCII `codes` · 1-byte length · 1-byte schema `0x00` · 16-byte marker `0x8021...8021`.
@@ -118,13 +134,13 @@ See [Who pays the transaction fee](/implementation-guides/sender-api-integration
 
 **Important:** the suffix is a public, human-readable attribution tag. It is **not** used for sender identification. Sender resolution, webhook delivery, and order lookup continue to use `metadata.apiKey` inside the encrypted `messageHash`, which is unchanged and not deprecated.
 
-Direct Gateway integrators can append their own suffix to `createOrder` calldata for public attribution. See [Onchain Attribution (ERC-8021)](/implementation-guides/smart-contract-interaction#onchain-attribution-erc-8021).
+Direct Gateway integrators can append their own suffix to `createOrder` calldata for public attribution. See [On-chain Attribution (ERC-8021)](/implementation-guides/smart-contract-interaction#on-chain-attribution-erc-8021).
 
 ---
 
-### Optimistic provider routing (August 2026)
+### Ranked provider queues (August 2026)
 
-Order routing is now **optimistic**: a ranked queue of up to **3 providers** is resolved once, at order creation, and assignment walks it in order instead of re-ranking the public orderbook on every retry. The fulfilling provider is known upfront and routing no longer drifts between creation and fulfilment.
+Each order now carries a ranked queue of up to **3 providers**, resolved once at order creation and tried in order.
 
 **Updated:** `GET /v2/rates/{network}/{from}/{amount}/{to}` — each side's **`providerIds`** now carries up to **3 provider ids ranked best first**, in the order assignment would try them. Previously always 0 or 1 entry. `providerIds[0]` is still the provider whose rate is in `rate`, so clients reading `[0]` are unaffected.
 
@@ -132,9 +148,9 @@ Order routing is now **optimistic**: a ranked queue of up to **3 providers** is 
 |-------|------|----------|
 | `limit` | single | Max ranked ids per side. Integer **1–3**, default **3**. Anything else returns **400** |
 
-Pinned (`?provider_id=`) quotes still return exactly one id. The fallback provider is never listed.
+Pinned (`?provider_id=`) quotes still return exactly one id.
 
-**New:** order creation accepts an explicit **`providerIds`** queue — `destination.providerIds` on `POST /v2/sender/orders`, `recipient.providerIds` on `POST /v1/sender/orders`, and `providerIds` inside the encrypted recipient for onchain orders. Pass the ids from a rate quote to route the order to the providers your user was quoted.
+**New:** order creation accepts an explicit **`providerIds`** queue: `destination.providerIds` on `POST /v2/sender/orders`, `recipient.providerIds` on `POST /v1/sender/orders`, and `providerIds` inside the encrypted recipient for on-chain orders. Pass the ids from a rate quote to route the order to the providers your user was quoted.
 
 | Rule | Behavior |
 |------|----------|
@@ -142,7 +158,7 @@ Pinned (`?provider_id=`) quotes still return exactly one id. The fallback provid
 | Size | Off-ramp up to **3** entries; on-ramp **1** (it selects its provider at creation rather than walking a queue) |
 | No duplicates, no empty strings | **400** |
 | Format | Exactly 8 alphabetic characters per id |
-| Eligibility | Multi-entry queues must name active providers with a live standard offer for the corridor; a provider restricted to specific senders is allowed when you are on its list. The fallback provider may be listed and is ignored |
+| Eligibility | Multi-entry queues must name active providers with a live standard offer for the corridor; a provider restricted to specific senders is allowed when you are on its list. |
 | One-entry queues | Exactly a pin — `providerIds: [X]` routes like `providerId: X` for every provider you can pin |
 | Response | Accepted on create, never echoed back. Orders and webhooks return the singular assigned `providerId` |
 
@@ -152,7 +168,7 @@ The singular **`providerId`** is retained for backward compatibility on both flo
 
 **Behavior change:** pinning an **on-ramp** order to a provider restricted to other senders now returns **400** `provider X cannot serve this order`. Off-ramp has always enforced this; on-ramp previously accepted such a pin and routed the order. It applies to **`providerId`** as well as `providerIds`, so on-ramp integrations that pin providers should confirm they are authorized for them.
 
-**Exhausting a queue is not an immediate refund** — fallback assignment runs after the last entry, then refund only after the refund window.
+**Exhausting a queue is not an immediate refund.** After the last entry, Paycrest may still route the order elsewhere before refunding it.
 
 See [Get Token Rate](/api-reference/general/get-token-rate), [Pin a provider queue](/implementation-guides/sender-api-integration#pin-a-provider-queue), and [Smart Contract Interaction](/implementation-guides/smart-contract-interaction#routing-fields).
 
@@ -167,7 +183,7 @@ See [Get Token Rate](/api-reference/general/get-token-rate), [Pin a provider que
 | Greater than zero (from `senderFee`, `senderFeePercent`, or a profile-configured fee) | **Required** — pass it on the request, or configure a fee address on the sender profile for that token |
 | Zero | **Not required** |
 
-`senderFee` and `senderFeePercent` remain mutually exclusive. Applies to both off-ramp and onramp. V1 create order is unchanged (still requires fee and refund addresses on the sender profile).
+`senderFee` and `senderFeePercent` remain mutually exclusive. Applies to both off-ramp and on-ramp. V1 create order is unchanged (still requires fee and refund addresses on the sender profile).
 
 See [Sender API Integration — Sender Fees](/implementation-guides/sender-api-integration#sender-fees) and [Initiate Order](/api-reference/sender/initiate-payment-order-v2).
 
@@ -197,18 +213,16 @@ See [Get Markets](/api-reference/general/get-markets).
 **Starknet** (chain ID `23448594291968334`) and **Tron** (chain ID `728126428`) are fully supported by the aggregator.
 
 **Starknet**
-- Gateway: `0x06ff3a3b1532da65594fc98f9ca7200af6c3dbaf37e7339b0ebd3b3f2390c583`
 - Network identifier: `starknet`
 - Tokens: USDT and USDC (6 decimals)
 - Addresses: felt hex (`0x` + 63–64 hex characters)
 
 **Tron**
-- Gateway: `THyFP5ST9YyLZn6EzjKjFhZti6aKPgEXNU`
 - Network identifier: `tron`
 - Tokens: USDT (6 decimals; contract `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`)
 - Addresses: Base58Check starting with `T`
 
-**Docs cleanup:** Scroll and Asset Chain are no longer listed as supported networks. Prefer the [Sender API](/implementation-guides/sender-api-integration) for Starknet and Tron orders; see [Gateway Contract Addresses](/resources/gateway-contract-addresses) and [Supported Stablecoins](/resources/supported-stablecoins).
+**Docs cleanup:** Asset Chain is no longer listed as a supported network. Prefer the [Sender API](/implementation-guides/sender-api-integration) for Starknet and Tron orders; see [Gateway Contract Addresses](/resources/gateway-contract-addresses) and [Supported Stablecoins](/resources/supported-stablecoins).
 
 ---
 
@@ -302,11 +316,9 @@ See [Get Token Rate](/api-reference/general/get-token-rate) and [Get Market Rate
 
 ---
 
-### FX on-ramp settleIn principal alignment (April 2026)
+### FX on-ramp settlement amounts (April 2026)
 
-No REST schema changes. For **FX on-ramp** pay-in, the aggregator now sizes onchain **`settleIn`** principal using Gateway fee settings (`providerToAggregatorFx`) so that, after the contract’s **floored** aggregator fee, the recipient still receives at least the **quoted net** crypto amount. Liquidity **reserve** and ERC-20 **approve** amounts align with that gross principal plus sender fee, and snapshots stored on the order keep release/cleanup consistent if chain settings move later.
-
-Onchain principal amounts may differ slightly from older builds that used a looser ceiling gross-up; recipients should match the quoted net more precisely.
+No REST schema changes. FX on-ramp recipients now receive at least the quoted net stablecoin amount. On-chain principal amounts may differ slightly from orders created before this change.
 
 ---
 
@@ -314,7 +326,7 @@ Onchain principal amounts may differ slightly from older builds that used a loos
 
 ### v2 API — On-ramp & Off-ramp (March 2026)
 
-The v2 API introduces a unified endpoint for both off-ramp and on-ramp flows, replacing the v1 offramp-only schema.
+The v2 API introduces a unified endpoint for both off-ramp and on-ramp flows, replacing the v1 off-ramp-only schema.
 
 **New endpoints:**
 - `POST /v2/sender/orders` — create off-ramp or on-ramp orders
@@ -340,7 +352,7 @@ The v1 API remains fully supported. No breaking changes to existing v1 integrati
 
 If you're building a new integration, use v2. Key differences to be aware of:
 
-1. The `source` and `destination` objects use a `type` discriminator (`"crypto"` or `"fiat"`) to distinguish off-ramp from onramp.
+1. The `source` and `destination` objects use a `type` discriminator (`"crypto"` or `"fiat"`) to distinguish off-ramp from on-ramp.
 2. For off-ramp, the `source.refundAddress` field replaces the v1 `returnAddress` field.
 3. All numeric values (amount, rate, fees) are returned as `string` in v2 — parse them as needed.
 4. The `providerAccount` in the create response is a virtual account (`V2FiatProviderAccount`) for on-ramp orders, replacing the `receiveAddress` string from v1.
@@ -355,23 +367,11 @@ Fiat-to-stablecoin on-ramp is live across active corridors. Available via the v2
 
 ---
 
-### Scroll network support (Q1 2026)
-
-Scroll (chain ID 534352) is now fully supported by the aggregator. Gateway contract: `0x663C5BfE7d44bA946C2dd4b2D1Cf9580319F9338`.
-
-Previously marked "Coming Soon" — now live across USDT and USDC.
-
----
-
 ## 2025
 
 ### cNGN support added
 
 cNGN (Compliant Naira) is now supported as a stablecoin across Ethereum, Base, Polygon, and BNB Smart Chain. This is the first local-currency stablecoin supported by the protocol.
-
-### Lisk network support
-
-Lisk (chain ID 1135) added to the aggregator. Gateway contract: `0xff0E00E0110C1FBb5315D276243497b66D3a4d8a`.
 
 ### Protocol launch (February 2025)
 

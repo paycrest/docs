@@ -1,9 +1,9 @@
 ---
 title: "Protocol Architecture"
-description: "The technical components behind Paycrest's payment routing — Gateway contract, aggregator, and provision nodes"
+description: "The technical components behind Paycrest's payment routing: Gateway contract, aggregator and provision nodes"
 ---
 
-Paycrest is a payment routing protocol built on three cooperating layers: a Gateway smart contract for onchain escrow, an aggregator for order routing and coordination, and provision nodes for fiat execution. This page explains how those components interact.
+Paycrest is a payment routing protocol built on three cooperating layers: a Gateway smart contract for on-chain escrow, an aggregator for order routing and coordination, and provision nodes for fiat execution. This page explains how those components interact.
 
 ```mermaid
 flowchart TD
@@ -35,7 +35,7 @@ flowchart TD
 
 ### Gateway Contract
 
-The **Gateway contract** is the onchain entry point for all payment orders. It holds stablecoins in escrow during the settlement process — neither Paycrest nor any provider ever custodies the funds directly.
+The **Gateway contract** is the on-chain entry point for all payment orders. It holds stablecoins in escrow during the settlement process. Neither Paycrest nor any provider ever custodies the funds directly.
 
 #### Key Functions
 
@@ -50,7 +50,7 @@ The **Gateway contract** is the onchain entry point for all payment orders. It h
     Sender creates an order via the Sender API or direct contract interaction. For off-ramp, stablecoins are locked in escrow. For on-ramp, the contract coordinates stablecoin release once fiat receipt is confirmed.
   </Step>
   <Step title="Routing">
-    Aggregator picks up the onchain event and routes the order to the most suitable liquidity provider based on rate, availability, and corridor.
+    Aggregator picks up the on-chain event and routes the order to the most suitable liquidity provider based on rate, availability, and corridor.
   </Step>
   <Step title="Fulfillment">
     For off-ramp, the provider disburses fiat to the recipient via a local PSP. For on-ramp, the provider receives the user's fiat deposit and reports confirmation.
@@ -62,7 +62,7 @@ The **Gateway contract** is the onchain entry point for all payment orders. It h
 
 ### Aggregator Node
 
-The **aggregator node** is the coordination layer: it monitors onchain events, manages provider routing, and oversees the settlement pipeline.
+The **aggregator node** is the coordination layer: it monitors on-chain events, manages provider routing, and oversees the settlement pipeline.
 
 #### Core Functions
 
@@ -72,33 +72,14 @@ The **aggregator node** is the coordination layer: it monitors onchain events, m
 - **Webhook Delivery**: Notifies senders of order status changes
 
 <Note>
-  Paycrest currently operates the **sole aggregator** in the network (federated model). All order matching and coordination fees flow to Paycrest. The protocol is designed to support multiple independent aggregators in a future phase. See the [Decentralization Path](/introduction#decentralization-path).
+  Paycrest operates the **Paycrest Aggregator** today. The protocol is designed to support multiple independent aggregators in the future. See the [Decentralization Path](/introduction#decentralization-path).
 </Note>
 
-#### API Layers
+#### API Layer
 
-<CardGroup cols={2}>
-  <Card title="Blockchain Layer">
-    - Gateway contract event monitoring
-    - Transaction submission and confirmation
-    - Multi-chain support
-  </Card>
-  <Card title="Business Logic Layer">
-    - Order matching and provider selection
-    - Rate validation and optimization
-    - Refund and timeout handling
-  </Card>
-  <Card title="API Layer">
-    - REST API (v1 and v2 sender/provider endpoints)
-    - Webhook delivery to senders
-    - Rate limiting and authentication
-  </Card>
-  <Card title="Data Layer">
-    - Order state management
-    - Provider registry and availability
-    - Transaction logs and audit trail
-  </Card>
-</CardGroup>
+- REST API (v1 and v2 sender/provider endpoints)
+- Webhook delivery to senders
+- Rate limiting and authentication
 
 ### Provision Nodes
 
@@ -137,9 +118,18 @@ The **aggregator node** is the coordination layer: it monitors onchain events, m
 - Automated scaling and monitoring
 - Recommended for providers new to infrastructure management
 
+### Sender API & Webhooks
+
+The interface businesses and apps use to:
+
+- **Create payment orders** in either direction, on-ramp or off-ramp
+- **Configure** refund addresses, fee addresses and fee percentages
+- **Manage API keys** and authentication
+- **Receive webhooks** for every order status change
+
 ## Multi-Chain Support
 
-The protocol is live on 6 EVM-compatible networks plus Starknet:
+The protocol is live on 6 EVM-compatible networks, where senders can use the Sender API or call the Gateway contract directly:
 
 | Network | Chain ID | Primary Use |
 |---------|----------|-------------|
@@ -148,12 +138,11 @@ The protocol is live on 6 EVM-compatible networks plus Starknet:
 | Arbitrum One | 42161 | USDT, USDC |
 | Polygon | 137 | USDT, USDC, cNGN |
 | BNB Smart Chain | 56 | USDT, USDC, cNGN |
-| Celo | 42220 | USDT, USDC |
-| Starknet | 23448594291968334 | USDT, USDC |
+| Celo | 42220 | USDT, USDC, cNGN |
 
-Use the API network identifier **`starknet`** when creating Starknet orders; Starknet addresses are felt-sized hex (`0x` + up to 64 hex digits). Tron (`tron`) and Solana (`solana`) are supported through the v2 Sender API; see [Supported Stablecoins](/resources/supported-stablecoins).
+**Starknet** (`starknet`), **Tron** (`tron`) and **Solana** (`solana`) are supported through the Sender API only; Tron and Solana orders use the v2 API. See [Supported Stablecoins](/resources/supported-stablecoins) for tokens and address formats.
 
-See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the full deployment table, and [Supported Stablecoins](/resources/supported-stablecoins) for per-network token details.
+See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the EVM deployment table, and [Supported Stablecoins](/resources/supported-stablecoins) for per-network token details.
 
 ## Security Architecture
 
@@ -161,10 +150,10 @@ See [Gateway Contract Addresses](/resources/gateway-contract-addresses) for the 
 
 The Gateway contract implements multiple security measures:
 
-- **Non-custodial escrow**: Funds are locked onchain, not held by Paycrest or providers
-- **Automatic refunds**: Orders not fulfilled within 5 minutes trigger automatic fund return
+- **Non-custodial escrow**: Funds are locked on-chain, not held by Paycrest or providers
+- **Automatic refunds**: Unfulfilled orders are refunded automatically
 - **Access control**: Role-based permissions and multi-signature governance for protocol changes
-- **Audited contracts**: Gateway contracts are security-audited; see the [contracts repository](https://github.com/paycrest/contracts)
+- **Open-source contracts**: see the [contracts repository](https://github.com/paycrest/contracts)
 
 ### Data Protection
 
@@ -178,9 +167,9 @@ Senders have two integration options:
 
 <CardGroup cols={2}>
   <Card title="Sender API" href="/implementation-guides/sender-api-integration" icon="code">
-    REST API integration — fastest time to integration. Paycrest handles the onchain interaction on your behalf.
+    REST API integration and the fastest way to go live. Paycrest handles the on-chain interaction for you.
   </Card>
   <Card title="Smart Contract" href="/implementation-guides/smart-contract-interaction" icon="file-contract">
-    Direct Gateway contract integration — full onchain composability. Automated flows like yield-to-fiat and liquidation-to-bank work natively.
+    Direct Gateway contract integration with full on-chain composability. Automated flows like yield-to-fiat and liquidation-to-bank work natively.
   </Card>
 </CardGroup>

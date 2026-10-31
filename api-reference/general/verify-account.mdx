@@ -38,3 +38,13 @@ Pass optional **`metadata`** on the verify request for Till/Paybill validation.
 - **`"OK"`** — account treated as valid but name lookup is unavailable for that corridor (common for some KES/GHS/UGX mobile flows). Provide your own `accountName` on the order.
 
 The same checks run again when you create an order; calling verify first improves checkout UX.
+
+## Status codes
+
+| Status | Meaning | What to do |
+|--------|---------|------------|
+| **200** | Account verified. `data` is the account name or `"OK"`. | Continue to order creation. |
+| **400** | Not verified: the institution is unsupported or unknown, or every eligible provider rejected the account. A malformed request body also returns 400, with field errors in `data`. | Treat as final. Ask the user to check the institution and account number. Do not retry unchanged. |
+| **503** | Verification could not complete: providers were unavailable, timed out, returned an error or a malformed response, or gave mixed results. For NGN, also returned when no provider returns a real account name. | Retry with backoff. |
+
+Branch on the HTTP status, not on the `message` text. If you already treat any non-200 response as "not verified", no change is needed.
