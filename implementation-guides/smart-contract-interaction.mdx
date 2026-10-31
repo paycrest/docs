@@ -479,7 +479,7 @@ The recipient object is encrypted with the aggregator's public key to produce th
 </Note>
 
 <Note>
-  On EVM networks you can additionally (or instead) attribute orders with an on-chain ERC-8021 data suffix. See [On-chain Attribution (ERC-8021)](#on-chain-attribution-erc-8021).
+  On EVM networks you can **additionally** tag orders with a public on-chain ERC-8021 data suffix. The suffix does **not** replace `metadata.apiKey`. See [On-chain Attribution (ERC-8021)](#on-chain-attribution-erc-8021).
 </Note>
 
 ### Routing fields
@@ -624,16 +624,23 @@ The suffix is execution-inert: the Gateway contract ignores trailing bytes beyon
   **The suffix is public attribution only.** It is not read for sender identification. Sender resolution, webhook delivery, and order lookup use `metadata.apiKey` inside the encrypted `messageHash`, which remains the authoritative and only mechanism.
 </Note>
 
+<Note>
+  Early drafts proposed putting the API key **ID** (UUID with dashes stripped) in the suffix so the indexer could resolve the sender from calldata. That approach was dropped: an API key ID in plaintext calldata can be copied onto another transaction. The shipped design uses the KYB **trading name** for the public tag, and keeps sender resolution on `metadata.apiKey`.
+</Note>
+
 ### Who appends the suffix
 
 | Path | Who appends it | Code used |
 |------|----------------|-----------|
 | **Sender API** (aggregator-relayed orders) | The aggregator, automatically | The sender's KYB trading name |
-| **Direct Gateway integration** (this guide) | You, on your own `createOrder` calldata | Whatever you choose to publish |
+| **Direct Gateway integration** (this guide) | You, on your own `createOrder` calldata | Your public code (usually your KYB trading name) |
+| **Noblocks** (app / embed widget) | The Noblocks app | On Base: `bc_julg9gbq` (and, when embedded, an `e_*` partner code). On other EVM chains: the `e_*` code alone when embedded |
 
 On the Sender API path the aggregator appends the suffix to the transactions it submits for an order: creation, settlement, and refunds. Senders with no trading name on their KYB profile get no suffix. There is nothing to configure.
 
 If you call the Gateway contract directly, nothing is appended for you. The rest of this section covers appending your own.
+
+Embed-host (`e_*`) attribution is a **Noblocks widget** concern. Direct smart-contract senders do not need it.
 
 ### Your sender code
 
@@ -886,7 +893,7 @@ Anything that appends bytes after your suffix breaks parsing too, since only the
 The `codes` field is a list, so a transaction can carry more than one code, comma-joined. For direct integrators the default is **your own code alone**, on every EVM network including Base.
 
 <Callout type="warning">
-  Use only your own code. Do not copy another app's Base Builder Code into your transactions.
+  `bc_julg9gbq` is **Paycrest/Noblocks' own registered Base Builder Code**. Noblocks appends it on Base mainnet for base.dev analytics and rewards. It identifies Noblocks as the originating app. Do **not** include it in your own transactions unless you have an explicit co-branding arrangement with Paycrest — it is not a code for arbitrary senders to claim.
 </Callout>
 
 ### Relationship to `metadata.apiKey`
@@ -908,9 +915,9 @@ Adding a suffix can never break order indexing. A malformed suffix, an unrecogni
 
 ### Network support
 
-On-chain attribution applies to **EVM networks only**. On **Starknet** no suffix is appended or read, and attribution works from `metadata.apiKey` exclusively.
+On-chain attribution applies to **EVM networks only**. On **Starknet** and **Tron**, no ERC-8021 suffix is appended or read; sender attribution continues to use `metadata.apiKey` exclusively.
 
-**References:** [ERC-8021 specification](https://eip.tools/eip/8021)
+**References:** [ERC-8021 specification](https://eip.tools/eip/8021) · [erc8021.com](https://www.erc8021.com/) · [Base: Builder Codes & ERC-8021](https://blog.base.dev/builder-codes-and-erc-8021-fixing-onchain-attribution)
 
 
 ## Token Approval
