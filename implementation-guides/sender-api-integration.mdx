@@ -604,7 +604,7 @@ Listen for webhooks or poll `GET /v2/sender/orders/:id`.
 
 ### Webhook Events
 
-Configure your webhook URL in the [Sender Dashboard](https://app.paycrest.io). Most webhooks are named for the status the order entered (`payment_order.<status>`) and all include a `direction` field (`"offramp"` or `"onramp"`). Branch on `event` rather than `data.status` — a few events, noted below, are not status changes:
+Configure your webhook URL in the [Sender Dashboard](https://app.paycrest.io) under **Settings › Webhooks**, which also shows delivery history and lets you retry failed deliveries. Most webhooks are named for the status the order entered (`payment_order.<status>`) and all include a `direction` field (`"offramp"` or `"onramp"`). Branch on `event` rather than `data.status` — a few events, noted below, are not status changes:
 
 ```json
 {
@@ -977,7 +977,7 @@ Fixed fee alternative:
 
 ### Who pays the transaction fee
 
-Every order carries a **transaction fee** (`transactionFee`) that covers its network costs. You choose who pays it, per token in the dashboard (**Settings › Trading › Transaction fee paid by**) or per order with `transactionFeePayer`:
+Every order carries a **transaction fee** (`transactionFee`) that covers its network costs. You choose who pays it, per token in the dashboard (**Settings › Trading › Who pays the transaction fee?**) or per order with `transactionFeePayer`:
 
 | `transactionFeePayer` | You earn (`senderFee`) | Your customer sends (`amountToTransfer`) |
 |---|---|---|

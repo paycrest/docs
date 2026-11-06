@@ -16,11 +16,11 @@ This guide walks you through the complete process of becoming a Paycrest provide
 ### Step 2: Initiate KYB Process
 - Complete the basic in-app Know-Your-Business (KYB) process
 - This process can run concurrently with PSP account setup
-- KYB approval is required for production access
+- KYB approval is required to add your first node and to create or activate offers
 
 ### Step 3: Register with Payment Service Providers (PSPs)
 
-Your provision node can support multiple payment service providers to ensure reliable transaction processing. The specific PSPs available to you will be shown in your provider dashboard so you can begin PSP account setup in parallel with your KYB process.
+Your provision node can support multiple payment service providers to ensure reliable transaction processing. The PSPs available to you are listed on the **PSPs** page of your dashboard, so you can begin PSP account setup in parallel with your KYB process.
 
 
 
@@ -28,14 +28,14 @@ Your provision node can support multiple payment service providers to ensure rel
 You need two credential groups:
 
 1. **Paycrest Aggregator Credentials** (from your Paycrest dashboard)
-   - Go to **Provider Dashboard → Settings → Payout tab → API Keys**
+   - Go to **Settings → API Keys**
    - Copy:
      - **API Key** -> set as `AGGREGATOR_CLIENT_ID`
      - **API Secret** -> set as `AGGREGATOR_SECRET_KEY`
 
 2. **PSP Credentials** (from each PSP portal)
    - For each PSP you enable, collect the required fields (for example: API key, client secret, client assertion, account ID, base URL, callback URL, webhook secret)
-   - Use the dashboard PSP setup page to see the exact environment variable keys to populate
+   - Use the **PSPs** page to see the exact environment variable keys to populate
    - Add these values to your node `.env`
 
 ### Step 4: Provision Node Setup
@@ -47,7 +47,7 @@ Choose your provision node hosting method:
 - Video setup guide available
 - Start here: [https://blockops.network](https://blockops.network)
 - After setup, obtain the Host Identifier URL from Blockops
-- In the app: **Settings → Payout tab → Configure Provision Node → Host identifier** — paste the URL and click **Update**
+- In the app: **Settings → Node → Add a node → Self hosted** — paste the URL and click **Save node URL**
 
 Choose this option if you want faster setup with minimal infrastructure management.
 
@@ -86,20 +86,20 @@ STARKNET_SNIP9_USER_ADDRESS= # required for Starknet onramp (payin)
 STARKNET_SNIP9_PRIVATE_KEY= # required for Starknet onramp (payin)
 
 # Aggregator Config
-AGGREGATOR_CLIENT_ID=your_paycrest_api_key # Provider Dashboard → Settings → Payout → API Keys
-AGGREGATOR_SECRET_KEY=your_paycrest_api_secret # Provider Dashboard → Settings → Payout → API Keys
+AGGREGATOR_CLIENT_ID=your_paycrest_api_key # Settings → API Keys
+AGGREGATOR_SECRET_KEY=your_paycrest_api_secret # Settings → API Keys
 AGGREGATOR_BASE_URL=https://api.paycrest.io/v2/provider
 
 # PSP Config - Only configure for PSPs you are using
-# Use the exact variable names shown for each PSP on the dashboard PSP setup page
+# Use the exact variable names shown for each PSP on the dashboard PSPs page
 # (availability varies by corridor and currency)
 <PSP>_API_KEY=
 <PSP>_SECRET_KEY=
 ```
 
 > **Credential Mapping**
-> - `AGGREGATOR_CLIENT_ID` must be your Paycrest **API Key** (Settings → **Payout** → **API Keys**)
-> - `AGGREGATOR_SECRET_KEY` must be your Paycrest **API Secret** (Settings → **Payout** → **API Keys**)
+> - `AGGREGATOR_CLIENT_ID` must be your Paycrest **API Key** (**Settings → API Keys**)
+> - `AGGREGATOR_SECRET_KEY` must be your Paycrest **API Secret** (**Settings → API Keys**)
 > - PSP variables (`<PSP>_*`) use values issued by each PSP. Prefixes match PSPs listed in the dashboard; availability depends on your corridor and currency.
 
 #### `EVM_PRIVATE_KEY` explained
@@ -123,7 +123,7 @@ AGGREGATOR_BASE_URL=https://api.paycrest.io/v2/provider
 > - Only configure the variables for the PSPs you are using
 > - If there is no comment on a credential key that has a value, DO NOT change that value
 > - DO NOT change the value of `AGGREGATOR_BASE_URL`
-> - The dashboard PSP setup page shows the exact environment variable keys per PSP
+> - The dashboard **PSPs** page shows the exact environment variable keys per PSP
 > - Retrieve the credential values from each PSP and place them in your `.env`
 
 3. **Start the Service**
@@ -155,8 +155,7 @@ Expected response:
 
 5. **Configure Host Identifier**
 - Take the base URL of your server (e.g., `http://your-server-ip:8000`)
-- In the app: **Settings → Payout tab → Configure Provision Node → Host identifier** — paste the URL and save
-- Go live on your dashboard
+- In the app: **Settings → Node → Add a node → Self hosted** — paste the URL and click **Save node URL**
 
 **Benefits:**
 - Complete control over infrastructure
@@ -164,44 +163,30 @@ Expected response:
 - No dependency on third-party services
 - Potential cost savings at scale
 
-### Step 5: Configure Trade Settings
+### Step 5: Create Offers
 
-#### Set Rates & Limits
+In **Offers**, click **Create offer** for a currency. Each offer sets:
 
-**Rates: Choose between:**
-- **Floating Rate (Recommended)**: Allows dynamic pricing with a margin
-- **Fixed Rate**: Static pricing, less flexible
+- **Side**: **Sell** (off-ramp) or **Buy** (on-ramp). Buy offers use PSPs that support payins.
+- **Token** and **Networks**
+- **Rate**: floating (recommended; market rate plus a margin) or fixed. Local stablecoin corridors are fixed only.
+- **Rate slippage**: advised, to handle volatility
+- **Fee bounds** (optional): minimum and maximum flat fee in fiat
+- **Order limits**: minimum and maximum order size. Set the maximum based on the fiat balance in your PSP account.
+- **PSPs**: all PSPs configured on your node, or a subset
+- **Settlement addresses**: one per network family. For **Starknet**, use a Starknet address (`0x` + 63–64 hex characters), not an EVM address.
 
-**Slippage**: It's advised to enable slippage to handle volatility
+**Protocol fee:** A protocol fee, a percentage of each order, is deducted at settlement. It appears as `transactionFee` on provider orders in the API and as **Protocol fee** on order details in the dashboard.
 
-**Order Limits:**
-- Set your minimum limit: Set the minimum amount (in USD) you can fulfill
-- Set your maximum limit: Set an amount (in USD) based on the available fiat balance in your PSP account
+### Step 6: Test & Go Live
 
-**Protocol fee:** A protocol fee, a percentage of each order, is deducted at settlement. It appears as `transactionFee` on provider orders in the API and as **Protocol Fee** on order details in the dashboard.
-
-#### Set Settlement Addresses
-
-**Configure Networks**
-- Add settlement addresses for all supported networks and tokens
-- You can add a settlement address on multiple networks for flexibility
-- For **Starknet**, use a Starknet wallet address (`0x` + 63–64 hex characters), not an EVM address — network identifier is `starknet`
-
-### Step 6: Node Testing & Launch
-
-#### Testing in Private Mode
-- After setting your settlement address(es), test your node in Private mode before going public
-- With private mode, you can route a transaction to your node using Noblocks
-- To go "LIVE" in Private Mode, switch your node to "Private Mode" on your dashboard
+- Turn on **Accepting offers** for the currency to start receiving orders
+- Check PSP balances in **Balances** and keep your PSP accounts funded
 
 **Test with Noblocks:**
-Use the Noblocks testing tool to verify your node in private mode:
+Route an order to your node:
 `https://noblocks.xyz?provider=YOUR_PROVIDER_ID`
 (Replace `YOUR_PROVIDER_ID` with your actual provider ID)
-
-#### Go Live on Public Mode
-- Once testing is successful, switch to Public Mode
-- Ensure your PSP account is funded and active for transaction fulfillment
 
 ## Onboarding Checklist
 
@@ -215,10 +200,9 @@ Use this checklist to track your progress:
 | Paycrest API Key + API Secret copied (for `AGGREGATOR_CLIENT_ID` / `AGGREGATOR_SECRET_KEY`) | ⬜ |
 | PSP credentials obtained and added to `.env` | ⬜ |
 | Node Deployed (Preferably Blockops) | ⬜ |
-| Trade Settings Configured | ⬜ |
-| Settlement Addresses Added | ⬜ |
-| Node Tested in Private Mode | ⬜ |
-| Switched to Public Mode | ⬜ |
+| Offers Created (with settlement addresses) | ⬜ |
+| Node Tested with Noblocks | ⬜ |
+| Accepting Offers turned on | ⬜ |
 
 ## Technical Requirements
 
