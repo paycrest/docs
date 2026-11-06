@@ -9,6 +9,18 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q4 2026
 
+### Dashboard redesign (November 2026)
+
+**Updated:** the [dashboard](https://app.paycrest.io) has a new layout. The API is unchanged.
+
+- **New:** sidebar navigation. Providers: **Home**, **Offers**, **Balances**, **Order history**, **Node** and **PSPs**. Senders: **Home** and **Orders**. **Profile** and workspace switching are in the account menu.
+- **New:** order search in the top bar, by order ID, reference, account or amount.
+- **New (providers):** **Balances** shows the balance of each PSP account on your node.
+- **Updated (providers):** **Settings** has **Node**, **API Keys** and **Team** tabs. Save your node URL under **Settings → Node → Add a node → Self hosted**. Go live per currency with **Accepting offers** on **Offers**. See the [Provider Setup Guide](/implementation-guides/provider-setup-guide).
+- **Behavior change (providers):** approved KYB is required to add your first node and to create or activate offers.
+- **Updated (senders):** **Settings** has **Trading**, **API Keys** (was **API Access**), **Webhooks** and **Team** tabs. **Webhooks** shows delivery history and retries failed deliveries. The fee payer setting is now **Who pays the transaction fee?** under **Trading**.
+- **Team:** invite members as **Admin** (full access), **Developer** (API keys, webhooks and node) or **Operations** (offers and orders).
+
 ### Webhook delivery reference corrected (October 2026)
 
 **Docs fix:** the [webhook delivery endpoints](/api-reference/sender/list-webhook-deliveries) now document the field names the API has always returned. The API itself has not changed.
