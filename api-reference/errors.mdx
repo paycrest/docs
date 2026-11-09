@@ -42,6 +42,12 @@ All error responses follow a consistent format:
 - **Provider issues**: Provider not found or misconfigured
 - **Provider queue**: `providerId` and `providerIds` sent together, more than 3 entries, duplicates, or an entry that can't serve the corridor — see [Pin a provider queue](/implementation-guides/sender-api-integration#pin-a-provider-queue)
 
+### 403 Forbidden
+- **KYB not approved**: Sender order creation returns `403` with `"field": "KYB"` when your KYB is not approved or pending. See [KYB requirement](/implementation-guides/sender-api-integration#kyb-requirement)
+- **Wrong API key type**: A sender API key used on a provider endpoint (including `/v2/offers`), or a provider key on a sender endpoint
+- **Provider KYB not approved**: Creating or activating an offer, or adding a first node, before provider KYB is approved
+- **Managed node subscription lapsed**: Activating an offer or enabling a currency while your Paycrest Managed node subscription has lapsed. See [Paycrest Managed node](/implementation-guides/provider-setup-guide#option-a-paycrest-managed-node)
+
 ### 503 Service Unavailable
 - **No provider available**: When no providers can handle the specific request
 - **Service temporarily unavailable**: During maintenance or high load

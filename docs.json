@@ -101,7 +101,8 @@
                   "api-reference/provider/get-order-by-id-v2",
                   "api-reference/provider/get-market-rate",
                   "api-reference/provider/get-provider-stats",
-                  "api-reference/provider/get-node-info"
+                  "api-reference/provider/get-node-info",
+                  "api-reference/provider/get-node-uptime"
                 ]
               },
               {
@@ -151,7 +152,8 @@
                   "api-reference/provider/list-lock-payment-orders",
                   "api-reference/provider/get-market-rate-v1",
                   "api-reference/provider/get-provider-stats-v1",
-                  "api-reference/provider/get-node-info-v1"
+                  "api-reference/provider/get-node-info-v1",
+                  "api-reference/provider/get-node-uptime-v1"
                 ]
               },
               {

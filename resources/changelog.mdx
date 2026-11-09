@@ -9,6 +9,33 @@ This page tracks significant changes to the Paycrest API and protocol. For full 
 
 ## Q4 2026
 
+### Sender KYB required to create orders (November 2026)
+
+**New:** creating orders requires sender KYB to be approved or pending. Enforcement is planned to take effect on 11 November 2026. See [KYB requirement](/implementation-guides/sender-api-integration#kyb-requirement).
+
+- **Behavior change:** [`POST /v2/sender/orders`](/api-reference/sender/initiate-payment-order-v2) (off-ramp and on-ramp) and [`POST /v1/sender/orders`](/api-reference/sender/initiate-payment-order) return **403** with `"field": "KYB"` when KYB has not been submitted or was rejected. Nothing is created.
+- **Behavior change:** the dashboard does not issue new API keys until KYB is approved or pending, and API keys may be revoked after a rejection once a grace period ends.
+- Saving token settings activates a sender profile only when KYB is approved or pending.
+
+### Order search: amounts and opt-in pagination (November 2026)
+
+**Updated:** order search on [`GET /v2/sender/orders`](/api-reference/sender/list-payment-orders-v2), [`GET /v1/sender/orders`](/api-reference/sender/list-payment-orders), [`GET /v2/provider/orders`](/api-reference/provider/list-orders-v2) and [`GET /v1/provider/orders`](/api-reference/provider/list-lock-payment-orders).
+
+- **New:** a numeric `search` term such as `1500` or `1,500.50` also matches the crypto amount or the fiat amount (to 2 decimal places).
+- **New:** search pagination is opt-in. Send `page`, `pageSize` or `limit` to get one page (`pageSize` default 10, max 100). Without them, a search returns every match as before, and returns **400** above 10,000 matches.
+- **New:** `GET /v2/provider/orders` accepts `token` and `network` filters, and a CSV export applies the same `currency`, `direction`, `token`, `network` and `status` filters as the list.
+
+### Bounded webhook deliveries list (November 2026)
+
+**New:** [`GET /v2/sender/webhooks`](/api-reference/sender/list-webhook-deliveries) accepts `bounded=true` for long delivery histories. `total` stops at 10,000 and the response adds `totalCapped: true` when more deliveries match, `pageSize` is capped at 100, and pages past the newest 10,000 return **400**. Without it, the list is unchanged.
+
+### Provider node uptime, Managed nodes and KYB for offers (November 2026)
+
+- **New:** [`GET /v2/provider/node-uptime`](/api-reference/provider/get-node-uptime) (and [v1](/api-reference/provider/get-node-uptime-v1)) returns 24 hourly buckets of node checks and failures, plus an uptime percentage.
+- **New:** [Paycrest Managed nodes](/implementation-guides/provider-setup-guide#option-a-paycrest-managed-node). Paycrest hosts your provision node on a paid subscription, managed from the dashboard. While the subscription has lapsed, enabling a currency or activating an offer returns **403**.
+- **Behavior change:** `/v2/offers` requires a provider API key. A sender API key returns **403**.
+- **Behavior change:** creating or activating an offer, and adding a first node, return **403** with `"field": "KYB"` until provider KYB is approved. Existing nodes are not affected.
+
 ### Verify-account status codes: 400 vs 503 (October 2026)
 
 **Updated:** [`POST /v2/verify-account`](/api-reference/general/verify-account) and [`POST /v1/verify-account`](/api-reference/general/verify-account-v1) now separate a definitive "not verified" from a temporary failure. Previously every verification failure returned **503**. Successful responses are unchanged. See [Status codes](/api-reference/general/verify-account#status-codes).

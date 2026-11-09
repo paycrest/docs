@@ -17,6 +17,7 @@ This guide walks you through the complete process of becoming a Paycrest provide
 - Complete the basic in-app Know-Your-Business (KYB) process
 - This process can run concurrently with PSP account setup
 - KYB approval is required for production access
+- You can't add your first node (set a host identifier or deploy a Paycrest Managed node) or create and activate offers until KYB is approved. These requests return **403** with `"field": "KYB"`. A provider that already has a node keeps it.
 
 ### Step 3: Register with Payment Service Providers (PSPs)
 
@@ -42,7 +43,25 @@ You need two credential groups:
 
 Choose your provision node hosting method:
 
-#### Option A: Blockops (Managed hosting)
+#### Option A: Paycrest Managed node
+
+Paycrest hosts and runs the node for you on a paid subscription, managed entirely from the dashboard. There is no server to run and no host identifier to configure.
+
+1. **Subscribe.** A team admin starts the Managed node subscription in the dashboard and pays through the hosted checkout. Checkout for a provider without a node requires approved KYB.
+2. **Deploy.** A team admin or developer deploys the node from the dashboard: choose at least one payment provider, enter its credentials, and add the wallet keys the node needs (an EVM wallet key is required). Paycrest creates the node and sets your host identifier once it is running. Wallet keys and credentials are stored as node secrets and are never shown again.
+3. **Manage.** From the dashboard you can edit the node's payment providers, credentials and wallet keys (the node restarts on the new settings), stop and start it, or delete it. A stopped node stays stopped until you start it. Starting a node needs an active subscription. Deleting a node does not cancel the subscription.
+
+**Subscription and billing.** Billing, invoices and payment history are under **Settings → Billing**.
+
+- **Cancel** stops renewal. Your node keeps running until the end of the period you already paid for. Until then you can **resume** without a new charge.
+- **Failed renewal:** after a failed charge, access is suspended on day 7 and the subscription ends on day 30, unless a payment succeeds first.
+- **When access ends** (suspension, or a cancelled period running out), Paycrest stops your node, sets your provider profile inactive and turns off every currency, so no orders are routed to you. While the subscription has lapsed, enabling a currency or activating an offer returns **403**.
+- **When a payment restores access**, your provider profile is reactivated and the node starts again, unless you stopped it yourself. Currencies stay off until you turn them back on.
+- A node whose access ended 30 or more days ago is deleted.
+
+These dashboard actions use your dashboard sign-in and can't be called with an API key.
+
+#### Option B: Blockops (Managed hosting)
 - Managed hosting with guided setup
 - Video setup guide available
 - Start here: [https://blockops.network](https://blockops.network)
@@ -51,7 +70,7 @@ Choose your provision node hosting method:
 
 Choose this option if you want faster setup with minimal infrastructure management.
 
-#### Option B: Self-Hosted Deployment (Recommended for Developers)
+#### Option C: Self-Hosted Deployment (Recommended for Developers)
 
 A Paycrest provision node is a backend service hosted on Docker Hub. The deployment process involves pulling the Docker image, configuring environment variables, and starting the server.
 
@@ -178,6 +197,8 @@ Expected response:
 - Set your minimum limit: Set the minimum amount (in USD) you can fulfill
 - Set your maximum limit: Set an amount (in USD) based on the available fiat balance in your PSP account
 
+**Offers and KYB:** You can only create or activate offers once your KYB is approved. To manage offers over the API at `/v2/offers`, use a **provider** API key; a sender API key returns **403**.
+
 **Protocol fee:** A protocol fee, a percentage of each order, is deducted at settlement. It appears as `transactionFee` on provider orders in the API and as **Protocol Fee** on order details in the dashboard.
 
 #### Set Settlement Addresses
@@ -214,7 +235,7 @@ Use this checklist to track your progress:
 | PSP Accounts Created | ⬜ |
 | Paycrest API Key + API Secret copied (for `AGGREGATOR_CLIENT_ID` / `AGGREGATOR_SECRET_KEY`) | ⬜ |
 | PSP credentials obtained and added to `.env` | ⬜ |
-| Node Deployed (Preferably Blockops) | ⬜ |
+| Node Deployed (Paycrest Managed, Blockops or self-hosted) | ⬜ |
 | Trade Settings Configured | ⬜ |
 | Settlement Addresses Added | ⬜ |
 | Node Tested in Private Mode | ⬜ |
@@ -268,6 +289,7 @@ sudo usermod -aG docker $USER
 - Implement key encryption
 
 ### Monitoring and Alerting
+- Track your node's reachability with [`GET /v2/provider/node-uptime`](/api-reference/provider/get-node-uptime): 24 hourly buckets of checks and failures, plus an uptime percentage
 - Set up log aggregation
 - Configure performance alerts
 - Monitor transaction volumes

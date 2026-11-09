@@ -187,8 +187,10 @@ components:
           type: integer
         page:
           type: integer
+          description: Omitted on an unpaged search.
         pageSize:
           type: integer
+          description: Omitted on an unpaged search.
         orders:
           type: array
           items:
@@ -204,6 +206,39 @@ components:
           type: string
 
     # Provider Schemas
+    NodeUptimeResponse:
+      type: object
+      description: Reachability of your provision node over the last 24 hours, in hourly buckets, oldest first.
+      properties:
+        windowHours:
+          type: integer
+          example: 24
+          description: Length of the window in hours. Always 24.
+        uptimePercent:
+          type: number
+          format: double
+          nullable: true
+          example: 99.3
+          description: Share of checks in the window that succeeded, as a percentage. `null` when there were no checks in the window, for example when no node host is configured.
+        buckets:
+          type: array
+          description: 24 hourly buckets, oldest first. The last bucket is the current hour.
+          items:
+            type: object
+            properties:
+              start:
+                type: string
+                format: date-time
+                example: "2026-11-09T13:00:00Z"
+                description: Start of the hour (UTC).
+              checks:
+                type: integer
+                example: 12
+                description: Number of times Paycrest checked your node during the hour.
+              failures:
+                type: integer
+                example: 0
+                description: Number of those checks that could not reach your node or got a server error (5xx) from it.
     ProviderOrderList:
       type: object
       properties:
@@ -575,6 +610,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            The sender's KYB is not approved or pending, so orders can't be created. Complete or resubmit KYB
+            verification at [app.paycrest.io](https://app.paycrest.io). Nothing was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                message: Complete or resubmit KYB verification to create orders
+                data:
+                  - field: KYB
+                    message: Complete or resubmit KYB verification to create orders
         '404':
           description: Not found
           content:
@@ -591,9 +640,37 @@ paths:
       tags:
         - Sender
       summary: List payment orders
+      description: |
+        Returns the authenticated sender's payment orders, newest first.
+
+        **Search.** Pass `search` to find orders by order ID, address, account number or name, memo,
+        institution, or amount. A numeric term such as `1500` or `1,500.50` also matches the crypto
+        amount or the fiat amount (to 2 decimal places). Search ignores the other filters and does not return
+        cancelled orders.
+
+        **Search pagination is opt-in.** Without `page`, `pageSize` or `limit`, a search returns every match in
+        one response, and returns **400** when more than 10,000 orders match. Send any of them to get one page
+        instead (`pageSize` default 10, max 100). A paged search response includes `page` and `pageSize`; an
+        unpaged one has only `total` and `orders`.
       security:
         - ApiKeyAuth: []
       parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 10
+          description: Items per page. With `search`, capped at 100.
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term. See the endpoint description for the fields matched and how paging works.
         - in: query
           name: status
           schema:
@@ -624,6 +701,12 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/SenderPaymentOrderList'
+        '400':
+          description: An empty `search`, or an unpaged search matching more than 10,000 orders. Narrow the term or send `page`/`pageSize`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
           content:
@@ -769,9 +852,35 @@ paths:
       tags:
         - Provider
       summary: List orders (provider)
+      description: |
+        Returns the orders assigned to the authenticated provider.
+
+        **Search.** `search` matches the order ID, account number or account name. A numeric term such as `1500`
+        or `1,500.50` also matches the crypto amount or the fiat amount (to 2 decimal places). Search ignores the
+        other filters.
+
+        **Search pagination is opt-in.** Without `page`, `pageSize` or `limit`, a search returns every match in
+        one response, and returns **400** when more than 10,000 orders match. Send any of them to get one page
+        instead (`pageSize` default 10, max 100), with `total` counting every match.
       security:
         - ApiKeyAuth: []
       parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 10
+          description: Items per page. With `search`, capped at 100.
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term. See the endpoint description for the fields matched and how paging works.
         - in: query
           name: currency
           schema:
@@ -924,6 +1033,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+
+
+  /provider/node-uptime:
+    get:
+      tags:
+        - Provider
+      summary: Get node uptime
+      description: |
+        Returns how often Paycrest could reach your provision node in each of the last 24 hours, and the
+        uptime percentage over that window. With no node host configured, every bucket is empty and
+        `uptimePercent` is `null`.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Node uptime
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NodeUptimeResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 
   # General Endpoints

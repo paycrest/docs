@@ -740,6 +740,40 @@ components:
           type: object
           description: The actual response data (e.g., ReceiveAddressResponse, etc.)
 
+    NodeUptimeResponse:
+      type: object
+      description: Reachability of your provision node over the last 24 hours, in hourly buckets, oldest first.
+      properties:
+        windowHours:
+          type: integer
+          example: 24
+          description: Length of the window in hours. Always 24.
+        uptimePercent:
+          type: number
+          format: double
+          nullable: true
+          example: 99.3
+          description: Share of checks in the window that succeeded, as a percentage. `null` when there were no checks in the window, for example when no node host is configured.
+        buckets:
+          type: array
+          description: 24 hourly buckets, oldest first. The last bucket is the current hour.
+          items:
+            type: object
+            properties:
+              start:
+                type: string
+                format: date-time
+                example: "2026-11-09T13:00:00Z"
+                description: Start of the hour (UTC).
+              checks:
+                type: integer
+                example: 12
+                description: Number of times Paycrest checked your node during the hour.
+              failures:
+                type: integer
+                example: 0
+                description: Number of those checks that could not reach your node or got a server error (5xx) from it.
+
     # ─── V2 Schemas ────────────────────────────────────────────────────────────
 
     V2PaymentOrderPayload:
@@ -1319,6 +1353,7 @@ components:
           type: integer
         pageSize:
           type: integer
+          description: On an unpaged search, the number of orders returned.
         orders:
           type: array
           items:
@@ -1333,6 +1368,7 @@ components:
           type: integer
         pageSize:
           type: integer
+          description: On an unpaged search, the number of orders returned.
         orders:
           type: array
           items:
@@ -1510,6 +1546,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WebhookDelivery'
+        totalCapped:
+          type: boolean
+          description: Only with `bounded=true`. Present and `true` when more deliveries match than `total` shows; `total` is then 10,000.
 
     WebhookRetryResult:
       type: object
@@ -1925,6 +1964,36 @@ paths:
           description: Unauthorized
         '503':
           description: Service unavailable
+
+  /provider/node-uptime:
+    get:
+      tags:
+        - Provider
+      summary: Get node uptime
+      description: |
+        Returns how often Paycrest could reach your provision node in each of the last 24 hours, and the
+        uptime percentage over that window. With no node host configured, every bucket is empty and
+        `uptimePercent` is `null`.
+      security:
+        - ApiKeyAuth: []
+      servers:
+        - url: https://api.paycrest.io/v2
+      responses:
+        '200':
+          description: Node uptime
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NodeUptimeResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
 
   # ─── V2 General Endpoints ─────────────────────────────────────────────────────
 
@@ -2593,6 +2662,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            The sender's KYB is not approved or pending, so orders can't be created. Complete or resubmit KYB
+            verification at [app.paycrest.io](https://app.paycrest.io). Nothing was created. See
+            [KYB requirement](/implementation-guides/sender-api-integration#kyb-requirement).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                status: error
+                message: Complete or resubmit KYB verification to create orders
+                data:
+                  field: KYB
+                  message: Complete or resubmit KYB verification to create orders
         '503':
           description: |
             No provider available for this corridor, or **"Network temporarily unavailable"** — "This network is
@@ -2606,6 +2690,17 @@ paths:
       tags:
         - Sender
       summary: List v2 payment orders
+      description: |
+        Returns the authenticated sender's payment orders, newest first.
+
+        **Search.** Pass `search` to find orders by order ID, address, account number or name, memo,
+        institution, or amount. A numeric term such as `1500` or `1,500.50` also matches the crypto
+        amount or the fiat amount (to 2 decimal places). Search ignores the other filters and does not return
+        cancelled orders.
+
+        **Search pagination is opt-in.** Without `page`, `pageSize` or `limit`, a search returns every match in
+        one response, and returns **400** when more than 10,000 orders match. Send any of them to get one page
+        instead (`pageSize` default 10, max 100), with `total` counting every match.
       security:
         - ApiKeyAuth: []
       servers:
@@ -2621,11 +2716,17 @@ paths:
           schema:
             type: integer
             default: 10
+          description: Items per page. With `search`, capped at 100.
         - in: query
           name: status
           schema:
             type: string
             enum: [initiated, deposited, pending, fulfilling, fulfilled, validated, settling, settled, cancelled, refunding, refunded, expired]
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term. See the endpoint description for the fields matched and how paging works.
         - $ref: '#/components/parameters/OptionalOrderDirection'
       responses:
         '200':
@@ -2639,6 +2740,12 @@ paths:
                     type: string
                   data:
                     $ref: '#/components/schemas/V2SenderPaymentOrderListResponse'
+        '400':
+          description: An empty `search`, or an unpaged search matching more than 10,000 orders. Narrow the term or send `page`/`pageSize`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
 
@@ -2685,6 +2792,12 @@ paths:
         Use this to audit which events were delivered and to find failed or expired
         deliveries to replay. List items omit the large `requestPayload` and
         `responseBody` fields — fetch a single delivery to see them.
+
+        **Bounded mode.** With a long delivery history, pass `bounded=true` to keep the request fast.
+        `total` then stops at 10,000 (with `totalCapped: true` when more deliveries match), `pageSize`
+        is capped at 100, and only the newest 10,000 matching deliveries can be paged: a page past them
+        returns **400**. Narrow older deliveries with `from`/`to`. Without `bounded`, `total` is exact
+        and paging is unchanged.
       security:
         - ApiKeyAuth: []
       servers:
@@ -2734,6 +2847,13 @@ paths:
           schema:
             type: integer
             default: 10
+          description: Items per page. With `bounded=true`, capped at 100.
+        - in: query
+          name: bounded
+          schema:
+            type: boolean
+            default: false
+          description: Set to `true` to cap the count and paging at the newest 10,000 matching deliveries. See the endpoint description.
       responses:
         '200':
           description: List of webhook deliveries
@@ -2746,6 +2866,12 @@ paths:
                     type: string
                   data:
                     $ref: '#/components/schemas/WebhookDeliveryList'
+        '400':
+          description: Invalid filter, or (with `bounded=true`) a page past the newest 10,000 matching deliveries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
 
@@ -2861,7 +2987,19 @@ paths:
       tags:
         - Provider
       summary: List v2 payment orders (provider)
-      description: Returns a paginated list of payment orders assigned to the authenticated provider, in the v2 response schema. Requires a `currency` query parameter. Supports optional `direction` (`onramp` / `offramp`), `search`, `export=csv`, `from`/`to` date filters, and `ordering` (asc/desc).
+      description: |
+        Returns a paginated list of payment orders assigned to the authenticated provider, in the v2 response schema.
+        Supports optional `currency`, `direction` (`onramp` / `offramp`), `token`, `network`, `status`, `search`,
+        `export=csv`, `from`/`to` date filters, and `ordering` (asc/desc). A CSV export applies the same
+        `currency`, `direction`, `token`, `network` and `status` filters as the list.
+
+        **Search.** `search` matches the order ID, account number or account name. A numeric term such as `1500`
+        or `1,500.50` also matches the crypto amount or the fiat amount (to 2 decimal places). Search ignores the
+        other filters.
+
+        **Search pagination is opt-in.** Without `page`, `pageSize` or `limit`, a search returns every match in
+        one response, and returns **400** when more than 10,000 orders match. Send any of them to get one page
+        instead (`pageSize` default 10, max 100), with `total` counting every match.
       security:
         - ApiKeyAuth: []
       servers:
@@ -2869,11 +3007,22 @@ paths:
       parameters:
         - in: query
           name: currency
-          required: true
           schema:
             type: string
             example: NGN
-          description: Fiat currency to filter orders by (e.g. NGN, KES).
+          description: Fiat currency to filter orders by (e.g. NGN, KES). Must be one of your currencies. Omit to list orders across all of them.
+        - in: query
+          name: token
+          schema:
+            type: string
+            example: USDC
+          description: Token symbol to filter orders by. An unknown symbol adds no filter.
+        - in: query
+          name: network
+          schema:
+            type: string
+            example: base
+          description: Network identifier to filter orders by. An unknown identifier adds no filter.
         - in: query
           name: page
           schema:
@@ -2884,6 +3033,7 @@ paths:
           schema:
             type: integer
             default: 10
+          description: Items per page. With `search`, capped at 100.
         - in: query
           name: status
           schema:
@@ -2899,7 +3049,7 @@ paths:
           name: search
           schema:
             type: string
-          description: Search by order ID, reference, or account identifier.
+          description: Search term. See the endpoint description for the fields matched and how paging works.
         - in: query
           name: export
           schema:
@@ -2935,7 +3085,7 @@ paths:
                   data:
                     $ref: '#/components/schemas/V2PaymentOrderListResponse'
         '400':
-          description: Bad request (e.g. missing currency)
+          description: Bad request (e.g. a currency you don't serve, or an unpaged search matching more than 10,000 orders)
         '401':
           description: Unauthorized
 
